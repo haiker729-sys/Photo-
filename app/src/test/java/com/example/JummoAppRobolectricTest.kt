@@ -17,6 +17,7 @@ import com.example.ui.auth.AuthScreen
 import com.example.ui.screens.EventsScreen
 import com.example.ui.screens.GuestPortalModalScreen
 import com.example.ui.screens.HomeDashboardScreen
+import com.example.ui.screens.OfficialWebsiteScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.util.QrCodeGenerator
@@ -340,5 +341,61 @@ class JummoAppRobolectricTest {
         composeTestRule.waitForIdle()
 
         assertTrue(consentSubmitted)
+    }
+
+    @Test
+    fun officialWebsiteScreen_displaysHeroDownloadButtonFeaturesPreviewFaqAndFooter() {
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                OfficialWebsiteScreen(
+                    onClose = {},
+                    enableLiveNetworkCheck = false
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        val websiteList = composeTestRule.onNodeWithTag("official_website_list")
+        websiteList.assertIsDisplayed()
+
+        // 1. Hero & Download APK button
+        websiteList.performScrollToNode(hasTestTag("hero_download_apk_button"))
+        composeTestRule.onNodeWithTag("hero_download_apk_button").assertIsDisplayed()
+
+        // 2. APK Download System Card, "DOWNLOAD JUMMO PHOTOS AI" CTA & Verified Unavailable Notice
+        websiteList.performScrollToNode(hasTestTag("download_jummo_photos_ai_button"))
+        composeTestRule.onNodeWithTag("download_jummo_photos_ai_button").assertIsDisplayed()
+        composeTestRule.onNodeWithText("DOWNLOAD JUMMO PHOTOS AI").assertIsDisplayed()
+
+        websiteList.performScrollToNode(hasTestTag("apk_unavailable_notice"))
+        composeTestRule.onNodeWithTag("apk_unavailable_notice").assertIsDisplayed()
+
+        // 3. 8 Implemented Features Section
+        websiteList.performScrollToNode(hasText("Implemented Studio Features"))
+        composeTestRule.onNodeWithText("Implemented Studio Features").assertIsDisplayed()
+        websiteList.performScrollToNode(hasText("Professional Camera"))
+        composeTestRule.onNodeWithText("Professional Camera").assertIsDisplayed()
+        composeTestRule.onNodeWithText("DSLR / RAW Import").assertIsDisplayed()
+
+        // 4. 8-Screen App Preview Gallery
+        websiteList.performScrollToNode(hasText("App Preview Gallery (8 Screens)"))
+        composeTestRule.onNodeWithText("App Preview Gallery (8 Screens)").assertIsDisplayed()
+
+        // 5. How It Works (6 Steps)
+        websiteList.performScrollToNode(hasText("How It Works"))
+        composeTestRule.onNodeWithText("How It Works").assertIsDisplayed()
+
+        // 6. Configurable Studio Plans (Pricing)
+        websiteList.performScrollToNode(hasText("Configurable Studio Plans"))
+        composeTestRule.onNodeWithText("Configurable Studio Plans").assertIsDisplayed()
+
+        // 7. FAQ Section
+        websiteList.performScrollToNode(hasText("How to install the APK?"))
+        composeTestRule.onNodeWithText("How to install the APK?").assertIsDisplayed()
+
+        // 8. Official Website Footer
+        websiteList.performScrollToNode(hasTestTag("website_footer_section"))
+        composeTestRule.onNodeWithTag("website_footer_section").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Official GitHub Repo").assertIsDisplayed()
     }
 }

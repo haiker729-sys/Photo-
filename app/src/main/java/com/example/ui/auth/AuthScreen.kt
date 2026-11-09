@@ -232,7 +232,8 @@ fun signOut(
 fun AuthScreen(
     onAuthSuccess: () -> Unit,
     enableAutoSignIn: Boolean = true,
-    initialErrorMessage: String? = null
+    initialErrorMessage: String? = null,
+    onOpenOfficialWebsite: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -712,6 +713,18 @@ fun AuthScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+
+                Text(
+                    text = "Official Website & APK Release Portal ↗",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = JummoGoldBright,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .clickable { onOpenOfficialWebsite() }
+                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                        .testTag("open_official_website_from_login")
+                )
             }
         }
     }

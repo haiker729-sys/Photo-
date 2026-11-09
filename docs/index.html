@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jummo Photos AI — Smart Event Photography Suite | Official Website</title>
+  <meta name="description" content="Jummo Photos AI is a luxury Event Photography, AI Face Search, DSLR RAW/JPG Import, WorkManager Cloud Upload, and Instant QR Photo Sharing suite for Android." />
+  <meta name="keywords" content="Jummo Photos AI, Event Photography App, AI Face Search, QR Photo Sharing, CameraX Android, DSLR Import, Wedding Photography SaaS" />
+  <meta property="og:title" content="Jummo Photos AI — Smart Event Photography Suite" />
+  <meta property="og:description" content="Capture, manage, and share event photography with CameraX, DSLR/SD Import, Google Drive sync, Branded Event QR codes, and Consent-First AI Face Search." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Sticky Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="#top" class="brand-link" aria-label="Jummo Photos AI Home">
+        <!-- Luxury Golden Camera Lens SVG Logo -->
+        <svg class="brand-logo-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="goldGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#FFE596" />
+              <stop offset="50%" stop-color="#F6C445" />
+              <stop offset="100%" stop-color="#C98A1B" />
+            </linearGradient>
+            <radialGradient id="purpleLens" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#E9B8FF" />
+              <stop offset="45%" stop-color="#A020F0" />
+              <stop offset="100%" stop-color="#1A062E" />
+            </radialGradient>
+          </defs>
+          <path d="M22 18L26 11H38L42 18" stroke="url(#goldGrad)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+          <rect x="8" y="18" width="48" height="34" rx="9" fill="#160B28" stroke="url(#goldGrad)" stroke-width="3.2" />
+          <circle cx="48" cy="25" r="2.2" fill="#FFE596" />
+          <circle cx="32" cy="35" r="12.5" fill="url(#goldGrad)" />
+          <circle cx="32" cy="35" r="10" fill="url(#purpleLens)" />
+          <circle cx="29" cy="32" r="2.2" fill="#FFFFFF" fill-opacity="0.85" />
+        </svg>
+        <div class="brand-text-wrap">
+          <span class="brand-name">Jummo Photos <span>AI</span></span>
+          <span class="brand-tagline">Smart Event Photography Suite</span>
+        </div>
+      </a>
+
+      <nav aria-label="Primary Navigation">
+        <ul class="nav-links" id="main-nav-links">
+          <li><a href="#download-apk">Download APK</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#app-preview">App Preview</a></li>
+          <li><a href="#how-it-works">How It Works</a></li>
+          <li><a href="#pricing">Plans</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="https://github.com/haiker729-sys/Photo-" target="_blank" rel="noopener noreferrer" class="btn btn-outline">GitHub Repo</a>
+        <a href="#download-apk" class="btn btn-gold">Download APK</a>
+        <button type="button" class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle Menu">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- 1. HERO SECTION -->
+    <section class="hero-section">
+      <div class="container hero-grid">
+        <div>
+          <div class="studio-pill">
+            <span>✦</span> Luxury Photography Studio &amp; AI Suite
+          </div>
+          <h1 class="hero-title">
+            Jummo Photos <span class="gold-accent">AI</span><br />
+            Smart Event Photography Suite
+          </h1>
+          <p class="hero-subtitle">
+            Capture with CameraX, import original DSLR &amp; SD card shoots, automate resilient WorkManager uploads to Google Drive, generate branded Event QR codes, and empower guests with consent-first AI Face Search.
+          </p>
+
+          <div class="hero-categories-strip" aria-label="Supported Event Categories">
+            <span class="category-chip">💍 Weddings</span>
+            <span class="category-chip">✨ Festivals</span>
+            <span class="category-chip">🏛️ Corporate</span>
+            <span class="category-chip">🎓 Schools</span>
+            <span class="category-chip">📡 Live Events</span>
+          </div>
+
+          <div class="hero-cta-row">
+            <a href="https://github.com/haiker729-sys/Photo-/releases/latest" class="btn btn-gold btn-large js-apk-download-trigger">
+              ⬇ DOWNLOAD JUMMO PHOTOS AI
+            </a>
+            <a href="#features" class="btn btn-violet btn-large">
+              Explore Features
+            </a>
+          </div>
+
+          <div class="hero-trust-row">
+            <span class="hero-trust-item">🛡️ <strong>Secured by</strong> Firebase Authentication</span>
+            <span class="hero-trust-item">📱 <strong>Android</strong> 7.0+ (API 24–36)</span>
+            <span class="hero-trust-item">💾 <strong>Originals</strong> Preserved Locally</span>
+          </div>
+        </div>
+
+        <!-- Right Visual Card: DSLR + Wedding Photography Showcase -->
+        <div class="hero-visual-card">
+          <div class="hero-banner-img-wrap">
+            <img src="assets/hero-studio.jpg" alt="Jummo Photos AI Professional DSLR Camera and Wedding Bokeh" />
+            <div class="hero-banner-overlay">
+              <span class="studio-pill" style="margin-bottom: 6px; width: fit-content;">Pro Studio Edition</span>
+              <h2 style="font-size: 1.45rem; color: #fff;">Event Photography Powered by AI</h2>
+              <p style="font-size: 0.82rem; color: #FFE082;">CameraX • DSLR RAW/JPG • WorkManager • QR • Guest AI</p>
+            </div>
+          </div>
+          <div class="hero-mini-grid">
+            <div class="hero-mini-stat">
+              <div class="label">Capture &amp; Import</div>
+              <div class="value">CameraX + SAF</div>
+            </div>
+            <div class="hero-mini-stat">
+              <div class="label">Queue Engine</div>
+              <div class="value">WorkManager</div>
+            </div>
+            <div class="hero-mini-stat">
+              <div class="label">Guest Access</div>
+              <div class="value">QR + Face AI</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. APK DOWNLOAD SYSTEM -->
+    <section class="section" id="download-apk">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow">Official Android Release</span>
+          <h2 class="section-title">Download Jummo Photos AI for Android</h2>
+          <p class="section-desc">
+            Direct connection to the official GitHub Releases asset on <strong>github.com/haiker729-sys/Photo-</strong> with real-time release verification.
+          </p>
+        </div>
+
+        <div class="apk-hub-card">
+          <div class="apk-hub-grid">
+            <div>
+              <div id="apk-release-status-pill" class="release-status-pill checking">
+                ⟳ Verifying Latest GitHub Release on haiker729-sys/Photo-…
+              </div>
+              <h3 style="font-size: 1.5rem; margin-bottom: 8px;">Jummo Photos AI — Android Photographer App</h3>
+              <p style="font-size: 0.9rem; color: var(--text-lavender);">
+                Package ID: <code>com.aistudio.jummophotos.vkpzrt</code> • Signed Android APK built with Kotlin, Jetpack Compose, Material 3, CameraX, WorkManager, and Firebase.
+              </p>
+
+              <div class="apk-meta-grid">
+                <div class="apk-meta-box">
+                  <div class="meta-label">APK Release Version</div>
+                  <div class="meta-value" id="apk-meta-version">Checking release…</div>
+                </div>
+                <div class="apk-meta-box">
+                  <div class="meta-label">Verified File Size</div>
+                  <div class="meta-value" id="apk-meta-size">Checking asset…</div>
+                </div>
+                <div class="apk-meta-box">
+                  <div class="meta-label">Last Updated Date</div>
+                  <div class="meta-value" id="apk-meta-updated">Checking date…</div>
+                </div>
+                <div class="apk-meta-box">
+                  <div class="meta-label">Android Compatibility</div>
+                  <div class="meta-value">Android 7.0+ (API 24–36)</div>
+                </div>
+              </div>
+
+              <a
+                href="https://github.com/haiker729-sys/Photo-/releases/latest"
+                id="primary-apk-download-btn"
+                class="btn btn-gold apk-download-btn js-apk-download-trigger"
+              >
+                ⬇ DOWNLOAD JUMMO PHOTOS AI
+              </a>
+
+              <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px;">
+                <a
+                  href="https://github.com/haiker729-sys/Photo-/releases"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn btn-outline"
+                  style="flex: 1;"
+                >
+                  View All GitHub Releases ↗
+                </a>
+                <a
+                  href="https://github.com/haiker729-sys/Photo-/actions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn btn-outline"
+                  style="flex: 1;"
+                >
+                  Inspect APK Build Workflow ↗
+                </a>
+              </div>
+
+              <div id="apk-download-error-box" class="apk-error-box" role="alert">
+                <strong>Release Verification Notice:</strong>
+                <span id="apk-download-error-text">
+                  Checking https://github.com/haiker729-sys/Photo-/releases for a published .apk asset…
+                </span>
+              </div>
+            </div>
+
+            <!-- Installation Instructions -->
+            <div class="install-steps-card">
+              <h3>How to Install the APK on Android</h3>
+              <ol class="install-list">
+                <li>
+                  <span class="step-badge">1</span>
+                  <div>Tap <strong>DOWNLOAD JUMMO PHOTOS AI</strong> to download the verified <code>.apk</code> file from the official GitHub Release.</div>
+                </li>
+                <li>
+                  <span class="step-badge">2</span>
+                  <div>Open the downloaded APK from your browser notification bar or your device’s <strong>Downloads</strong> folder.</div>
+                </li>
+                <li>
+                  <span class="step-badge">3</span>
+                  <div>If prompted by Android, enable <strong>Allow from this source</strong> (Install unknown apps) for your browser or file manager.</div>
+                </li>
+                <li>
+                  <span class="step-badge">4</span>
+                  <div>Launch <strong>Jummo Photos AI</strong>, tap <strong>Sign in with Google</strong>, and grant Camera permission when shooting live events.</div>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. FEATURES SECTION (8 Implemented Features) -->
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow">Production Architecture</span>
+          <h2 class="section-title">Engineered for Professional Event Studios</h2>
+          <p class="section-desc">
+            Every feature below is implemented and verified inside the Jummo Photos AI Android application.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <article class="feature-card">
+            <div class="feature-icon-box">📷</div>
+            <h3>Professional Camera</h3>
+            <p>Full-screen CameraX viewfinder with Flash modes (Auto/On/Off), HDR toggle, 4K framing badge, rule-of-thirds composition grid, front/rear lens switching, and floating active event selector.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon-box">💾</div>
+            <h3>DSLR / RAW Import</h3>
+            <p>Zero-permission Android Photo Picker and Storage Access Framework (SAF) to import RAW, DNG, CR2, NEF, ARW, PNG, and JPG files directly from DSLR SD cards or camera storage.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon-box">☁️</div>
+            <h3>Automatic Photo Upload</h3>
+            <p>Resilient background upload queue powered by Android WorkManager (`PhotoUploadWorker`) with configurable Wi-Fi Only and Battery &gt; 20% protection.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon-box">📁</div>
+            <h3>Google Drive Integration</h3>
+            <p>Connect your studio’s root Drive folder (`Jummo_Events_Cloud`) via a server-side OAuth architecture that keeps client secrets out of the Android APK.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon-box">🔳</div>
+            <h3>Event QR Generation</h3>
+            <p>Deterministic branded QR code generator with custom event title, category, expiration date, instant pause/resume switch, gallery download, and native Android Share sheet.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon-box">👤</div>
+            <h3>AI Face Search</h3>
+            <p>Consent-first guest selfie matching strictly isolated per Event ID. Guests can report mismatches or purge their face-search session data at any time.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon-box">🖼️</div>
+            <h3>Guest Photo Gallery</h3>
+            <p>3-column event gallery with All Photos, People (AI), and Highlights tabs, plus configurable guest access modes: Full Gallery, Face Search Only, or Photographer Approval.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon-box">🔒</div>
+            <h3>Secure Photo Download</h3>
+            <p>Original captured photos are stored safely in local app storage (`filesDir/photos`) and never auto-deleted. Guest downloads respect per-event authorization rules.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. APP PREVIEW GALLERY (8 Screens) -->
+    <section class="section" id="app-preview">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow">Interactive Visual Tour</span>
+          <h2 class="section-title">Explore All 8 Luxury App Screens</h2>
+          <p class="section-desc">
+            Inspect the actual Jummo Photos AI interface across Login, Home Dashboard, Events, Camera, Uploads, Profile, Event Gallery, and Admin Dashboard.
+          </p>
+        </div>
+
+        <div class="preview-tabs" id="preview-tabs-container" role="tablist"></div>
+
+        <div class="preview-showcase-layout">
+          <div class="preview-image-frame">
+            <img id="preview-active-image" src="assets/screen-login.png" alt="Jummo Photos AI Screen Preview" />
+          </div>
+          <div>
+            <span class="studio-pill" id="preview-active-number">Screen 01</span>
+            <h3 id="preview-active-title" style="font-size: 1.85rem; margin-bottom: 8px;">Luxury Studio Login Screen</h3>
+            <p id="preview-active-badge" style="color: var(--gold-bright); font-weight: 700; font-size: 0.9rem; margin-bottom: 12px;">
+              Firebase Auth + Google Sign-In
+            </p>
+            <p id="preview-active-desc" style="color: var(--text-lavender); font-size: 0.95rem; margin-bottom: 20px;">
+              Features the DSLR bokeh hero header, golden camera lens emblem, 5 event categories, 4 purple glass feature rows, and official Google Sign-In.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+              <a href="#download-apk" class="btn btn-gold">Download Android App</a>
+              <a href="assets/screen-suite-8.png" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Open Full 8-Screen Reference ↗</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="screens-8-grid" id="screens-mini-grid"></div>
+      </div>
+    </section>
+
+    <!-- 5. HOW IT WORKS (6 Steps) -->
+    <section class="section" id="how-it-works">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow">End-to-End Studio Workflow</span>
+          <h2 class="section-title">How Jummo Photos AI Works</h2>
+          <p class="section-desc">
+            From live event capture to instant QR guest delivery in six streamlined steps.
+          </p>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card">
+            <span class="step-number-pill">STEP 01</span>
+            <h3>1. Download the Android App</h3>
+            <p>Download and install the signed Jummo Photos AI APK from the official GitHub Releases page on your Android phone or tablet.</p>
+          </div>
+
+          <div class="step-card">
+            <span class="step-number-pill">STEP 02</span>
+            <h3>2. Sign in with Google</h3>
+            <p>Authenticate your studio workspace in one tap using Google Sign-In powered by Jetpack Credential Manager and Firebase Authentication.</p>
+          </div>
+
+          <div class="step-card">
+            <span class="step-number-pill">STEP 03</span>
+            <h3>3. Create an Event</h3>
+            <p>Set the event name, category (Wedding, Birthday, Festival, School, Corporate), date, venue, cover photograph, and guest access rules.</p>
+          </div>
+
+          <div class="step-card">
+            <span class="step-number-pill">STEP 04</span>
+            <h3>4. Capture or Import Photos</h3>
+            <p>Shoot directly with the built-in CameraX viewfinder or import RAW/JPG photos from your DSLR SD card. Originals remain safe on your device.</p>
+          </div>
+
+          <div class="step-card">
+            <span class="step-number-pill">STEP 05</span>
+            <h3>5. Generate Event QR</h3>
+            <p>Open QR Management for any event to generate, download, or share a branded QR card with custom expiration and live pause controls.</p>
+          </div>
+
+          <div class="step-card">
+            <span class="step-number-pill">STEP 06</span>
+            <h3>6. Let Guests Find Authorized Photos</h3>
+            <p>Guests scan the event QR code, provide explicit face-search consent, and view or download their authorized event photos.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. PRICING (Configurable Plans — No Fake Prices or Payment Claims) -->
+    <section class="section" id="pricing">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow">Configurable Studio Plans</span>
+          <h2 class="section-title">Flexible Architecture for Solo &amp; Multi-Photographer Studios</h2>
+          <p class="section-desc">
+            Jummo Photos AI connects directly to your own Firebase project and Google Drive storage. No third-party payment gateway or subscription lock-in is required.
+          </p>
+        </div>
+
+        <div class="pricing-config-bar">
+          <label for="studio-scale-select" style="font-size: 0.88rem; font-weight: 700; color: var(--gold-bright);">
+            Configure Workload Profile:
+          </label>
+          <select
+            id="studio-scale-select"
+            style="background: var(--bg-card-purple); color: var(--text-white); border: 1px solid var(--border-gold); border-radius: 10px; padding: 8px 14px; font-weight: 600;"
+          >
+            <option value="standard">Standard Event Studio</option>
+            <option value="high_volume">High-Volume Wedding &amp; Festival Season</option>
+            <option value="enterprise">Self-Hosted Multi-Studio Deployment</option>
+          </select>
+        </div>
+
+        <div class="pricing-grid">
+          <div class="pricing-card">
+            <div>
+              <span class="plan-badge">Solo Creator</span>
+              <h3>Personal Photographer</h3>
+              <div class="plan-mode-tag">Included in Open Release</div>
+              <p id="plan-solo-capacity" style="font-size: 0.84rem; color: var(--gold-soft); margin-bottom: 14px;">
+                Up to 15 Active Events • Single Photographer
+              </p>
+              <ul class="plan-features">
+                <li>Google Authentication &amp; Studio Profile</li>
+                <li>CameraX Capture &amp; Local Originals Retention</li>
+                <li>Manual &amp; Automatic WorkManager Upload Queue</li>
+                <li>Branded Event QR Code Generation</li>
+              </ul>
+            </div>
+            <a href="#download-apk" class="btn btn-outline">Download APK</a>
+          </div>
+
+          <div class="pricing-card featured">
+            <div>
+              <span class="plan-badge">Most Popular Configuration</span>
+              <h3>Pro Studio Edition</h3>
+              <div class="plan-mode-tag">Full Feature Suite Active</div>
+              <p id="plan-pro-capacity" style="font-size: 0.84rem; color: var(--gold-soft); margin-bottom: 14px;">
+                Unlimited Active Events • Full AI Face Search &amp; QR Suite
+              </p>
+              <ul class="plan-features">
+                <li>DSLR / SD Card RAW, DNG, CR2, NEF &amp; JPG Import</li>
+                <li>Google Drive Folder Sync Bridge (`Jummo_Events_Cloud`)</li>
+                <li>Consent-First Guest AI Face Search &amp; Data Purge</li>
+                <li>3-Column Event Gallery (All, People AI, Highlights)</li>
+              </ul>
+            </div>
+            <a href="#download-apk" class="btn btn-gold">Download Pro Studio APK</a>
+          </div>
+
+          <div class="pricing-card">
+            <div>
+              <span class="plan-badge">Multi-Photographer Platform</span>
+              <h3>Studio Agency &amp; Admin</h3>
+              <div class="plan-mode-tag">Configurable Governance</div>
+              <p id="plan-agency-capacity" style="font-size: 0.84rem; color: var(--gold-soft); margin-bottom: 14px;">
+                Multi-Photographer Roles (Admin, Manager, Support)
+              </p>
+              <ul class="plan-features">
+                <li>14-Module Admin Dashboard &amp; Live KPI Telemetry</li>
+                <li>7-Day Upload Analytics &amp; Dual-Tone Storage Monitor</li>
+                <li>Role-Based Access (Super Admin, Event, Support, Storage)</li>
+                <li>Deployable with Your Own Firebase &amp; Cloud Project</li>
+              </ul>
+            </div>
+            <a href="https://github.com/haiker729-sys/Photo-" target="_blank" rel="noopener noreferrer" class="btn btn-violet">View Source &amp; Docs ↗</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. FAQ SECTION -->
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow">Frequently Asked Questions</span>
+          <h2 class="section-title">Everything You Need to Know</h2>
+        </div>
+
+        <div class="faq-list">
+          <div class="faq-item open">
+            <button type="button" class="faq-question">
+              <span>How to install the APK?</span>
+              <span class="icon">+</span>
+            </button>
+            <div class="faq-answer">
+              Tap the <strong>DOWNLOAD JUMMO PHOTOS AI</strong> button above to download the signed APK from the official GitHub Releases page (<code>https://github.com/haiker729-sys/Photo-/releases</code>). Open the file on your Android device (Android 7.0+), allow installation from your browser if prompted, and launch the app.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question">
+              <span>How to create an event?</span>
+              <span class="icon">+</span>
+            </button>
+            <div class="faq-answer">
+              After signing in with Google, tap <strong>+ Create Event</strong> on the Home Dashboard or <strong>+ New Event</strong> on the My Events tab. Enter the event name, choose a category (Wedding, Birthday, Festival, School, Corporate, Other), set the event date and venue, pick a cover image, and choose the guest access mode.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question">
+              <span>How does QR sharing work?</span>
+              <span class="icon">+</span>
+            </button>
+            <div class="faq-answer">
+              Every event automatically gets a unique, deterministic branded QR code card. You can download the QR image to your gallery, share it via WhatsApp/email using the native Share sheet, set an expiration date, or pause/resume guest QR access at any time with a single toggle.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question">
+              <span>How does Google Drive work?</span>
+              <span class="icon">+</span>
+            </button>
+            <div class="faq-answer">
+              In <strong>Profile &amp; Settings → Google Drive</strong>, enable the Drive connection and specify your root cloud folder name (default: <code>Jummo_Events_Cloud</code>). The architecture uses a server-side OAuth bridge so no sensitive OAuth client secret is ever hardcoded inside the Android APK.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question">
+              <span>How does AI Face Search work?</span>
+              <span class="icon">+</span>
+            </button>
+            <div class="faq-answer">
+              When guests open an event portal, they must first read and check an explicit biometric consent agreement before running a selfie face search. Search results are strictly isolated to that single Event ID, and both guests and photographers can permanently delete guest face-search sessions at any time.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question">
+              <span>Are original photos preserved?</span>
+              <span class="icon">+</span>
+            </button>
+            <div class="faq-answer">
+              Yes. Every photo captured with the built-in CameraX viewfinder or imported into an event is saved in local app storage (<code>filesDir/photos</code>) and is <strong>never automatically deleted</strong> after cloud upload.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 8. FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand-link" style="margin-bottom: 10px;">
+            <span class="brand-name">Jummo Photos <span>AI</span></span>
+          </div>
+          <p style="font-size: 0.84rem; color: var(--text-lavender); margin-bottom: 12px;">
+            Smart Event Photography Suite — Luxury Android Photographer App, Branded QR Sharing, DSLR Import, WorkManager Cloud Queue, and Consent-First AI Face Search.
+          </p>
+          <p style="font-size: 0.78rem; color: var(--gold-bright);">
+            Secured by Firebase Authentication &amp; Cloud Firestore
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>About &amp; Product</h4>
+          <ul>
+            <li><a href="#features">Features Architecture</a></li>
+            <li><a href="#app-preview">8-Screen App Preview</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#pricing">Configurable Studio Plans</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Download &amp; Source</h4>
+          <ul>
+            <li><a href="#download-apk">Download App (APK)</a></li>
+            <li><a href="https://github.com/haiker729-sys/Photo-/releases" target="_blank" rel="noopener noreferrer">Official GitHub Releases ↗</a></li>
+            <li><a href="https://github.com/haiker729-sys/Photo-" target="_blank" rel="noopener noreferrer">Official GitHub Repository ↗</a></li>
+            <li><a href="#faq">Installation &amp; FAQ</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Legal &amp; Contact</h4>
+          <ul>
+            <li><button type="button" class="link-btn" data-policy-modal="privacy">Privacy Policy</button></li>
+            <li><button type="button" class="link-btn" data-policy-modal="terms">Terms of Service</button></li>
+            <li><a href="mailto:merajalam906090@gmail.com">Contact Studio Support</a></li>
+            <li><a href="https://github.com/haiker729-sys/Photo-/issues" target="_blank" rel="noopener noreferrer">Report an Issue on GitHub ↗</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© 2026 Jummo Photos AI — Smart Event Photography Suite. All rights reserved.</span>
+        <span>Official Repository: <a href="https://github.com/haiker729-sys/Photo-" target="_blank" rel="noopener noreferrer" style="color: var(--gold-bright);">github.com/haiker729-sys/Photo-</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Privacy Policy / Terms Modal -->
+  <div class="modal-backdrop" id="policy-modal" role="dialog" aria-modal="true" aria-labelledby="policy-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="policy-modal-title" style="color: var(--gold-bright); font-size: 1.35rem;">Policy</h3>
+        <button type="button" id="policy-modal-close" class="btn btn-outline" style="padding: 6px 12px;">Close ✕</button>
+      </div>
+      <div class="modal-body" id="policy-modal-body"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -89,6 +89,7 @@ import com.example.ui.screens.CameraScreen
 import com.example.ui.screens.EventsScreen
 import com.example.ui.screens.GuestPortalModalScreen
 import com.example.ui.screens.HomeDashboardScreen
+import com.example.ui.screens.OfficialWebsiteScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.UploadsScreen
 import com.example.ui.theme.JummoCardPurple
@@ -121,6 +122,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun JummoRootApp() {
     var showSplash by rememberSaveable { mutableStateOf(true) }
+    var showOfficialWebsite by rememberSaveable { mutableStateOf(false) }
     var currentUser by remember { mutableStateOf(Firebase.auth.currentUser) }
 
     LaunchedEffect(Unit) {
@@ -143,11 +145,21 @@ fun JummoRootApp() {
         return
     }
 
+    if (showOfficialWebsite) {
+        OfficialWebsiteScreen(
+            onClose = { showOfficialWebsite = false }
+        )
+        return
+    }
+
     val user = currentUser
     if (user == null) {
         AuthScreen(
             onAuthSuccess = {
                 currentUser = Firebase.auth.currentUser
+            },
+            onOpenOfficialWebsite = {
+                showOfficialWebsite = true
             }
         )
     } else {
@@ -155,7 +167,10 @@ fun JummoRootApp() {
             JummoAuthenticatedShell(
                 currentUserId = user.uid,
                 userDisplayName = user.displayName ?: "Meraj Sir",
-                userEmail = user.email ?: ""
+                userEmail = user.email ?: "",
+                onOpenOfficialWebsite = {
+                    showOfficialWebsite = true
+                }
             )
         }
     }
@@ -352,7 +367,8 @@ private fun SplashFeatureIcon(
 fun JummoAuthenticatedShell(
     currentUserId: String,
     userDisplayName: String,
-    userEmail: String
+    userEmail: String,
+    onOpenOfficialWebsite: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -752,6 +768,7 @@ fun JummoAuthenticatedShell(
                                 onOpenAdminDashboard = {
                                     showAdminDashboard = true
                                 },
+                                onOpenOfficialWebsite = onOpenOfficialWebsite,
                                 onSignOut = {
                                     signOut(
                                         credentialManager = credentialManager,

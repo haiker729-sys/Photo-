@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Save
@@ -114,7 +115,8 @@ fun ProfileScreen(
     ) -> Unit,
     onDeleteGuestFaceData: (GuestFaceSearchSession) -> Unit,
     onSignOut: () -> Unit,
-    onOpenAdminDashboard: () -> Unit = {}
+    onOpenAdminDashboard: () -> Unit = {},
+    onOpenOfficialWebsite: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -774,6 +776,68 @@ fun ProfileScreen(
                                 )
                                 Text(
                                     text = "Users, events, QR & guest access, face AI, reports & roles",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = JummoTextSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = JummoGoldBright
+                        )
+                    }
+                }
+            }
+
+            // 10b. Official Website & APK Release Portal Launch Row
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenOfficialWebsite() }
+                        .testTag("open_official_website_row"),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = JummoElevatedPurple),
+                    border = BorderStroke(1.dp, JummoVioletBright.copy(alpha = 0.65f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(JummoVioletPrimary.copy(alpha = 0.22f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Language,
+                                    contentDescription = null,
+                                    tint = JummoGoldBright,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Official Website & APK Release",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Live GitHub release check, APK download, 8-screen gallery, FAQ & pricing",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = JummoTextSecondary,
                                     maxLines = 1,
