@@ -222,25 +222,25 @@ suspend fun fetchVerifiedGitHubRelease(): VerifiedGitHubReleaseInfo = withContex
         VerifiedGitHubReleaseInfo(
             checked = true,
             available = false,
-            versionTag = "No Published Release Yet",
-            fileSizeLabel = "Unpublished on GitHub Releases",
-            updatedDateLabel = "Awaiting Release Run",
+            versionTag = "APK release is being prepared.",
+            fileSizeLabel = "Pending release asset",
+            updatedDateLabel = "Pending release run",
             downloadUrl = null,
             releasePageUrl = releasesPage,
             repoUrl = repoUrl,
-            diagnosticMessage = "No published .apk asset was found in https://github.com/haiker729-sys/Photo-/releases. Push your latest commit or tag (v1.0.0) on GitHub to trigger the Build Jummo Photos AI APK workflow, which automatically publishes the signed APK to GitHub Releases."
+            diagnosticMessage = "APK release is being prepared. Push to main on https://github.com/haiker729-sys/Photo- to automatically build and publish the latest signed APK to GitHub Releases."
         )
     } catch (e: Exception) {
         VerifiedGitHubReleaseInfo(
             checked = true,
             available = false,
-            versionTag = "Verification Offline",
+            versionTag = "APK release is being prepared.",
             fileSizeLabel = "Check GitHub Releases",
             updatedDateLabel = "Network / Rate Limit",
             downloadUrl = null,
             releasePageUrl = releasesPage,
             repoUrl = repoUrl,
-            diagnosticMessage = "Could not query the GitHub Releases API right now (${e.javaClass.simpleName}). Open https://github.com/haiker729-sys/Photo-/releases directly to inspect published APK assets."
+            diagnosticMessage = "APK release is being prepared. Open https://github.com/haiker729-sys/Photo-/releases directly to inspect published APK assets."
         )
     }
 }
@@ -264,10 +264,10 @@ fun OfficialWebsiteScreen(
                 VerifiedGitHubReleaseInfo(
                     checked = true,
                     available = false,
-                    versionTag = "No Published Release Yet",
-                    fileSizeLabel = "Unpublished on GitHub Releases",
-                    updatedDateLabel = "Awaiting Release Run",
-                    diagnosticMessage = "No published .apk asset was found in https://github.com/haiker729-sys/Photo-/releases."
+                    versionTag = "APK release is being prepared.",
+                    fileSizeLabel = "Pending release asset",
+                    updatedDateLabel = "Pending release run",
+                    diagnosticMessage = "APK release is being prepared."
                 )
             }
         )

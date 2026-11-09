@@ -1,24 +1,30 @@
-name: Build Jummo Photos AI APK
+name: Build and Release Jummo Photos AI APK
 
 on:
   push:
-    branches: [ "**" ]
-    tags: [ "v*" ]
+    branches:
+      - main
+      - master
+    tags:
+      - "v*"
   pull_request:
-    branches: [ "main", "master" ]
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 concurrency:
-  group: apk-build-${{ github.ref }}
+  group: android-apk-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
-  build-apk:
-    name: Assemble Debug APK
+  build-and-release:
+    name: Assemble & Publish Debug APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout Repository
@@ -47,8 +53,11 @@ jobs:
 
       - name: Prepare Debug Keystore, Firebase Config & Environment
         run: |
-          if [ ! -f "app/google-services.json" ]; then
+          if [ ! -f "app/google-services.json" ] || ! grep -q "com.aistudio.jummophotos.vkpzrt" app/google-services.json; then
             echo "ewogICJwcm9qZWN0X2luZm8iOiB7CiAgICAicHJvamVjdF9udW1iZXIiOiAiNzU4Mzc1NDQwMjc1IiwKICAgICJwcm9qZWN0X2lkIjogImdlbi1sYW5nLWNsaWVudC0wMTE3NDM1ODE5IiwKICAgICJzdG9yYWdlX2J1Y2tldCI6ICJnZW4tbGFuZy1jbGllbnQtMDExNzQzNTgxOS5maXJlYmFzZXN0b3JhZ2UuYXBwIgogIH0sCiAgImNsaWVudCI6IFsKICAgIHsKICAgICAgImNsaWVudF9pbmZvIjogewogICAgICAgICJtb2JpbGVzZGtfYXBwX2lkIjogIjE6NzU4Mzc1NDQwMjc1OmFuZHJvaWQ6ZGZlOTFhNDJhMjcwMjFlOGFkZDI2NiIsCiAgICAgICAgImFuZHJvaWRfY2xpZW50X2luZm8iOiB7CiAgICAgICAgICAicGFja2FnZV9uYW1lIjogImNvbS5haXN0dWRpby5jb25uZWN0eC52cHhxbXIiCiAgICAgICAgfQogICAgICB9LAogICAgICAib2F1dGhfY2xpZW50IjogWwogICAgICAgIHsKICAgICAgICAgICJjbGllbnRfaWQiOiAiNzU4Mzc1NDQwMjc1LW83YTM5bjcycWZ2OTAxZG5rdG9vNm85amw1NDNkM25uLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwKICAgICAgICAgICJjbGllbnRfdHlwZSI6IDEsCiAgICAgICAgICAiYW5kcm9pZF9pbmZvIjogewogICAgICAgICAgICAicGFja2FnZV9uYW1lIjogImNvbS5haXN0dWRpby5jb25uZWN0eC52cHhxbXIiLAogICAgICAgICAgICAiY2VydGlmaWNhdGVfaGFzaCI6ICJiMzVkZDM1ZTE4ZGRjOTQ4ZjM0MjM4YTJmNTQxMTkzZDMzNGNkMmE2IgogICAgICAgICAgfQogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgImNsaWVudF9pZCI6ICI3NTgzNzU0NDAyNzUtZ2tuZWxjZGgzdjl0M205anY2aWI3YTdtM290MWJyYWMuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLAogICAgICAgICAgImNsaWVudF90eXBlIjogMwogICAgICAgIH0KICAgICAgXSwKICAgICAgImFwaV9rZXkiOiBbCiAgICAgICAgewogICAgICAgICAgImN1cnJlbnRfa2V5IjogIkFJemFTeURrZnpMMmRwQ1FUYTdabkNQUkdwQ2tENWV4RW5sX01zZyIKICAgICAgICB9CiAgICAgIF0sCiAgICAgICJzZXJ2aWNlcyI6IHsKICAgICAgICAiYXBwaW52aXRlX3NlcnZpY2UiOiB7CiAgICAgICAgICAib3RoZXJfcGxhdGZvcm1fb2F1dGhfY2xpZW50IjogWwogICAgICAgICAgICB7CiAgICAgICAgICAgICAgImNsaWVudF9pZCI6ICI3NTgzNzU0NDAyNzUtZ2tuZWxjZGgzdjl0M205anY2aWI3YTdtM290MWJyYWMuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLAogICAgICAgICAgICAgICJjbGllbnRfdHlwZSI6IDMKICAgICAgICAgICAgfQogICAgICAgICAgXQogICAgICAgIH0KICAgICAgfQogICAgfSwKICAgIHsKICAgICAgImNsaWVudF9pbmZvIjogewogICAgICAgICJtb2JpbGVzZGtfYXBwX2lkIjogIjE6NzU4Mzc1NDQwMjc1OmFuZHJvaWQ6ODRmOGU5MWQ1ZjgxZTVjNmFkZDI2NiIsCiAgICAgICAgImFuZHJvaWRfY2xpZW50X2luZm8iOiB7CiAgICAgICAgICAicGFja2FnZV9uYW1lIjogImNvbS5haXN0dWRpby5qdW1tb3Bob3Rvcy52a3B6cnQiCiAgICAgICAgfQogICAgICB9LAogICAgICAib2F1dGhfY2xpZW50IjogWwogICAgICAgIHsKICAgICAgICAgICJjbGllbnRfaWQiOiAiNzU4Mzc1NDQwMjc1LXBybmhxNXVsOGc0amt2dGFkNmJyaHV0YXFudGMzZjgzLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwKICAgICAgICAgICJjbGllbnRfdHlwZSI6IDEsCiAgICAgICAgICAiYW5kcm9pZF9pbmZvIjogewogICAgICAgICAgICAicGFja2FnZV9uYW1lIjogImNvbS5haXN0dWRpby5qdW1tb3Bob3Rvcy52a3B6cnQiLAogICAgICAgICAgICAiY2VydGlmaWNhdGVfaGFzaCI6ICI2YzUzNmRlYzNjYzU3NTQzZWY3ODhlNjliMTA5NmI4Y2I4YjhiNTdkIgogICAgICAgICAgfQogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgImNsaWVudF9pZCI6ICI3NTgzNzU0NDAyNzUtZ2tuZWxjZGgzdjl0M205anY2aWI3YTdtM290MWJyYWMuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLAogICAgICAgICAgImNsaWVudF90eXBlIjogMwogICAgICAgIH0KICAgICAgXSwKICAgICAgImFwaV9rZXkiOiBbCiAgICAgICAgewogICAgICAgICAgImN1cnJlbnRfa2V5IjogIkFJemFTeURrZnpMMmRwQ1FUYTdabkNQUkdwQ2tENWV4RW5sX01zZyIKICAgICAgICB9CiAgICAgIF0sCiAgICAgICJzZXJ2aWNlcyI6IHsKICAgICAgICAiYXBwaW52aXRlX3NlcnZpY2UiOiB7CiAgICAgICAgICAib3RoZXJfcGxhdGZvcm1fb2F1dGhfY2xpZW50IjogWwogICAgICAgICAgICB7CiAgICAgICAgICAgICAgImNsaWVudF9pZCI6ICI3NTgzNzU0NDAyNzUtZ2tuZWxjZGgzdjl0M205anY2aWI3YTdtM290MWJyYWMuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLAogICAgICAgICAgICAgICJjbGllbnRfdHlwZSI6IDMKICAgICAgICAgICAgfQogICAgICAgICAgXQogICAgICAgIH0KICAgICAgfQogICAgfQogIF0sCiAgImNvbmZpZ3VyYXRpb25fdmVyc2lvbiI6ICIxIgp9" | base64 -d > app/google-services.json
+          fi
+          if [ ! -f "app/src/main/res/values/firebase_applet_config.xml" ]; then
+            printf '<?xml version="1.0" encoding="utf-8" standalone="no"?>\n<resources>\n    <string name="firestore_database_id" translatable="false">ai-studio-android-jummopho-55029774-8138-4d41-b404-15513db02f01</string>\n</resources>\n' > app/src/main/res/values/firebase_applet_config.xml
           fi
           if [ -f "debug.keystore.base64" ] && [ ! -f "debug.keystore" ]; then
             base64 -d debug.keystore.base64 > debug.keystore
@@ -62,27 +71,64 @@ jobs:
       - name: Build Debug APK with Gradle
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 
-      - name: Verify Generated Debug APK
+      - name: Verify Generated Debug APK & Prepare Versioned Asset
+        id: verify_apk
         run: |
-          ls -lh app/build/outputs/apk/debug/*.apk
-          test -f app/build/outputs/apk/debug/app-debug.apk
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Jummo-Photos-AI-v1.0.0.apk
+          RAW_APK="app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -s "$RAW_APK" ]; then
+            echo "ERROR: Verified APK file $RAW_APK is missing or empty!"
+            exit 1
+          fi
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION_TAG="${GITHUB_REF_NAME}"
+          else
+            VERSION_TAG="v1.0.${GITHUB_RUN_NUMBER}"
+          fi
+          VERSIONED_APK="app/build/outputs/apk/debug/Jummo-Photos-AI-${VERSION_TAG}.apk"
+          cp "$RAW_APK" "$VERSIONED_APK"
+          ls -lh "$RAW_APK" "$VERSIONED_APK"
+          echo "version_tag=${VERSION_TAG}" >> "$GITHUB_OUTPUT"
+          echo "versioned_apk=${VERSIONED_APK}" >> "$GITHUB_OUTPUT"
 
       - name: Upload Jummo Photos AI APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Jummo-Photos-AI-Debug-APK
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            ${{ steps.verify_apk.outputs.versioned_apk }}
           if-no-files-found: error
 
-      - name: Publish GitHub Release APK
+      - name: Publish Verified APK to GitHub Releases
         if: github.event_name != 'pull_request'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.0.0' }}
-          name: "Jummo Photos AI ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.0.0' }} (Smart Event Photography Suite)"
-          files: |
-            app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/apk/debug/Jummo-Photos-AI-v1.0.0.apk
-          generate_release_notes: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.verify_apk.outputs.version_tag }}"
+          APK_PATH="${{ steps.verify_apk.outputs.versioned_apk }}"
+          RAW_APK="app/build/outputs/apk/debug/app-debug.apk"
 
+          if [ ! -s "$APK_PATH" ]; then
+            echo "ERROR: Refusing to publish release because $APK_PATH does not exist."
+            exit 1
+          fi
+
+          # Collision-safe check: if tag already exists on a manual re-run, append run attempt
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+              echo "Release $TAG already exists for pushed tag; attaching verified APK without overwriting release metadata."
+              gh release upload "$TAG" "$APK_PATH" "$RAW_APK" --clobber
+              exit 0
+            else
+              TAG="${TAG}-${GITHUB_RUN_ATTEMPT}"
+              APK_PATH="app/build/outputs/apk/debug/Jummo-Photos-AI-${TAG}.apk"
+              cp "$RAW_APK" "$APK_PATH"
+            fi
+          fi
+
+          gh release create "$TAG" \
+            "$APK_PATH" \
+            "$RAW_APK" \
+            --title "Jummo Photos AI ${TAG}" \
+            --generate-notes \
+            --latest

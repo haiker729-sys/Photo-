@@ -1,6 +1,7 @@
 /**
  * Jummo Photos AI — Official Website & Live GitHub Release APK Verification Engine
  * Repository: https://github.com/haiker729-sys/Photo-
+ * Official Website: https://haiker729-sys.github.io/Photo-/
  */
 (function () {
   const GITHUB_OWNER = 'haiker729-sys';
@@ -17,7 +18,7 @@
       number: 'Screen 01',
       title: 'Luxury Studio Login Screen',
       badge: 'Firebase Auth + Google Sign-In',
-      image: 'assets/screen-login.png',
+      image: './assets/screen-login.png',
       description:
         'Features the DSLR bokeh hero header, golden camera lens emblem, 5 event categories (Weddings, Festivals, Corporate, Schools, Live Events), 4 purple glass feature rows, and official Google Sign-In via Jetpack Credential Manager.'
     },
@@ -26,7 +27,7 @@
       number: 'Screen 02',
       title: 'Home Dashboard',
       badge: 'Live Telemetry & Quick Actions',
-      image: 'assets/screen-suite-8.png',
+      image: './assets/screen-suite-8.png',
       description:
         'Displays real-time counts for Events, Photos, Uploaded, Pending, and Failed items, side-by-side + Create Event and Camera actions, Google Drive sync indicator, local storage bar, and Recent Events.'
     },
@@ -35,7 +36,7 @@
       number: 'Screen 03',
       title: 'My Events Manager',
       badge: 'Category & Active/Archived Filters',
-      image: 'assets/screen-suite-8.png',
+      image: './assets/screen-suite-8.png',
       description:
         'Organize Wedding, Birthday, Festival, School, and Corporate shoots with instant search, Active/Archived tabs, cover photos, and 1-tap Gallery, QR, Edit, Archive, and Delete controls.'
     },
@@ -44,7 +45,7 @@
       number: 'Screen 04',
       title: 'CameraX Pro Viewfinder',
       badge: 'Rule-of-Thirds • HDR • 4K Framing',
-      image: 'assets/screen-suite-8.png',
+      image: './assets/screen-suite-8.png',
       description:
         'Full-bleed CameraX viewfinder with top Flash, HDR, 4K, and Grid controls, floating active event selector pill, front/rear lens switching, and local original storage in filesDir/photos.'
     },
@@ -53,7 +54,7 @@
       number: 'Screen 05',
       title: 'Smart Upload Queue & DSLR Import',
       badge: 'WorkManager • Wi-Fi & Battery Guard',
-      image: 'assets/screen-suite-8.png',
+      image: './assets/screen-suite-8.png',
       description:
         'Monitor Queue, Uploaded, and Failed transfers with percentage progress bars, toggle Automatic Upload with Wi-Fi Only and Battery > 20% protection, or import RAW/DNG/CR2/NEF/JPG from DSLR SD cards.'
     },
@@ -62,7 +63,7 @@
       number: 'Screen 06',
       title: 'Profile & Studio Settings',
       badge: 'Photographer Pro Workspace',
-      image: 'assets/screen-suite-8.png',
+      image: './assets/screen-suite-8.png',
       description:
         'Manage Studio Display Name, Google Drive folder bridge, Upload Preferences, Local Original Storage metrics, Guest Face-Search Consent privacy sessions, Camera permissions, and Admin access.'
     },
@@ -71,7 +72,7 @@
       number: 'Screen 07',
       title: 'Event Photo Gallery & Guest Portal',
       badge: 'All Photos • People (AI) • Highlights',
-      image: 'assets/screen-suite-8.png',
+      image: './assets/screen-suite-8.png',
       description:
         '3-column responsive event photo gallery with All Photos, People (AI), and Highlights tabs, multi-select batch actions, QR sharing, and consent-first Guest AI Face Search.'
     },
@@ -80,7 +81,7 @@
       number: 'Screen 08',
       title: 'Multi-Role Admin Dashboard',
       badge: 'KPIs • 7-Day Line Chart • 14 Modules',
-      image: 'assets/screen-suite-8.png',
+      image: './assets/screen-suite-8.png',
       description:
         'Role-based command center (Super Admin, Event Admin, Support Admin, Finance/Storage Admin) with 2x2 KPI cards, dual-tone storage bar, 7-day upload chart, and 14 interactive management modules.'
     }
@@ -91,11 +92,12 @@
     checked: false,
     available: false,
     downloadUrl: null,
-    version: 'Awaiting Published Release',
-    sizeText: 'Pending verification',
-    updatedText: 'Not yet published',
+    assetName: null,
+    version: 'APK release is being prepared.',
+    sizeText: 'APK release is being prepared.',
+    updatedText: 'APK release is being prepared.',
     releaseHtmlUrl: RELEASES_PAGE_URL,
-    errorReason: null
+    errorReason: 'APK release is being prepared.'
   };
 
   function formatBytes(bytes) {
@@ -105,7 +107,7 @@
   }
 
   function formatDate(isoStr) {
-    if (!isoStr) return 'Available on GitHub';
+    if (!isoStr) return 'Published on GitHub';
     try {
       const date = new Date(isoStr);
       return date.toLocaleDateString('en-US', {
@@ -120,6 +122,16 @@
 
   function extractApkAssetFromRelease(releaseObj) {
     if (!releaseObj || !Array.isArray(releaseObj.assets)) return null;
+    // Prefer versioned Jummo-Photos-AI-*.apk first, then any .apk
+    const preferred = releaseObj.assets.find(
+      (asset) =>
+        asset &&
+        typeof asset.name === 'string' &&
+        asset.name.toLowerCase().startsWith('jummo-photos-ai') &&
+        asset.name.toLowerCase().endsWith('.apk') &&
+        asset.browser_download_url
+    );
+    if (preferred) return preferred;
     return (
       releaseObj.assets.find(
         (asset) =>
@@ -136,6 +148,7 @@
     const versionEl = document.getElementById('apk-meta-version');
     const sizeEl = document.getElementById('apk-meta-size');
     const updatedEl = document.getElementById('apk-meta-updated');
+    const linkTextEl = document.getElementById('apk-meta-link-text');
     const downloadBtns = document.querySelectorAll('.js-apk-download-trigger');
     const errorBox = document.getElementById('apk-download-error-box');
     const errorText = document.getElementById('apk-download-error-text');
@@ -144,6 +157,7 @@
       let releaseData = null;
       let apkAsset = null;
 
+      // 1. Primary check: https://api.github.com/repos/haiker729-sys/Photo-/releases/latest
       const latestResp = await fetch(LATEST_RELEASE_API, {
         headers: { Accept: 'application/vnd.github+json' }
       });
@@ -153,6 +167,7 @@
         apkAsset = extractApkAssetFromRelease(releaseData);
       }
 
+      // 2. Fallback check across releases list if latest returned 404 or had no .apk asset
       if (!apkAsset) {
         const listResp = await fetch(ALL_RELEASES_API, {
           headers: { Accept: 'application/vnd.github+json' }
@@ -177,6 +192,7 @@
           checked: true,
           available: true,
           downloadUrl: apkAsset.browser_download_url,
+          assetName: apkAsset.name || 'Jummo-Photos-AI.apk',
           version: releaseData.tag_name || releaseData.name || 'v1.0.0',
           sizeText: formatBytes(apkAsset.size),
           updatedText: formatDate(apkAsset.updated_at || releaseData.published_at),
@@ -191,54 +207,61 @@
         if (versionEl) versionEl.textContent = verifiedApkState.version;
         if (sizeEl) sizeEl.textContent = verifiedApkState.sizeText;
         if (updatedEl) updatedEl.textContent = verifiedApkState.updatedText;
+        if (linkTextEl) {
+          linkTextEl.innerHTML = `<a href="${verifiedApkState.downloadUrl}" style="color: var(--gold-bright); text-decoration: underline;">${verifiedApkState.assetName}</a>`;
+        }
         if (errorBox) errorBox.classList.remove('visible');
 
         downloadBtns.forEach((btn) => {
           btn.setAttribute('href', verifiedApkState.downloadUrl);
-          btn.setAttribute('download', apkAsset.name || 'Jummo-Photos-AI.apk');
+          btn.setAttribute('download', verifiedApkState.assetName);
         });
       } else {
         verifiedApkState = {
           checked: true,
           available: false,
           downloadUrl: null,
-          version: 'No Published Release Yet',
-          sizeText: 'Unpublished on GitHub Releases',
-          updatedText: 'Pending Tag / Release Run',
+          assetName: null,
+          version: 'APK release is being prepared.',
+          sizeText: 'Pending release asset',
+          updatedText: 'Pending release run',
           releaseHtmlUrl: RELEASES_PAGE_URL,
-          errorReason:
-            'No published .apk asset was found in https://github.com/haiker729-sys/Photo-/releases. Push your latest commit or tag (e.g. v1.0.0) to trigger the "Build Jummo Photos AI APK" GitHub Actions workflow, which automatically publishes the signed APK to GitHub Releases.'
+          errorReason: 'APK release is being prepared.'
         };
 
         if (statusPill) {
           statusPill.className = 'release-status-pill unavailable';
-          statusPill.textContent = '⚠ APK Release Not Yet Published on GitHub Releases';
+          statusPill.textContent = 'APK release is being prepared.';
         }
-        if (versionEl) versionEl.textContent = verifiedApkState.version;
+        if (versionEl) versionEl.textContent = 'APK release is being prepared.';
         if (sizeEl) sizeEl.textContent = verifiedApkState.sizeText;
         if (updatedEl) updatedEl.textContent = verifiedApkState.updatedText;
-        if (errorText) errorText.textContent = verifiedApkState.errorReason;
+        if (linkTextEl) linkTextEl.textContent = 'APK release is being prepared.';
+        if (errorBox) errorBox.classList.add('visible');
+        if (errorText) errorText.textContent = 'APK release is being prepared.';
       }
-    } catch (err) {
+    } catch (_) {
       verifiedApkState = {
         checked: true,
         available: false,
         downloadUrl: null,
-        version: 'Verification Offline',
+        assetName: null,
+        version: 'APK release is being prepared.',
         sizeText: 'Check GitHub Releases',
-        updatedText: 'Network / API Rate Limit',
+        updatedText: 'Check GitHub Releases',
         releaseHtmlUrl: RELEASES_PAGE_URL,
-        errorReason:
-          'Unable to verify the latest APK asset from the GitHub API right now. Please open the official GitHub Releases page directly: https://github.com/haiker729-sys/Photo-/releases'
+        errorReason: 'APK release is being prepared.'
       };
       if (statusPill) {
         statusPill.className = 'release-status-pill unavailable';
-        statusPill.textContent = '⚠ Unable to Reach GitHub Releases API';
+        statusPill.textContent = 'APK release is being prepared.';
       }
-      if (versionEl) versionEl.textContent = verifiedApkState.version;
+      if (versionEl) versionEl.textContent = 'APK release is being prepared.';
       if (sizeEl) sizeEl.textContent = verifiedApkState.sizeText;
       if (updatedEl) updatedEl.textContent = verifiedApkState.updatedText;
-      if (errorText) errorText.textContent = verifiedApkState.errorReason;
+      if (linkTextEl) linkTextEl.textContent = 'APK release is being prepared.';
+      if (errorBox) errorBox.classList.add('visible');
+      if (errorText) errorText.textContent = 'APK release is being prepared.';
     }
   }
 
@@ -250,7 +273,6 @@
     downloadBtns.forEach((btn) => {
       btn.addEventListener('click', function (e) {
         if (verifiedApkState.available && verifiedApkState.downloadUrl) {
-          // Allow direct browser download of the verified GitHub Release asset
           return;
         }
         e.preventDefault();
@@ -261,8 +283,8 @@
         if (errorBox) {
           errorBox.classList.add('visible');
         }
-        if (errorText && verifiedApkState.errorReason) {
-          errorText.textContent = verifiedApkState.errorReason;
+        if (errorText) {
+          errorText.textContent = 'APK release is being prepared.';
         }
       });
     });
@@ -337,8 +359,8 @@
     const presets = {
       standard: {
         solo: 'Up to 15 Active Events • Single Photographer',
-        pro: 'Unlimited Active Events • Full AI Face Search & QR Suite',
-        agency: 'Multi-Photographer Roles (Admin, Manager, Support)'
+        pro: 'Unlimited Active Events • Full QR & Guest Portal Suite',
+        agency: 'Multi-Photographer Roles (Admin, Event, Support, Storage)'
       },
       high_volume: {
         solo: 'Up to 50 Active Events • Single Photographer',
@@ -381,7 +403,7 @@
         html: `
           <p><strong>1. Explicit Guest Consent for AI Face Search:</strong> Guests scanning an event QR code must explicitly check and submit the consent agreement before any selfie face-search session is created.</p>
           <p><strong>2. Strict Per-Event Data Isolation:</strong> Every photo, QR code, and guest consent session is strictly scoped by <code>eventId</code> and <code>userId</code> in Cloud Firestore.</p>
-          <p><strong>3. Instant Face-Data Purge Controls:</strong> Both guests and photographers can permanently purge guest face-search sessions at any time from the Guest Portal or Profile -> Privacy settings.</p>
+          <p><strong>3. Instant Face-Data Purge Controls:</strong> Both guests and photographers can permanently purge guest face-search sessions at any time from the Guest Portal or Profile &rarr; Privacy settings.</p>
           <p><strong>4. Local Original Photo Preservation:</strong> Original captured and imported photos are stored in app-private storage (<code>filesDir/photos</code>) and are never automatically deleted after upload.</p>
         `
       },
@@ -390,7 +412,7 @@
         html: `
           <p><strong>1. Studio Ownership:</strong> Photographers retain 100% ownership and copyright over all event photographs captured or imported into Jummo Photos AI.</p>
           <p><strong>2. Authorized Guest Distribution:</strong> Event QR codes can be configured for Full Gallery Access, Face Search Only, or Photographer Approval, and can be paused or expired at any time.</p>
-          <p><strong>3. Cloud & Drive Connectivity:</strong> Google Authentication is powered by Firebase Authentication, and Google Drive folder sync uses a server-side OAuth architecture so client secrets are never embedded in the APK.</p>
+          <p><strong>3. Cloud &amp; Drive Connectivity:</strong> Google Authentication is powered by Firebase Authentication, and Google Drive folder sync uses a clean architecture so client secrets are never embedded in the APK.</p>
         `
       }
     };
