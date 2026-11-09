@@ -1,0 +1,298 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: default-deny all unmatched paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        ('email' in request.auth.token &&
+         'email_verified' in request.auth.token &&
+         request.auth.token.email == 'merajalam906090@gmail.com' &&
+         request.auth.token.email_verified == true)
+      );
+    }
+
+    // Admins lookup collection (read-only for owner/admin, no client writes)
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
+      allow list, create, update, delete: if false;
+    }
+
+    // 1. Photographer Profile validation
+    function isValidPhotographerProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+             data.email is string && data.email.size() <= 150 &&
+             data.studioName is string && data.studioName.size() >= 1 && data.studioName.size() <= 100 &&
+             data.role is string && (data.role == 'photographer' || data.role == 'admin') &&
+             data.driveConnected is bool &&
+             data.driveFolderName is string && data.driveFolderName.size() <= 120 &&
+             data.autoUploadEnabled is bool &&
+             data.wifiOnlyUpload is bool &&
+             data.batteryNotLowUpload is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isSignedIn() && request.auth.uid == userId;
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'email', 'studioName', 'role',
+                         'driveConnected', 'driveFolderName', 'autoUploadEnabled',
+                         'wifiOnlyUpload', 'batteryNotLowUpload', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'email', 'studioName', 'role',
+                         'driveConnected', 'driveFolderName', 'autoUploadEnabled',
+                         'wifiOnlyUpload', 'batteryNotLowUpload', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidPhotographerProfile(incoming()) &&
+                       (incoming().role == 'photographer' || isAdmin());
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       isValidPhotographerProfile(incoming()) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (incoming().role == existing().role || isAdmin()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'email', 'studioName', 'role',
+                         'driveConnected', 'driveFolderName', 'autoUploadEnabled',
+                         'wifiOnlyUpload', 'batteryNotLowUpload', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+    }
+
+    // 2. PhotoEvent validation
+    function isValidPhotoEvent(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+             data.category is string && (
+               data.category == 'Wedding' ||
+               data.category == 'Birthday' ||
+               data.category == 'Festival' ||
+               data.category == 'School' ||
+               data.category == 'Corporate' ||
+               data.category == 'Other'
+             ) &&
+             data.eventDate is string && data.eventDate.size() >= 1 && data.eventDate.size() <= 40 &&
+             data.location is string && data.location.size() >= 1 && data.location.size() <= 160 &&
+             data.coverType is string && data.coverType.size() >= 1 && data.coverType.size() <= 60 &&
+             data.coverUri is string && data.coverUri.size() <= 500 &&
+             data.status is string && (data.status == 'Active' || data.status == 'Archived') &&
+             data.qrCodeValue is string && data.qrCodeValue.size() >= 1 && data.qrCodeValue.size() <= 250 &&
+             data.qrEnabled is bool &&
+             data.qrExpirationDate is string && data.qrExpirationDate.size() <= 40 &&
+             data.guestAccessMode is string && (
+               data.guestAccessMode == 'FaceSearchOnly' ||
+               data.guestAccessMode == 'ViewAllPermitted' ||
+               data.guestAccessMode == 'PINProtected'
+             ) &&
+             data.guestAllowDownload is bool &&
+             data.totalPhotos is int && data.totalPhotos >= 0 &&
+             data.uploadedPhotos is int && data.uploadedPhotos >= 0 &&
+             data.pendingPhotos is int && data.pendingPhotos >= 0 &&
+             data.failedPhotos is int && data.failedPhotos >= 0 &&
+             data.driveSyncStatus is string && (
+               data.driveSyncStatus == 'Synced' ||
+               data.driveSyncStatus == 'Pending' ||
+               data.driveSyncStatus == 'NotConnected'
+             ) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /events/{eventId} {
+      allow get: if isSignedIn() && isValidId(eventId) && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+                       isValidId(eventId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'name', 'category', 'eventDate', 'location',
+                         'coverType', 'coverUri', 'status', 'qrCodeValue', 'qrEnabled',
+                         'qrExpirationDate', 'guestAccessMode', 'guestAllowDownload',
+                         'totalPhotos', 'uploadedPhotos', 'pendingPhotos', 'failedPhotos',
+                         'driveSyncStatus', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'name', 'category', 'eventDate', 'location',
+                         'coverType', 'coverUri', 'status', 'qrCodeValue', 'qrEnabled',
+                         'qrExpirationDate', 'guestAccessMode', 'guestAllowDownload',
+                         'totalPhotos', 'uploadedPhotos', 'pendingPhotos', 'failedPhotos',
+                         'driveSyncStatus', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidPhotoEvent(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(eventId) &&
+                       isValidPhotoEvent(incoming()) &&
+                       (existing().userId == request.auth.uid || isAdmin()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'name', 'category', 'eventDate', 'location',
+                         'coverType', 'coverUri', 'status', 'qrCodeValue', 'qrEnabled',
+                         'qrExpirationDate', 'guestAccessMode', 'guestAllowDownload',
+                         'totalPhotos', 'uploadedPhotos', 'pendingPhotos', 'failedPhotos',
+                         'driveSyncStatus', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(eventId) && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // 3. PhotoUploadRecord validation
+    function isValidPhotoUploadRecord(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.eventId is string && isValidId(data.eventId) &&
+             data.eventName is string && data.eventName.size() >= 1 && data.eventName.size() <= 120 &&
+             data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 200 &&
+             data.localUri is string && data.localUri.size() >= 1 && data.localUri.size() <= 500 &&
+             data.sourceType is string && (
+               data.sourceType == 'MobileCamera' ||
+               data.sourceType == 'DSLRImport' ||
+               data.sourceType == 'ManualGallery'
+             ) &&
+             data.uploadMode is string && (
+               data.uploadMode == 'Automatic' ||
+               data.uploadMode == 'Manual'
+             ) &&
+             data.status is string && (
+               data.status == 'Uploaded' ||
+               data.status == 'Pending' ||
+               data.status == 'Uploading' ||
+               data.status == 'Failed'
+             ) &&
+             data.progress is int && data.progress >= 0 && data.progress <= 100 &&
+             data.fileSizeBytes is int && data.fileSizeBytes >= 0 &&
+             data.mimeType is string && data.mimeType.size() >= 1 && data.mimeType.size() <= 60 &&
+             data.faceIndexStatus is string && (
+               data.faceIndexStatus == 'Indexed' ||
+               data.faceIndexStatus == 'AwaitingBackend' ||
+               data.faceIndexStatus == 'OptedOut'
+             ) &&
+             data.driveFileId is string && data.driveFileId.size() <= 200 &&
+             data.errorMessage is string && data.errorMessage.size() <= 300 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /uploads/{uploadId} {
+      allow get: if isSignedIn() && isValidId(uploadId) && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+                       isValidId(uploadId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'eventId', 'eventName', 'fileName', 'localUri',
+                         'sourceType', 'uploadMode', 'status', 'progress',
+                         'fileSizeBytes', 'mimeType', 'faceIndexStatus',
+                         'driveFileId', 'errorMessage', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'eventId', 'eventName', 'fileName', 'localUri',
+                         'sourceType', 'uploadMode', 'status', 'progress',
+                         'fileSizeBytes', 'mimeType', 'faceIndexStatus',
+                         'driveFileId', 'errorMessage', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidPhotoUploadRecord(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(uploadId) &&
+                       isValidPhotoUploadRecord(incoming()) &&
+                       (existing().userId == request.auth.uid || isAdmin()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().eventId == existing().eventId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'eventName', 'fileName', 'localUri', 'uploadMode',
+                         'status', 'progress', 'faceIndexStatus',
+                         'driveFileId', 'errorMessage', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(uploadId) && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // 4. GuestFaceSearchSession validation
+    function isValidGuestFaceSearchSession(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.eventId is string && isValidId(data.eventId) &&
+             data.guestLabel is string && data.guestLabel.size() >= 1 && data.guestLabel.size() <= 100 &&
+             data.consentGranted is bool &&
+             data.selfieUri is string && data.selfieUri.size() <= 500 &&
+             data.matchStatus is string && (
+               data.matchStatus == 'ConsentVerified' ||
+               data.matchStatus == 'BackendPending' ||
+               data.matchStatus == 'DataDeleted' ||
+               data.matchStatus == 'ReportedMismatch'
+             ) &&
+             data.matchedPhotoCount is int && data.matchedPhotoCount >= 0 &&
+             data.reportNotes is string && data.reportNotes.size() <= 300 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /guest_consents/{consentId} {
+      allow get: if isSignedIn() && isValidId(consentId) && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+                       isValidId(consentId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'eventId', 'guestLabel', 'consentGranted',
+                         'selfieUri', 'matchStatus', 'matchedPhotoCount',
+                         'reportNotes', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'eventId', 'guestLabel', 'consentGranted',
+                         'selfieUri', 'matchStatus', 'matchedPhotoCount',
+                         'reportNotes', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidGuestFaceSearchSession(incoming()) &&
+                       incoming().consentGranted == true;
+
+      allow update: if isSignedIn() &&
+                       isValidId(consentId) &&
+                       isValidGuestFaceSearchSession(incoming()) &&
+                       (existing().userId == request.auth.uid || isAdmin()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().eventId == existing().eventId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'guestLabel', 'consentGranted', 'selfieUri',
+                         'matchStatus', 'matchedPhotoCount', 'reportNotes', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(consentId) && (existing().userId == request.auth.uid || isAdmin());
+    }
+  }
+}

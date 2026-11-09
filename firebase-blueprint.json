@@ -1,0 +1,366 @@
+{
+  "entities": {
+    "PhotographerProfile": {
+      "title": "PhotographerProfile",
+      "description": "Profile and cloud configuration for an authenticated event photographer.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the photographer."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Photographer full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "Photographer email address."
+        },
+        "studioName": {
+          "type": "string",
+          "description": "Commercial photography studio or brand name."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["photographer", "admin"],
+          "description": "Account role within Jummo Photos AI."
+        },
+        "driveConnected": {
+          "type": "boolean",
+          "description": "Whether server-side Google Drive integration is linked."
+        },
+        "driveFolderName": {
+          "type": "string",
+          "description": "Target Google Drive root folder name."
+        },
+        "autoUploadEnabled": {
+          "type": "boolean",
+          "description": "Whether automatic background photo uploads are enabled."
+        },
+        "wifiOnlyUpload": {
+          "type": "boolean",
+          "description": "Whether background uploads require an unmetered Wi-Fi network."
+        },
+        "batteryNotLowUpload": {
+          "type": "boolean",
+          "description": "Whether background uploads pause when battery is low."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "displayName",
+        "email",
+        "studioName",
+        "role",
+        "driveConnected",
+        "driveFolderName",
+        "autoUploadEnabled",
+        "wifiOnlyUpload",
+        "batteryNotLowUpload",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PhotoEvent": {
+      "title": "PhotoEvent",
+      "description": "Photography event metadata, QR configuration, guest access rules, and photo counters.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner photographer UID."
+        },
+        "name": {
+          "type": "string",
+          "description": "Event title."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Wedding", "Birthday", "Festival", "School", "Corporate", "Other"],
+          "description": "Event category."
+        },
+        "eventDate": {
+          "type": "string",
+          "description": "Formatted date of the event."
+        },
+        "location": {
+          "type": "string",
+          "description": "Venue or city location of the event."
+        },
+        "coverType": {
+          "type": "string",
+          "description": "Cover preset identifier (wedding, festival, studio, custom)."
+        },
+        "coverUri": {
+          "type": "string",
+          "description": "Optional custom cover image URI."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Active", "Archived"],
+          "description": "Lifecycle state of the event."
+        },
+        "qrCodeValue": {
+          "type": "string",
+          "description": "Unique guest portal URL encoded in the event QR code."
+        },
+        "qrEnabled": {
+          "type": "boolean",
+          "description": "Whether guest QR access is currently active."
+        },
+        "qrExpirationDate": {
+          "type": "string",
+          "description": "Expiration date for the event QR code."
+        },
+        "guestAccessMode": {
+          "type": "string",
+          "enum": ["FaceSearchOnly", "ViewAllPermitted", "PINProtected"],
+          "description": "Guest gallery visibility configuration."
+        },
+        "guestAllowDownload": {
+          "type": "boolean",
+          "description": "Whether guests can download original high-resolution photos."
+        },
+        "totalPhotos": {
+          "type": "integer",
+          "description": "Total photos associated with this event."
+        },
+        "uploadedPhotos": {
+          "type": "integer",
+          "description": "Photos successfully uploaded to cloud storage."
+        },
+        "pendingPhotos": {
+          "type": "integer",
+          "description": "Photos queued for upload."
+        },
+        "failedPhotos": {
+          "type": "integer",
+          "description": "Photos whose last upload attempt failed."
+        },
+        "driveSyncStatus": {
+          "type": "string",
+          "enum": ["Synced", "Pending", "NotConnected"],
+          "description": "Google Drive backend synchronization state."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the event was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the event was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "category",
+        "eventDate",
+        "location",
+        "coverType",
+        "coverUri",
+        "status",
+        "qrCodeValue",
+        "qrEnabled",
+        "qrExpirationDate",
+        "guestAccessMode",
+        "guestAllowDownload",
+        "totalPhotos",
+        "uploadedPhotos",
+        "pendingPhotos",
+        "failedPhotos",
+        "driveSyncStatus",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PhotoUploadRecord": {
+      "title": "PhotoUploadRecord",
+      "description": "Record of a captured or imported photo in the upload queue and event gallery.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner photographer UID."
+        },
+        "eventId": {
+          "type": "string",
+          "description": "Associated event document ID."
+        },
+        "eventName": {
+          "type": "string",
+          "description": "Denormalized event name for rapid display."
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Original filename on device."
+        },
+        "localUri": {
+          "type": "string",
+          "description": "Local storage URI preserving original photo."
+        },
+        "sourceType": {
+          "type": "string",
+          "enum": ["MobileCamera", "DSLRImport", "ManualGallery"],
+          "description": "Capture or import origin."
+        },
+        "uploadMode": {
+          "type": "string",
+          "enum": ["Automatic", "Manual"],
+          "description": "Queue mode for upload."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Uploaded", "Pending", "Uploading", "Failed"],
+          "description": "Current upload state."
+        },
+        "progress": {
+          "type": "integer",
+          "description": "Upload progress percentage (0-100)."
+        },
+        "fileSizeBytes": {
+          "type": "integer",
+          "description": "Original file size in bytes."
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type (e.g., image/jpeg, image/png, image/x-adobe-dng)."
+        },
+        "faceIndexStatus": {
+          "type": "string",
+          "enum": ["Indexed", "AwaitingBackend", "OptedOut"],
+          "description": "Face-matching backend indexing status."
+        },
+        "driveFileId": {
+          "type": "string",
+          "description": "Server-side Google Drive file identifier once synced."
+        },
+        "errorMessage": {
+          "type": "string",
+          "description": "Diagnostic message if upload failed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when queued (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "eventId",
+        "eventName",
+        "fileName",
+        "localUri",
+        "sourceType",
+        "uploadMode",
+        "status",
+        "progress",
+        "fileSizeBytes",
+        "mimeType",
+        "faceIndexStatus",
+        "driveFileId",
+        "errorMessage",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "GuestFaceSearchSession": {
+      "title": "GuestFaceSearchSession",
+      "description": "Consent-based guest face search session and privacy audit record isolated per event.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated photographer/organizer UID."
+        },
+        "eventId": {
+          "type": "string",
+          "description": "Target event ID for strict event-specific isolation."
+        },
+        "guestLabel": {
+          "type": "string",
+          "description": "Guest name or session label."
+        },
+        "consentGranted": {
+          "type": "boolean",
+          "description": "Explicit guest biometric/face-matching consent flag."
+        },
+        "selfieUri": {
+          "type": "string",
+          "description": "Local reference to guest selfie (cleared when face data is deleted)."
+        },
+        "matchStatus": {
+          "type": "string",
+          "enum": ["ConsentVerified", "BackendPending", "DataDeleted", "ReportedMismatch"],
+          "description": "Current privacy and face-search lifecycle status."
+        },
+        "matchedPhotoCount": {
+          "type": "integer",
+          "description": "Count of event photos matched or tagged."
+        },
+        "reportNotes": {
+          "type": "string",
+          "description": "Optional guest report notes for incorrect matches."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when session was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when session was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "eventId",
+        "guestLabel",
+        "consentGranted",
+        "selfieUri",
+        "matchStatus",
+        "matchedPhotoCount",
+        "reportNotes",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/PhotographerProfile" },
+      "description": "Stores photographer user profiles and studio settings."
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/PhotoEvent" },
+      "description": "Stores event records, QR settings, and guest access policies."
+    },
+    "/uploads/{uploadId}": {
+      "schema": { "$ref": "#/entities/PhotoUploadRecord" },
+      "description": "Stores photo upload records for automatic and manual queues."
+    },
+    "/guest_consents/{consentId}": {
+      "schema": { "$ref": "#/entities/GuestFaceSearchSession" },
+      "description": "Stores consent-based guest face search records isolated per event."
+    }
+  }
+}
