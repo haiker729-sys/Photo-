@@ -4,8 +4,12 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,10 +27,13 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Collections
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material3.Button
@@ -36,10 +43,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -65,15 +71,19 @@ import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
 import com.example.ui.components.EmptyStateCard
 import com.example.ui.components.SectionHeaderRow
-import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.statusColorForUpload
+import com.example.ui.theme.JummoBorderGlow
 import com.example.ui.theme.JummoBorderSubtle
 import com.example.ui.theme.JummoCardPurple
 import com.example.ui.theme.JummoDeepPurple
+import com.example.ui.theme.JummoElevatedPurple
 import com.example.ui.theme.JummoGoldBright
 import com.example.ui.theme.JummoObsidian
+import com.example.ui.theme.JummoSuccessGreen
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
+import com.example.ui.theme.JummoVioletPrimary
+import java.util.Locale
 
 @Composable
 fun UploadsScreen(
@@ -101,7 +111,7 @@ fun UploadsScreen(
     val activeEvents = events.filter { it.status == "Active" }.ifEmpty { events }
     val currentEvent = activeEvents.find { it.id == selectedEventId } ?: activeEvents.firstOrNull()
 
-    var statusFilter by remember { mutableStateOf("All") }
+    var statusFilter by remember { mutableStateOf("Queue") }
 
     // Manual Gallery Multiple Photo Picker
     val manualGalleryPicker = rememberLauncherForActivityResult(
@@ -128,12 +138,15 @@ fun UploadsScreen(
         }
     }
 
+    val uploadedCount = uploads.count { it.status == "Uploaded" }
+    val pendingCount = uploads.count { it.status == "Pending" || it.status == "Uploading" }
+    val failedCount = uploads.count { it.status == "Failed" }
+
     val filteredUploads = uploads.filter { record ->
         when (statusFilter) {
             "Uploaded" -> record.status == "Uploaded"
-            "Pending" -> record.status == "Pending" || record.status == "Uploading"
             "Failed" -> record.status == "Failed"
-            "DSLR" -> record.sourceType == "DSLRImport"
+            "Queue" -> true
             else -> true
         }
     }
@@ -147,59 +160,56 @@ fun UploadsScreen(
                 .fillMaxSize()
                 .widthIn(max = 840.dp)
                 .testTag("uploads_screen_list"),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // 1. Header: "Uploads" + "Upload, monitor and manage photos" (Screen 5 in Reference)
             item {
                 SectionHeaderRow(
                     title = "Uploads",
-                    subtitle = "Automatic and manual upload queue • Original local files are preserved"
+                    subtitle = "Upload, monitor and manage photos"
                 )
             }
 
-            // Target Event Selector
+            // 2. Segmented Filter Pills Bar: Queue (X) | Uploaded | Failed (Screen 5 in Reference)
             item {
-                Card(
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
-                    border = BorderStroke(0.75.dp, JummoBorderSubtle)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = JummoCardPurple,
+                    shape = RoundedCornerShape(50),
+                    border = BorderStroke(0.85.dp, JummoBorderSubtle)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = "Target Event",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
+                        val tabs = listOf(
+                            "Queue" to "Queue (${uploads.size})",
+                            "Uploaded" to "Uploaded ($uploadedCount)",
+                            "Failed" to "Failed ($failedCount)"
                         )
-                        if (activeEvents.isEmpty()) {
-                            Button(
-                                onClick = onCreateEventClick,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = JummoGoldBright,
-                                    contentColor = JummoObsidian
-                                )
-                            ) {
-                                Text("Create Event", fontWeight = FontWeight.Bold)
-                            }
-                        } else {
-                            Row(
+                        tabs.forEach { (key, label) ->
+                            val selected = statusFilter == key
+                            Surface(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(50))
+                                    .clickable { statusFilter = key },
+                                color = if (selected) JummoVioletPrimary else Color.Transparent,
+                                shape = RoundedCornerShape(50)
                             ) {
-                                activeEvents.forEach { evt ->
-                                    FilterChip(
-                                        selected = currentEvent?.id == evt.id,
-                                        onClick = { onSelectEvent(evt.id) },
-                                        label = { Text(evt.name) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = JummoGoldBright,
-                                            selectedLabelColor = JummoObsidian
-                                        )
+                                Box(
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = if (selected) Color.White else JummoTextSecondary,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                        maxLines = 1
                                     )
                                 }
                             }
@@ -208,19 +218,20 @@ fun UploadsScreen(
                 }
             }
 
-            // Automatic Upload Card (WorkManager)
+            // 3. Automatic Upload Card with Golden Switch & Green Check Pills (Screen 5 in Reference)
             item {
                 val autoEnabled = profile?.autoUploadEnabled ?: true
                 val wifiOnly = profile?.wifiOnlyUpload ?: true
                 val batteryNotLow = profile?.batteryNotLowUpload ?: true
 
                 Card(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
-                    border = BorderStroke(0.75.dp, JummoBorderSubtle)
+                    border = BorderStroke(0.9.dp, JummoBorderSubtle),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier.padding(18.dp),
+                        modifier = Modifier.padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(
@@ -236,7 +247,7 @@ fun UploadsScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Background WorkManager queue respecting network and battery conditions",
+                                    text = "Background upload via WorkManager",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = JummoTextSecondary
                                 )
@@ -253,167 +264,230 @@ fun UploadsScreen(
                             )
                         }
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            FilterChip(
-                                selected = wifiOnly,
-                                onClick = {
-                                    onUpdateAutoUploadSettings(autoEnabled, !wifiOnly, batteryNotLow)
-                                },
-                                label = { Text("Wi-Fi Only") },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = JummoVioletBright,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
-                            FilterChip(
-                                selected = batteryNotLow,
-                                onClick = {
-                                    onUpdateAutoUploadSettings(autoEnabled, wifiOnly, !batteryNotLow)
-                                },
-                                label = { Text("Battery Not Low") },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = JummoVioletBright,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Manual Upload & DSLR Import Card
-            item {
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
-                    border = BorderStroke(0.75.dp, JummoBorderSubtle)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(18.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = "Manual Upload & DSLR Import",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Select photos from device gallery or import from SD card / camera storage (JPG, PNG, RAW).",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = JummoTextSecondary
-                        )
-
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            OutlinedButton(
+                            ConstraintTogglePill(
+                                label = "Wi-Fi Only",
+                                checked = wifiOnly,
                                 onClick = {
-                                    manualGalleryPicker.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                    )
+                                    onUpdateAutoUploadSettings(autoEnabled, !wifiOnly, batteryNotLow)
                                 },
-                                enabled = currentEvent != null,
-                                border = BorderStroke(0.75.dp, JummoGoldBright),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("select_gallery_photos_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Collections,
-                                    contentDescription = null,
-                                    tint = JummoGoldBright,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Select Photos", color = JummoGoldBright)
-                            }
-
-                            Button(
-                                onClick = onUploadAllPendingNow,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = JummoGoldBright,
-                                    contentColor = JummoObsidian
-                                ),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("upload_now_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CloudUpload,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Upload Now", fontWeight = FontWeight.Bold)
-                            }
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                dslrSafImporter.launch(
-                                    arrayOf(
-                                        "image/jpeg",
-                                        "image/png",
-                                        "image/x-adobe-dng",
-                                        "image/x-canon-cr2",
-                                        "image/x-nikon-nef",
-                                        "image/x-sony-arw",
-                                        "image/*"
-                                    )
-                                )
-                            },
-                            enabled = currentEvent != null,
-                            border = BorderStroke(0.75.dp, JummoVioletBright),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("dslr_saf_import_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.SdCard,
-                                contentDescription = null,
-                                tint = JummoVioletBright,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.weight(1f)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Import from SD Card / Camera Storage (RAW/JPG)", color = Color.White)
+                            ConstraintTogglePill(
+                                label = "Battery > 20%",
+                                checked = batteryNotLow,
+                                onClick = {
+                                    onUpdateAutoUploadSettings(autoEnabled, wifiOnly, !batteryNotLow)
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
                 }
             }
 
-            // Queue Filter Chips
+            // 4. Two Large Side-by-Side Action Cards: "Select Photos" & "DSLR / SD Import" + Target Event Selector (Screen 5 in Reference)
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf("All", "Pending", "Uploaded", "Failed", "DSLR").forEach { tab ->
-                        FilterChip(
-                            selected = statusFilter == tab,
-                            onClick = { statusFilter = tab },
-                            label = { Text(tab) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = JummoGoldBright,
-                                selectedLabelColor = JummoObsidian
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Left Action Card: Select Photos
+                        Card(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(enabled = currentEvent != null) {
+                                    manualGalleryPicker.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                }
+                                .testTag("select_gallery_photos_button"),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
+                            border = BorderStroke(1.dp, JummoGoldBright.copy(alpha = 0.55f))
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp, horizontal = 12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(42.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(JummoGoldBright.copy(alpha = 0.16f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Collections,
+                                        contentDescription = "Select Photos",
+                                        tint = JummoGoldBright,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Text(
+                                    text = "Select Photos",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+
+                        // Right Action Card: DSLR / SD Import
+                        Card(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(enabled = currentEvent != null) {
+                                    dslrSafImporter.launch(
+                                        arrayOf(
+                                            "image/jpeg",
+                                            "image/png",
+                                            "image/x-adobe-dng",
+                                            "image/x-canon-cr2",
+                                            "image/x-nikon-nef",
+                                            "image/x-sony-arw",
+                                            "image/*"
+                                        )
+                                    )
+                                }
+                                .testTag("dslr_saf_import_button"),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
+                            border = BorderStroke(1.dp, JummoBorderGlow)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp, horizontal = 12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(42.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(JummoVioletBright.copy(alpha = 0.18f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SdCard,
+                                        contentDescription = "DSLR / SD Import",
+                                        tint = JummoVioletBright,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Text(
+                                    text = "DSLR / SD Import",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+
+                    // Target Event Selector + Upload Now Action Bar
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (activeEvents.isEmpty()) {
+                            Button(
+                                onClick = onCreateEventClick,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = JummoGoldBright,
+                                    contentColor = JummoObsidian
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Create Event First", fontWeight = FontWeight.Bold)
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                activeEvents.forEach { evt ->
+                                    FilterChip(
+                                        selected = currentEvent?.id == evt.id,
+                                        onClick = { onSelectEvent(evt.id) },
+                                        label = {
+                                            Text(
+                                                text = evt.name,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                maxLines = 1
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = JummoGoldBright,
+                                            selectedLabelColor = JummoObsidian
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
+                        Button(
+                            onClick = onUploadAllPendingNow,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = JummoGoldBright,
+                                contentColor = JummoObsidian
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                            modifier = Modifier
+                                .height(36.dp)
+                                .testTag("upload_now_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudUpload,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp)
                             )
-                        )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = "Upload Now",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
+            }
+
+            // 5. Uploading / Queue List Header
+            item {
+                Text(
+                    text = if (pendingCount > 0) {
+                        "Uploading ($pendingCount)"
+                    } else {
+                        "Uploading (${filteredUploads.size})"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             if (filteredUploads.isEmpty()) {
                 item {
                     EmptyStateCard(
                         icon = Icons.Default.CloudUpload,
-                        title = "No Uploads in Queue",
-                        message = "Capture photos with Camera or select photos above to queue uploads."
+                        title = "No Uploads in This View",
+                        message = "Capture photos with Camera or tap Select Photos / DSLR Import above."
                     )
                 }
             } else {
@@ -429,92 +503,173 @@ fun UploadsScreen(
 }
 
 @Composable
+private fun ConstraintTogglePill(
+    label: String,
+    checked: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .clickable { onClick() },
+        color = JummoElevatedPurple,
+        border = BorderStroke(
+            0.85.dp,
+            if (checked) JummoSuccessGreen.copy(alpha = 0.55f) else JummoBorderSubtle
+        ),
+        shape = RoundedCornerShape(50)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = if (checked) JummoSuccessGreen else JummoTextSecondary,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
 private fun UploadQueueItemCard(
     upload: PhotoUploadRecord,
     onRetry: () -> Unit
 ) {
     val badgeColor = statusColorForUpload(upload.status)
+    val animatedItemProgress by animateFloatAsState(
+        targetValue = (upload.progress / 100f).coerceIn(0.08f, 1f),
+        animationSpec = tween(durationMillis = 250),
+        label = "upload_item_progress"
+    )
+    val formattedSize = remember(upload.fileSizeBytes) {
+        val kb = (upload.fileSizeBytes / 1024.0).coerceAtLeast(1.0)
+        if (kb >= 1024.0) {
+            String.format(Locale.US, "%.1f MB", kb / 1024.0)
+        } else {
+            String.format(Locale.US, "%.0f KB", kb)
+        }
+    }
 
+    // Upload Queue Item Card matching Screen 5 in Reference
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
-        border = BorderStroke(0.75.dp, JummoBorderSubtle),
+        border = BorderStroke(0.85.dp, JummoBorderSubtle),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left Square Photo Thumbnail
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(JummoDeepPurple)
+                    .border(0.75.dp, JummoBorderSubtle, RoundedCornerShape(12.dp))
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(JummoDeepPurple)
-                ) {
-                    AsyncImage(
-                        model = upload.localUri,
-                        contentDescription = upload.fileName,
-                        placeholder = painterResource(id = R.drawable.img_wedding_cover),
-                        error = painterResource(id = R.drawable.img_wedding_cover),
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = upload.fileName,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        StatusBadgePill(text = upload.status, color = badgeColor)
-                    }
-                    Text(
-                        text = "${upload.eventName} • ${upload.sourceType} (${upload.uploadMode})",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = JummoTextSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "${upload.mimeType} • ${(upload.fileSizeBytes / 1024).coerceAtLeast(1)} KB",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = JummoGoldBright
-                    )
-                }
+                AsyncImage(
+                    model = upload.localUri,
+                    contentDescription = upload.fileName,
+                    placeholder = painterResource(id = R.drawable.img_wedding_cover),
+                    error = painterResource(id = R.drawable.img_wedding_cover),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
 
-                if (upload.status != "Uploaded") {
-                    IconButton(onClick = onRetry) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Retry Upload",
-                            tint = JummoGoldBright
-                        )
-                    }
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Middle Filename, Size/Status, and Progress Bar with Percentage
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = upload.fileName,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    text = "$formattedSize • ${if (upload.status == "Uploaded") "Uploaded (${upload.eventName})" else "${upload.status}... (${upload.eventName})"}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = JummoTextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    LinearProgressIndicator(
+                        progress = { animatedItemProgress },
+                        color = if (upload.status == "Uploaded") JummoSuccessGreen else JummoVioletBright,
+                        trackColor = JummoDeepPurple,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(50))
+                    )
+                    Text(
+                        text = "${upload.progress}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-            LinearProgressIndicator(
-                progress = { (upload.progress / 100f).coerceIn(0f, 1f) },
-                color = badgeColor,
-                trackColor = JummoDeepPurple,
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // Right Circular Action Button (Pause / Retry / Done)
+            Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(5.dp)
-                    .clip(RoundedCornerShape(50))
-            )
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .clickable {
+                        if (upload.status != "Uploaded") {
+                            onRetry()
+                        }
+                    },
+                color = JummoElevatedPurple,
+                border = BorderStroke(0.75.dp, JummoBorderSubtle),
+                shape = CircleShape
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = when (upload.status) {
+                            "Uploaded" -> Icons.Default.CheckCircle
+                            "Failed" -> Icons.Default.Refresh
+                            else -> Icons.Default.Pause
+                        },
+                        contentDescription = upload.status,
+                        tint = if (upload.status == "Uploaded") JummoSuccessGreen else Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
         }
     }
 }

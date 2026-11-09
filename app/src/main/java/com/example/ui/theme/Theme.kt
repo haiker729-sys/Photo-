@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-private val JummoDarkColorScheme = darkColorScheme(
+private val JummoUltraPremiumColorScheme = darkColorScheme(
     primary = JummoVioletBright,
     onPrimary = Color.White,
     primaryContainer = JummoVioletDeep,
@@ -32,10 +32,10 @@ private val JummoDarkColorScheme = darkColorScheme(
 
 val JummoShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(18.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(32.dp)
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(14.dp),
+    large = RoundedCornerShape(18.dp),
+    extraLarge = RoundedCornerShape(24.dp)
 )
 
 @Composable
@@ -43,7 +43,7 @@ fun MyApplicationTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = JummoDarkColorScheme,
+        colorScheme = JummoUltraPremiumColorScheme,
         typography = Typography,
         shapes = JummoShapes,
         content = content

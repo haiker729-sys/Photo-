@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performScrollToNode
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
+import com.example.ui.auth.AuthScreen
 import com.example.ui.screens.EventsScreen
 import com.example.ui.screens.GuestPortalModalScreen
 import com.example.ui.screens.HomeDashboardScreen
@@ -34,6 +35,59 @@ class JummoAppRobolectricTest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Test
+    fun loginScreen_displaysHeroCategoriesFeatureCardGoogleButtonAndSecurityFooter() {
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                AuthScreen(
+                    onAuthSuccess = {},
+                    enableAutoSignIn = false
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        // 1. Branding & Hero
+        composeTestRule.onNodeWithTag("jummo_auth_screen").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Jummo Photos AI").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Smart Event Photography Suite").assertIsDisplayed()
+
+        // 2. Five Compact Event Categories
+        composeTestRule.onNodeWithText("Weddings").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Festivals").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Corporate").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Schools").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Live Events").assertIsDisplayed()
+
+        // 3. Four Feature Card Rows
+        val scrollContainer = composeTestRule.onNodeWithTag("login_scroll_container")
+        scrollContainer.performScrollToNode(hasText("Camera & DSLR Import"))
+        composeTestRule.onNodeWithText("Camera & DSLR Import").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Capture or import photos from camera, SD card or storage.").assertIsDisplayed()
+
+        scrollContainer.performScrollToNode(hasText("Smart Upload Queue"))
+        composeTestRule.onNodeWithText("Smart Upload Queue").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Automatic and manual uploads with network and battery protection.").assertIsDisplayed()
+
+        scrollContainer.performScrollToNode(hasText("Event QR & Guest Portal"))
+        composeTestRule.onNodeWithText("Event QR & Guest Portal").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Create event QR codes and share photos securely with guests.").assertIsDisplayed()
+
+        scrollContainer.performScrollToNode(hasText("AI Face Search"))
+        composeTestRule.onNodeWithText("AI Face Search").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Find guest photos with explicit consent and privacy controls.").assertIsDisplayed()
+
+        // 4. Google Sign-In Button & Security Footer
+        scrollContainer.performScrollToNode(hasTestTag("google_sign_in_button"))
+        composeTestRule.onNodeWithTag("google_sign_in_button")
+            .assertIsDisplayed()
+            .assertIsEnabled()
+        composeTestRule.onNodeWithText("Sign in with Google").assertIsDisplayed()
+
+        scrollContainer.performScrollToNode(hasTestTag("login_security_footer"))
+        composeTestRule.onNodeWithText("Secured by Firebase Authentication").assertIsDisplayed()
+    }
 
     @Test
     fun qrCodeGenerator_generatesDeterministicMatrixAndBrandedBitmap() {

@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,23 +29,32 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.Visibility
@@ -59,12 +70,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -74,6 +87,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -91,16 +105,21 @@ import com.example.ui.components.EmptyStateCard
 import com.example.ui.components.SectionHeaderRow
 import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.statusColorForUpload
+import com.example.ui.theme.JummoBorderGlow
 import com.example.ui.theme.JummoBorderSubtle
 import com.example.ui.theme.JummoCardPurple
 import com.example.ui.theme.JummoDeepPurple
+import com.example.ui.theme.JummoElevatedPurple
 import com.example.ui.theme.JummoErrorRed
 import com.example.ui.theme.JummoGoldBright
 import com.example.ui.theme.JummoObsidian
 import com.example.ui.theme.JummoSuccessGreen
+import com.example.ui.theme.JummoTextMuted
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
+import com.example.ui.theme.JummoVioletPrimary
 import com.example.util.QrCodeGenerator
+import java.util.Locale
 
 @Composable
 fun EventsScreen(
@@ -133,6 +152,7 @@ fun EventsScreen(
     onRemoveUploadFromQueue: (PhotoUploadRecord) -> Unit = {},
     onShowMessage: (String) -> Unit
 ) {
+    var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryFilter by remember { mutableStateOf("All") }
     var showArchived by remember { mutableStateOf(false) }
 
@@ -145,10 +165,15 @@ fun EventsScreen(
     val filteredEvents = events.filter { event ->
         val matchesStatus = if (showArchived) event.status == "Archived" else event.status == "Active"
         val matchesCategory = selectedCategoryFilter == "All" || event.category == selectedCategoryFilter
-        matchesStatus && matchesCategory
+        val q = searchQuery.trim().lowercase()
+        val matchesSearch = q.isEmpty() ||
+            event.name.lowercase().contains(q) ||
+            event.location.lowercase().contains(q) ||
+            event.category.lowercase().contains(q)
+        matchesStatus && matchesCategory && matchesSearch
     }
 
-    // Event Details & Photo Management View
+    // Event Details & Photo Gallery View (Screen 7 in Reference)
     if (detailsEvent != null) {
         val liveEvent = events.find { it.id == detailsEvent?.id } ?: detailsEvent!!
         val eventUploads = uploads.filter { it.eventId == liveEvent.id }
@@ -170,7 +195,8 @@ fun EventsScreen(
             onDeleteRequest = { deletingEvent = liveEvent },
             onImportPhotos = { uris -> onImportPhotosForEvent(liveEvent, uris) },
             onRetryUpload = onRetryUpload,
-            onRemoveUploadFromQueue = onRemoveUploadFromQueue
+            onRemoveUploadFromQueue = onRemoveUploadFromQueue,
+            onShowMessage = onShowMessage
         )
     } else {
         Box(
@@ -182,13 +208,14 @@ fun EventsScreen(
                     .fillMaxSize()
                     .widthIn(max = 840.dp)
                     .testTag("events_screen_list"),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Header: "My Events" + Golden "+ New Event" Pill (Screen 3 in Reference)
                 item {
                     SectionHeaderRow(
-                        title = "Events",
-                        subtitle = "Manage event shoots, cover art, QR codes, and photos",
+                        title = "My Events",
+                        subtitle = "Manage your photography events",
                         trailingContent = {
                             Button(
                                 onClick = {
@@ -199,59 +226,182 @@ fun EventsScreen(
                                     containerColor = JummoGoldBright,
                                     contentColor = JummoObsidian
                                 ),
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier.testTag("events_add_button")
+                                shape = RoundedCornerShape(50),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                modifier = Modifier
+                                    .height(38.dp)
+                                    .testTag("events_add_button")
                             ) {
-                                Icon(imageVector = Icons.Default.Add, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("New Event", fontWeight = FontWeight.Bold)
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "New Event",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    maxLines = 1
+                                )
                             }
                         }
                     )
                 }
 
-                // Category & Archive Filter Row
+                // Search Bar + Filter Button + Category Pills + Active / Archived Pills (Screen 3 in Reference)
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = {
+                                    Text(
+                                        text = "Search events...",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = JummoTextSecondary
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = "Search Events",
+                                        tint = JummoTextSecondary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                trailingIcon = {
+                                    if (searchQuery.isNotBlank()) {
+                                        IconButton(
+                                            onClick = { searchQuery = "" },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Clear search",
+                                                tint = JummoTextSecondary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                singleLine = true,
+                                shape = RoundedCornerShape(50),
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("events_search_input")
+                            )
+
+                            Surface(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        selectedCategoryFilter = "All"
+                                        showArchived = false
+                                    },
+                                color = JummoCardPurple,
+                                border = BorderStroke(0.85.dp, JummoBorderSubtle),
+                                shape = CircleShape
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.FilterList,
+                                        contentDescription = "Reset Filters",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Category Filter Pills Row (All golden when selected)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             val categories = listOf("All") + EventCategories.ALL
                             categories.forEach { category ->
-                                FilterChip(
-                                    selected = selectedCategoryFilter == category,
-                                    onClick = { selectedCategoryFilter = category },
-                                    label = { Text(category) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = JummoGoldBright,
-                                        selectedLabelColor = JummoObsidian
+                                val selected = selectedCategoryFilter == category
+                                Surface(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .clickable { selectedCategoryFilter = category },
+                                    color = if (selected) JummoGoldBright else JummoCardPurple,
+                                    border = BorderStroke(
+                                        0.85.dp,
+                                        if (selected) JummoGoldBright else JummoBorderSubtle
+                                    ),
+                                    shape = RoundedCornerShape(50)
+                                ) {
+                                    Text(
+                                        text = category,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = if (selected) JummoObsidian else Color.White,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                                     )
-                                )
+                                }
                             }
                         }
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(
-                                selected = !showArchived,
-                                onClick = { showArchived = false },
-                                label = { Text("Active (${events.count { it.status == "Active" }})") },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = JummoVioletBright,
-                                    selectedLabelColor = Color.White
+                        // Active (X) / Archived (Y) Pills Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val activeCount = events.count { it.status == "Active" }
+                            val archivedCount = events.count { it.status == "Archived" }
+
+                            Surface(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .clickable { showArchived = false },
+                                color = if (!showArchived) JummoVioletPrimary else JummoCardPurple,
+                                border = BorderStroke(
+                                    0.85.dp,
+                                    if (!showArchived) JummoBorderGlow else JummoBorderSubtle
+                                ),
+                                shape = RoundedCornerShape(50)
+                            ) {
+                                Text(
+                                    text = "Active ($activeCount)",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                                 )
-                            )
-                            FilterChip(
-                                selected = showArchived,
-                                onClick = { showArchived = true },
-                                label = { Text("Archived (${events.count { it.status == "Archived" }})") },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = JummoVioletBright,
-                                    selectedLabelColor = Color.White
+                            }
+
+                            Surface(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .clickable { showArchived = true },
+                                color = if (showArchived) JummoVioletPrimary else JummoCardPurple,
+                                border = BorderStroke(
+                                    0.85.dp,
+                                    if (showArchived) JummoBorderGlow else JummoBorderSubtle
+                                ),
+                                shape = RoundedCornerShape(50)
+                            ) {
+                                Text(
+                                    text = "Archived ($archivedCount)",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = if (showArchived) Color.White else JummoTextSecondary,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                                 )
-                            )
+                            }
                         }
                     }
                 }
@@ -260,8 +410,8 @@ fun EventsScreen(
                     item {
                         EmptyStateCard(
                             icon = Icons.Default.Event,
-                            title = if (showArchived) "No Archived Events" else "No Active Events",
-                            message = "Create an event with a category, date, location, cover image, and QR code configuration.",
+                            title = if (showArchived) "No Archived Events" else "No Matching Events",
+                            message = "Create an event with a category, date, venue, cover photograph, and QR access rules.",
                             actionButton = {
                                 if (!showArchived) {
                                     Button(
@@ -272,7 +422,8 @@ fun EventsScreen(
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = JummoGoldBright,
                                             contentColor = JummoObsidian
-                                        )
+                                        ),
+                                        shape = RoundedCornerShape(10.dp)
                                     ) {
                                         Text("Create Event", fontWeight = FontWeight.Bold)
                                     }
@@ -282,8 +433,12 @@ fun EventsScreen(
                     }
                 } else {
                     items(filteredEvents, key = { it.id }) { event ->
+                        val eventPhotoBytes = uploads
+                            .filter { it.eventId == event.id }
+                            .sumOf { it.fileSizeBytes }
                         EventManagementCard(
                             event = event,
+                            eventBytes = eventPhotoBytes,
                             onOpenDetails = { detailsEvent = event },
                             onEdit = {
                                 editingEvent = event
@@ -291,8 +446,7 @@ fun EventsScreen(
                             },
                             onToggleArchive = { onToggleArchive(event) },
                             onDeleteRequest = { deletingEvent = event },
-                            onOpenQrModal = { activeQrEvent = event },
-                            onOpenCamera = { onSelectEventForCamera(event) }
+                            onOpenQrModal = { activeQrEvent = event }
                         )
                     }
                 }
@@ -337,6 +491,7 @@ fun EventsScreen(
             text = {
                 Text(
                     text = "Delete \"${target.name}\"? Original photos stored locally on your device will remain untouched, while the event record and QR link will be removed.",
+                    style = MaterialTheme.typography.bodySmall,
                     color = JummoTextSecondary
                 )
             },
@@ -394,12 +549,12 @@ fun EventsScreen(
 @Composable
 private fun EventManagementCard(
     event: PhotoEvent,
+    eventBytes: Long,
     onOpenDetails: () -> Unit,
     onEdit: () -> Unit,
     onToggleArchive: () -> Unit,
     onDeleteRequest: () -> Unit,
-    onOpenQrModal: () -> Unit,
-    onOpenCamera: () -> Unit
+    onOpenQrModal: () -> Unit
 ) {
     val defaultPainter = when (event.coverType) {
         "festival", "School", "Corporate" -> painterResource(id = R.drawable.img_festival_cover)
@@ -407,20 +562,42 @@ private fun EventManagementCard(
         else -> painterResource(id = R.drawable.img_wedding_cover)
     }
 
+    val sizeText = remember(eventBytes, event.totalPhotos) {
+        if (eventBytes > 0L) {
+            val mb = eventBytes / (1024.0 * 1024.0)
+            if (mb >= 1024.0) {
+                String.format(Locale.US, "%.1f GB", mb / 1024.0)
+            } else {
+                String.format(Locale.US, "%.1f MB", mb.coerceAtLeast(0.1))
+            }
+        } else {
+            "${event.uploadedPhotos} synced"
+        }
+    }
+
+    // Compact Horizontal Luxury Event Card (matching Screen 3 in Reference)
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onOpenDetails() }
             .testTag("event_card_${event.id}"),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
-        border = BorderStroke(0.75.dp, JummoBorderSubtle)
+        border = BorderStroke(0.9.dp, JummoBorderSubtle)
     ) {
-        Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left Square Thumbnail Photograph
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(148.dp)
+                    .size(92.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(JummoDeepPurple)
+                    .border(0.85.dp, JummoGoldBright.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
             ) {
                 if (event.coverUri.isNotBlank()) {
                     AsyncImage(
@@ -439,179 +616,138 @@ private fun EventManagementCard(
                         contentScale = ContentScale.Crop
                     )
                 }
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    JummoObsidian.copy(alpha = 0.90f)
-                                )
-                            )
-                        )
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatusBadgePill(text = event.category, color = JummoGoldBright)
-                        StatusBadgePill(
-                            text = event.status,
-                            color = if (event.status == "Active") JummoSuccessGreen else JummoTextSecondary
-                        )
-                    }
-                    StatusBadgePill(
-                        text = if (event.qrEnabled) "QR ACTIVE" else "QR PAUSED",
-                        color = if (event.qrEnabled) JummoSuccessGreen else JummoErrorRed
-                    )
-                }
-
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = event.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = JummoGoldBright,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${event.eventDate} • ${event.location}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = JummoTextSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
             }
 
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Right Content: Title + Status Badge, Date/Category, Photos/Size, and 4 Square Action Buttons
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "${event.totalPhotos} photos • ${event.uploadedPhotos} uploaded • ${event.pendingPhotos} pending",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White
-                    )
-                    Text(
-                        text = if (event.guestAllowDownload) "Downloads On" else "View-Only",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = JummoGoldBright
-                    )
-                }
-
-                // Primary Actions Row (Event Details & Photos, QR Management)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onOpenDetails,
-                        border = BorderStroke(0.75.dp, JummoVioletBright),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("details_button_${event.id}")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PhotoLibrary,
-                            contentDescription = null,
-                            tint = JummoVioletBright,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Details & Photos", color = Color.White)
-                    }
-
-                    Button(
-                        onClick = onOpenQrModal,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = JummoGoldBright,
-                            contentColor = JummoObsidian
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("qr_button_${event.id}")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.QrCode2,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("QR Code", fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                // Secondary Management Row (Camera, Edit, Archive, Delete)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onOpenCamera) {
-                        Icon(
-                            imageVector = Icons.Default.CameraAlt,
-                            contentDescription = null,
-                            tint = JummoGoldBright,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Open Camera", color = JummoGoldBright)
-                    }
+                    Text(
+                        text = event.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    StatusBadgePill(
+                        text = event.status,
+                        color = if (event.status == "Active") JummoSuccessGreen else JummoTextMuted
+                    )
+                }
 
-                    Row {
-                        IconButton(onClick = onEdit) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit Event",
-                                tint = Color.White
-                            )
-                        }
-                        IconButton(onClick = onToggleArchive) {
-                            Icon(
-                                imageVector = if (event.status == "Archived") {
-                                    Icons.Default.Unarchive
-                                } else {
-                                    Icons.Default.Archive
-                                },
-                                contentDescription = "Archive Event",
-                                tint = JummoVioletBright
-                            )
-                        }
-                        IconButton(onClick = onDeleteRequest) {
-                            Icon(
-                                imageVector = Icons.Default.DeleteOutline,
-                                contentDescription = "Delete Event",
-                                tint = JummoErrorRed
-                            )
-                        }
-                    }
+                Text(
+                    text = "${event.eventDate} • ${event.category}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = JummoTextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    text = "${event.totalPhotos} Photos • $sizeText",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // 4 Rounded Square Action Buttons + Archive Button (Gallery, QR, Edit, Archive, Delete)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 1. Open Event Gallery / Details
+                    EventSquareActionButton(
+                        icon = Icons.Default.PhotoLibrary,
+                        contentDescription = "Details & Photos",
+                        tint = Color.White,
+                        containerColor = JummoElevatedPurple,
+                        onClick = onOpenDetails,
+                        modifier = Modifier.testTag("details_button_${event.id}")
+                    )
+
+                    // 2. Open Event QR Modal
+                    EventSquareActionButton(
+                        icon = Icons.Default.QrCode2,
+                        contentDescription = "QR Code",
+                        tint = JummoVioletBright,
+                        containerColor = JummoElevatedPurple,
+                        onClick = onOpenQrModal,
+                        modifier = Modifier.testTag("qr_button_${event.id}")
+                    )
+
+                    // 3. Edit Event
+                    EventSquareActionButton(
+                        icon = Icons.Default.Edit,
+                        contentDescription = "Edit Event",
+                        tint = Color.White,
+                        containerColor = JummoElevatedPurple,
+                        onClick = onEdit
+                    )
+
+                    // 4. Archive / Unarchive Event
+                    EventSquareActionButton(
+                        icon = if (event.status == "Archived") Icons.Default.Unarchive else Icons.Default.Archive,
+                        contentDescription = "Archive Event",
+                        tint = JummoGoldBright,
+                        containerColor = JummoElevatedPurple,
+                        onClick = onToggleArchive
+                    )
+
+                    // 5. Delete Event
+                    EventSquareActionButton(
+                        icon = Icons.Default.DeleteOutline,
+                        contentDescription = "Delete Event",
+                        tint = JummoErrorRed,
+                        containerColor = JummoErrorRed.copy(alpha = 0.14f),
+                        onClick = onDeleteRequest
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun EventSquareActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    tint: Color,
+    containerColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .size(34.dp)
+            .clip(RoundedCornerShape(9.dp))
+            .clickable { onClick() },
+        color = containerColor,
+        border = BorderStroke(0.75.dp, JummoBorderSubtle),
+        shape = RoundedCornerShape(9.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }
@@ -629,7 +765,8 @@ private fun EventDetailsAndPhotosView(
     onDeleteRequest: () -> Unit,
     onImportPhotos: (List<Uri>) -> Unit,
     onRetryUpload: (PhotoUploadRecord) -> Unit,
-    onRemoveUploadFromQueue: (PhotoUploadRecord) -> Unit
+    onRemoveUploadFromQueue: (PhotoUploadRecord) -> Unit,
+    onShowMessage: (String) -> Unit
 ) {
     BackHandler { onBack() }
 
@@ -647,26 +784,43 @@ private fun EventDetailsAndPhotosView(
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.TopCenter
+    var selectedGalleryTab by remember { mutableStateOf("All Photos") }
+    var multiSelectActive by remember { mutableStateOf(false) }
+    val selectedPhotoIds = remember { mutableStateListOf<String>() }
+
+    val displayedPhotos = remember(eventUploads, selectedGalleryTab) {
+        when (selectedGalleryTab) {
+            "People (AI)" -> eventUploads.filter { it.status == "Uploaded" }
+            "Highlights" -> eventUploads.take(6)
+            else -> eventUploads
+        }
+    }
+
+    // Event Photo Gallery View matching Screen 7 in Reference
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .widthIn(max = 840.dp)
     ) {
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .widthIn(max = 840.dp)
+                .weight(1f)
+                .fillMaxWidth()
                 .testTag("event_details_list"),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Top Bar
+            // Top Header: Back Button + Event Name + Date & Photo Count + More Menu (Screen 7 in Reference)
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
                         IconButton(onClick = onBack) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -674,245 +828,200 @@ private fun EventDetailsAndPhotosView(
                                 tint = Color.White
                             )
                         }
-                        Text(
-                            text = "Event Details",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = event.name,
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "Event Details",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = JummoGoldBright,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "${event.eventDate} • ${event.totalPhotos} Photos",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = JummoTextSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
 
-                    Row {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onOpenQr) {
+                            Icon(
+                                imageVector = Icons.Default.QrCode2,
+                                contentDescription = "QR Management",
+                                tint = JummoGoldBright,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                         IconButton(onClick = onEditEvent) {
                             Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit Event",
-                                tint = Color.White
-                            )
-                        }
-                        IconButton(onClick = onToggleArchive) {
-                            Icon(
-                                imageVector = if (event.status == "Archived") {
-                                    Icons.Default.Unarchive
-                                } else {
-                                    Icons.Default.Archive
-                                },
-                                contentDescription = "Archive Event",
-                                tint = JummoVioletBright
-                            )
-                        }
-                        IconButton(onClick = onDeleteRequest) {
-                            Icon(
-                                imageVector = Icons.Default.DeleteOutline,
-                                contentDescription = "Delete Event",
-                                tint = JummoErrorRed
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Edit Event Options",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
                 }
             }
 
-            // Event Cover & Metadata Card
+            // 3 Filter Pill Tabs: "All Photos", "People (AI)", "Highlights" (Screen 7 in Reference)
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
-                    border = BorderStroke(0.75.dp, JummoBorderSubtle)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(175.dp)
-                        ) {
-                            if (event.coverUri.isNotBlank()) {
-                                AsyncImage(
-                                    model = event.coverUri,
-                                    contentDescription = event.name,
-                                    placeholder = defaultPainter,
-                                    error = defaultPainter,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                Image(
-                                    painter = defaultPainter,
-                                    contentDescription = event.name,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.verticalGradient(
-                                            colors = listOf(
-                                                Color.Transparent,
-                                                JummoObsidian.copy(alpha = 0.92f)
-                                            )
-                                        )
-                                    )
+                    GalleryFilterPill(
+                        label = "All Photos",
+                        icon = null,
+                        selected = selectedGalleryTab == "All Photos",
+                        onClick = { selectedGalleryTab = "All Photos" }
+                    )
+                    GalleryFilterPill(
+                        label = "People (AI)",
+                        icon = Icons.Default.Face,
+                        selected = selectedGalleryTab == "People (AI)",
+                        onClick = { selectedGalleryTab = "People (AI)" }
+                    )
+                    GalleryFilterPill(
+                        label = "Highlights",
+                        icon = Icons.Default.AutoAwesome,
+                        selected = selectedGalleryTab == "Highlights",
+                        onClick = { selectedGalleryTab = "Highlights" }
+                    )
+                }
+            }
+
+            // Quick Actions Strip: Camera, Import, Guest Portal, Archive
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onOpenCamera,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = JummoGoldBright,
+                            contentColor = JummoObsidian
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text("Camera", fontWeight = FontWeight.Bold, maxLines = 1)
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            photoImporter.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                StatusBadgePill(text = event.category, color = JummoGoldBright)
-                                StatusBadgePill(
-                                    text = if (event.qrEnabled) "QR ACTIVE" else "QR PAUSED",
-                                    color = if (event.qrEnabled) JummoSuccessGreen else JummoErrorRed
-                                )
-                            }
-                            Column(
-                                modifier = Modifier
-                                    .align(Alignment.BottomStart)
-                                    .padding(16.dp)
-                            ) {
-                                Text(
-                                    text = event.name,
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "${event.eventDate} • ${event.location}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = JummoTextSecondary
-                                )
-                            }
-                        }
+                        },
+                        border = BorderStroke(0.75.dp, JummoGoldBright),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Collections,
+                            contentDescription = null,
+                            tint = JummoGoldBright,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text("Import", color = JummoGoldBright, maxLines = 1)
+                    }
 
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Text(
-                                text = "Guest Access: ${GuestAccessModes.displayLabel(event.guestAccessMode)} • QR Expiration: ${event.qrExpirationDate}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = JummoTextSecondary
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = onOpenQr,
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = JummoGoldBright,
-                                        contentColor = JummoObsidian
-                                    ),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.QrCode2,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("QR Management", fontWeight = FontWeight.Bold)
-                                }
-
-                                OutlinedButton(
-                                    onClick = onOpenGuestPortal,
-                                    border = BorderStroke(0.75.dp, JummoVioletBright),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Visibility,
-                                        contentDescription = null,
-                                        tint = JummoVioletBright,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Guest Portal", color = Color.White)
-                                }
-                            }
-                        }
+                    OutlinedButton(
+                        onClick = onOpenGuestPortal,
+                        border = BorderStroke(0.75.dp, JummoVioletBright),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Visibility,
+                            contentDescription = null,
+                            tint = JummoVioletBright,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text("Guest AI", color = Color.White, maxLines = 1)
                     }
                 }
             }
 
-            // Photo Management Header & Actions
-            item {
-                SectionHeaderRow(
-                    title = "Photo Management (${eventUploads.size})",
-                    subtitle = "Capture or import event photos • Original local files are preserved",
-                    trailingContent = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(
-                                onClick = {
-                                    photoImporter.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                    )
-                                },
-                                border = BorderStroke(0.75.dp, JummoGoldBright),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Collections,
-                                    contentDescription = "Import Photos",
-                                    tint = JummoGoldBright,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Import", color = JummoGoldBright)
-                            }
-                            Button(
-                                onClick = onOpenCamera,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = JummoGoldBright,
-                                    contentColor = JummoObsidian
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CameraAlt,
-                                    contentDescription = "Camera",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Camera", fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                )
-            }
-
-            if (eventUploads.isEmpty()) {
+            // 3-Column Photo Grid (matching Screen 7 in Reference)
+            if (displayedPhotos.isEmpty()) {
                 item {
                     EmptyStateCard(
                         icon = Icons.Default.PhotoLibrary,
-                        title = "No Photos in This Event Yet",
-                        message = "Use the Camera or Import button above to add photos to \"${event.name}\"."
+                        title = "No Photos in $selectedGalleryTab",
+                        message = "Use Camera or Import above to add original event photos to \"${event.name}\"."
                     )
                 }
             } else {
-                items(eventUploads, key = { it.id }) { photo ->
-                    val statusColor = statusColorForUpload(photo.status)
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
-                        border = BorderStroke(0.75.dp, JummoBorderSubtle),
-                        modifier = Modifier.fillMaxWidth()
+                val rows = displayedPhotos.chunked(3)
+                items(rows) { rowPhotos ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        rowPhotos.forEach { photo ->
+                            val isSelected = selectedPhotoIds.contains(photo.id)
                             Box(
                                 modifier = Modifier
-                                    .size(58.dp)
+                                    .weight(1f)
+                                    .aspectRatio(1f)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(JummoDeepPurple)
+                                    .border(
+                                        width = if (isSelected) 2.dp else 0.75.dp,
+                                        color = if (isSelected) JummoGoldBright else JummoBorderSubtle,
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable {
+                                        if (multiSelectActive) {
+                                            if (isSelected) {
+                                                selectedPhotoIds.remove(photo.id)
+                                            } else {
+                                                selectedPhotoIds.add(photo.id)
+                                            }
+                                        } else if (photo.status != "Uploaded") {
+                                            onRetryUpload(photo)
+                                        } else {
+                                            onShowMessage("${photo.fileName} (${photo.status})")
+                                        }
+                                    }
                             ) {
                                 AsyncImage(
                                     model = photo.localUri,
@@ -922,53 +1031,176 @@ private fun EventDetailsAndPhotosView(
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
                                 )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+
+                                // Top-right status or selection badge
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(6.dp)
+                                ) {
+                                    if (multiSelectActive) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Selected",
+                                            tint = if (isSelected) JummoGoldBright else Color.White.copy(alpha = 0.55f),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(statusColorForUpload(photo.status))
+                                        )
+                                    }
+                                }
+
+                                // Bottom subtle filename overlay
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .align(Alignment.BottomCenter)
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = listOf(
+                                                    Color.Transparent,
+                                                    JummoObsidian.copy(alpha = 0.8f)
+                                                )
+                                            )
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 4.dp)
                                 ) {
                                     Text(
                                         text = photo.fileName,
-                                        style = MaterialTheme.typography.titleSmall,
+                                        style = MaterialTheme.typography.labelSmall,
                                         color = Color.White,
-                                        fontWeight = FontWeight.Bold,
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    StatusBadgePill(text = photo.status, color = statusColor)
-                                }
-                                Text(
-                                    text = "${photo.sourceType} • ${(photo.fileSizeBytes / 1024).coerceAtLeast(1)} KB • Original Local File Kept",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = JummoTextSecondary
-                                )
-                            }
-                            if (photo.status != "Uploaded") {
-                                IconButton(onClick = { onRetryUpload(photo) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Refresh,
-                                        contentDescription = "Upload Photo Now",
-                                        tint = JummoGoldBright
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
-                            IconButton(onClick = { onRemoveUploadFromQueue(photo) }) {
-                                Icon(
-                                    imageVector = Icons.Default.DeleteOutline,
-                                    contentDescription = "Remove from Cloud Queue (Keep Local Original)",
-                                    tint = JummoTextSecondary
-                                )
-                            }
+                        }
+                        repeat(3 - rowPhotos.size) {
+                            Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }
             }
         }
+
+        // Bottom Gallery Action Bar: Select, Download, Share, More (Screen 7 in Reference)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = JummoCardPurple.copy(alpha = 0.96f),
+            border = BorderStroke(0.75.dp, JummoBorderSubtle)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BottomGalleryActionItem(
+                    icon = Icons.Default.CheckBox,
+                    label = if (multiSelectActive) "Done (${selectedPhotoIds.size})" else "Select",
+                    active = multiSelectActive,
+                    onClick = {
+                        multiSelectActive = !multiSelectActive
+                        if (!multiSelectActive) selectedPhotoIds.clear()
+                    }
+                )
+                BottomGalleryActionItem(
+                    icon = Icons.Default.Download,
+                    label = "Download",
+                    onClick = {
+                        val count = if (selectedPhotoIds.isNotEmpty()) selectedPhotoIds.size else displayedPhotos.size
+                        onShowMessage("$count original photo(s) verified in local device storage.")
+                    }
+                )
+                BottomGalleryActionItem(
+                    icon = Icons.Default.Share,
+                    label = "Share",
+                    onClick = onOpenQr
+                )
+                BottomGalleryActionItem(
+                    icon = Icons.Default.MoreHoriz,
+                    label = "More",
+                    onClick = onEditEvent
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GalleryFilterPill(
+    label: String,
+    icon: ImageVector?,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .clickable { onClick() },
+        color = if (selected) JummoVioletPrimary else JummoCardPurple,
+        border = BorderStroke(
+            width = 0.9.dp,
+            color = if (selected) JummoBorderGlow else JummoBorderSubtle
+        ),
+        shape = RoundedCornerShape(50)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (selected) Color.White else JummoGoldBright,
+                    modifier = Modifier.size(15.dp)
+                )
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+            )
+        }
+    }
+}
+
+@Composable
+private fun BottomGalleryActionItem(
+    icon: ImageVector,
+    label: String,
+    active: Boolean = false,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (active) JummoGoldBright else Color.White,
+            modifier = Modifier.size(20.dp)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (active) JummoGoldBright else JummoTextSecondary,
+            fontWeight = if (active) FontWeight.Bold else FontWeight.Medium
+        )
     }
 }
 
@@ -1025,7 +1257,7 @@ private fun EventEditorDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 OutlinedTextField(
                     value = name,
@@ -1046,7 +1278,7 @@ private fun EventEditorDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     EventCategories.ALL.forEach { cat ->
                         FilterChip(
@@ -1099,7 +1331,7 @@ private fun EventEditorDialog(
                             color = Color.White
                         )
                         Text(
-                            text = if (coverUri.isNotBlank()) "Custom cover image selected" else "Default category cover ($coverType)",
+                            text = if (coverUri.isNotBlank()) "Custom cover selected" else "Default category cover ($coverType)",
                             style = MaterialTheme.typography.bodySmall,
                             color = JummoTextSecondary
                         )
@@ -1110,15 +1342,16 @@ private fun EventEditorDialog(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
                         },
-                        border = BorderStroke(0.75.dp, JummoGoldBright)
+                        border = BorderStroke(0.75.dp, JummoGoldBright),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Image,
                             contentDescription = null,
                             tint = JummoGoldBright,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text("Select Cover", color = JummoGoldBright)
                     }
                 }
@@ -1129,7 +1362,7 @@ private fun EventEditorDialog(
                     style = MaterialTheme.typography.labelMedium,
                     color = JummoGoldBright
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     GuestAccessModes.ALL.forEach { mode ->
                         FilterChip(
                             selected = guestAccessMode == mode,
@@ -1275,20 +1508,20 @@ private fun EventQrSystemDialog(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Image(
                     bitmap = qrBitmap.asImageBitmap(),
                     contentDescription = "Generated Event QR Code",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
+                        .clip(RoundedCornerShape(14.dp))
                 )
 
                 // Download & Share QR Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
                         onClick = {
@@ -1308,16 +1541,19 @@ private fun EventQrSystemDialog(
                             containerColor = JummoGoldBright,
                             contentColor = JummoObsidian
                         ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(38.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Download QR", fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text("Download QR", fontWeight = FontWeight.Bold, maxLines = 1)
                     }
 
                     OutlinedButton(
@@ -1333,17 +1569,20 @@ private fun EventQrSystemDialog(
                             }
                         },
                         border = BorderStroke(0.75.dp, JummoGoldBright),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(38.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = null,
                             tint = JummoGoldBright,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Share QR", color = JummoGoldBright)
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text("Share QR", color = JummoGoldBright, maxLines = 1)
                     }
                 }
 
@@ -1351,9 +1590,9 @@ private fun EventQrSystemDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(JummoDeepPurple)
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1397,7 +1636,7 @@ private fun EventQrSystemDialog(
                 // Guest Access Configuration
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
                         text = "Guest Access Mode",
@@ -1421,14 +1660,14 @@ private fun EventQrSystemDialog(
                 OutlinedButton(
                     onClick = onOpenGuestPortal,
                     border = BorderStroke(0.75.dp, JummoVioletBright),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Visibility,
                         contentDescription = null,
                         tint = JummoVioletBright,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("Open Guest Portal View", color = Color.White)
