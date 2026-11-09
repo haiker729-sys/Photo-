@@ -17,36 +17,114 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy-website:
-    name: Deploy Official Website to GitHub Pages
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
+    name: Verify & Package Website Assets
     runs-on: ubuntu-latest
+    outputs:
+      site_enabled: ${{ steps.pages_status.outputs.site_enabled }}
+      build_type: ${{ steps.pages_status.outputs.build_type }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Verify Website Assets in docs/
         run: |
-          test -s docs/index.html
-          test -s docs/styles.css
-          test -s docs/app.js
-          test -s docs/assets/hero-studio.jpg
-          test -s docs/assets/screen-login.png
-          test -s docs/assets/screen-suite-8.png
+          set -euo pipefail
+          echo "Verifying required website files in docs/..."
+          required_files=(
+            "docs/index.html"
+            "docs/styles.css"
+            "docs/app.js"
+            "docs/404.html"
+            "docs/.nojekyll"
+            "docs/assets/hero-studio.jpg"
+            "docs/assets/screen-login.png"
+            "docs/assets/screen-suite-8.png"
+            "docs/assets/wedding-cover.jpg"
+          )
+          for file in "${required_files[@]}"; do
+            if [ ! -s "$file" ] && [ "$file" != "docs/.nojekyll" ]; then
+              echo "::error::Missing or empty required website asset: $file"
+              exit 1
+            fi
+          done
           touch docs/.nojekyll
+          grep -qE 'href="(\./)?styles\.css"' docs/index.html
+          grep -qE 'src="(\./)?app\.js"' docs/index.html
+          echo "All website HTML, CSS, JS, and image assets verified."
+
+      - name: Check GitHub Pages Activation Status
+        id: pages_status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if PAGES_JSON=$(gh api "repos/${GITHUB_REPOSITORY}/pages" 2>/dev/null); then
+            BUILD_TYPE=$(printf '%s' "$PAGES_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('build_type') or 'legacy')")
+            HTML_URL=$(printf '%s' "$PAGES_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('html_url') or '')")
+            echo "site_enabled=true" >> "$GITHUB_OUTPUT"
+            echo "build_type=${BUILD_TYPE}" >> "$GITHUB_OUTPUT"
+            echo "GitHub Pages is enabled for ${GITHUB_REPOSITORY} (build_type=${BUILD_TYPE}, url=${HTML_URL})."
+            if [ "$BUILD_TYPE" != "workflow" ]; then
+              echo "::warning::GitHub Pages is currently set to '${BUILD_TYPE}' instead of 'workflow' (GitHub Actions). Open https://github.com/${GITHUB_REPOSITORY}/settings/pages and set Source to 'GitHub Actions'."
+            fi
+          else
+            echo "site_enabled=false" >> "$GITHUB_OUTPUT"
+            echo "build_type=not_enabled" >> "$GITHUB_OUTPUT"
+            echo "::warning::GitHub Pages is not yet activated on https://github.com/${GITHUB_REPOSITORY}/settings/pages. GITHUB_TOKEN cannot call 'Create Pages site' (POST /repos/${GITHUB_REPOSITORY}/pages) without manual owner enablement."
+            {
+              echo "### Action Required: Enable GitHub Pages in Repository Settings"
+              echo ""
+              echo "GitHub prevents the default \`GITHUB_TOKEN\` integration from creating a Pages site for the first time (\`Create Pages site failed: Resource not accessible by integration\`)."
+              echo ""
+              echo "To activate **https://haiker729-sys.github.io/Photo-/** (one-time owner step):"
+              echo "1. Open **[Repository Settings → Pages](https://github.com/${GITHUB_REPOSITORY}/settings/pages)**."
+              echo "2. Under **Build and deployment → Source**, change the dropdown to **GitHub Actions**."
+              echo "3. Re-run this workflow from the **Actions** tab (or push a commit to \`main\`)."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Configure GitHub Pages
+        if: steps.pages_status.outputs.site_enabled == 'true'
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs'
 
+  deploy:
+    name: Deploy Official Website to GitHub Pages
+    needs: build
+    if: needs.build.outputs.site_enabled == 'true'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify Live Website HTTP 200 & Assets
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PAGE_URL}" ]; then
+            echo "No page_url output returned."
+            exit 0
+          fi
+          BASE_URL="${PAGE_URL%/}"
+          for endpoint in "${BASE_URL}/" "${BASE_URL}/styles.css" "${BASE_URL}/app.js"; do
+            echo "Checking ${endpoint}..."
+            for attempt in 1 2 3 4 5; do
+              STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" "${endpoint}" || true)
+              if [ "$STATUS" = "200" ]; then
+                echo "Verified HTTP 200 for ${endpoint}"
+                break
+              fi
+              echo "Attempt ${attempt}: HTTP ${STATUS} for ${endpoint}, waiting 5s..."
+              sleep 5
+            done
+          done

@@ -1,5 +1,7 @@
 package com.example
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -9,11 +11,15 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.test.core.app.ApplicationProvider
+import com.example.data.model.GuestAccessModes
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
 import com.example.ui.auth.AuthScreen
+import com.example.ui.screens.EventQrSystemDialog
 import com.example.ui.screens.EventsScreen
 import com.example.ui.screens.GuestPortalModalScreen
 import com.example.ui.screens.HomeDashboardScreen
@@ -21,7 +27,10 @@ import com.example.ui.screens.OfficialWebsiteScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.util.QrCodeGenerator
+import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -397,5 +406,270 @@ class JummoAppRobolectricTest {
         websiteList.performScrollToNode(hasTestTag("website_footer_section"))
         composeTestRule.onNodeWithTag("website_footer_section").assertIsDisplayed()
         composeTestRule.onNodeWithText("Official GitHub Repo").assertIsDisplayed()
+    }
+
+    @Test
+    fun qrCodeGenerator_encodesAndDecodesRealScannableIsoQrPerEvent() {
+        val event1 = PhotoEvent(
+            id = "evt_rahul_pooja_1512",
+            name = "Rahul weds Pooja",
+            category = "Wedding",
+            eventDate = "15 Dec 2026"
+        )
+        val event2 = PhotoEvent(
+            id = "evt_ankit_bday_1012",
+            name = "Ankit Birthday",
+            category = "Birthday",
+            eventDate = "10 Dec 2026"
+        )
+
+        val url1 = QrCodeGenerator.buildGuestPortalUrl(event1)
+        val url2 = QrCodeGenerator.buildGuestPortalUrl(event2)
+
+        assertEquals("https://jummophotos.ai/guest/evt_rahul_pooja_1512", url1)
+        assertEquals("https://jummophotos.ai/guest/evt_ankit_bday_1012", url2)
+        assertNotEquals(url1, url2)
+
+        // Generate real ISO/IEC 18004 QR matrices dynamically
+        val isoMatrix1 = QrCodeGenerator.generateIsoQrMatrix(url1)
+        val isoMatrix2 = QrCodeGenerator.generateIsoQrMatrix(url2)
+
+        // Verify the two matrices are distinct (never static or sample)
+        var diffModules = 0
+        for (r in isoMatrix1.indices) {
+            for (c in isoMatrix1[r].indices) {
+                if (isoMatrix1[r][c] != isoMatrix2[r][c]) diffModules++
+            }
+        }
+        assertTrue("Different events must produce different QR matrices", diffModules > 20)
+
+        // Scan/decode the generated ISO QR matrices back to the exact Guest Portal URLs
+        val decodedUrl1 = QrCodeGenerator.decodeQrPayloadFromMatrix(isoMatrix1)
+        val decodedUrl2 = QrCodeGenerator.decodeQrPayloadFromMatrix(isoMatrix2)
+
+        assertEquals(url1, decodedUrl1)
+        assertTrue(decodedUrl1.contains(event1.id))
+        assertEquals(url2, decodedUrl2)
+        assertTrue(decodedUrl2.contains(event2.id))
+    }
+
+    @Test
+    fun qrCodeGenerator_downloadsHighResPngAndSharesViaIntent() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val eventId = "evt_rahul_pooja_qr_export"
+        val portalUrl = QrCodeGenerator.buildGuestPortalUrl(eventId)
+
+        // 1. High-resolution PNG download
+        val downloadResult = QrCodeGenerator.saveQrBitmapToGallery(
+            context = context,
+            eventName = "Rahul weds Pooja",
+            eventCategory = "Wedding",
+            eventDate = "15 Dec 2026",
+            qrPayload = portalUrl
+        )
+        assertTrue("QR download must succeed", downloadResult.isSuccess)
+        val localQrDir = File(context.filesDir, "qr_exports")
+        val exportedFiles = localQrDir.listFiles()?.filter { it.extension == "png" }.orEmpty()
+        assertTrue("High-res PNG file must be written", exportedFiles.isNotEmpty())
+        assertTrue("PNG file must have non-zero size", exportedFiles.first().length() > 1000L)
+
+        // 2. Native Android Share Sheet intent
+        val shareResult = QrCodeGenerator.shareEventQrCode(
+            context = context,
+            eventName = "Rahul weds Pooja",
+            eventCategory = "Wedding",
+            eventDate = "15 Dec 2026",
+            qrPayload = portalUrl
+        )
+        assertTrue("QR native share must succeed", shareResult.isSuccess)
+        val shareIntent = shareResult.getOrThrow()
+        assertEquals(Intent.ACTION_SEND, shareIntent.action)
+        assertEquals("image/png", shareIntent.type)
+        val shareText = shareIntent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
+        assertTrue("Shared text must include the Guest Portal URL with event ID", shareText.contains(portalUrl))
+    }
+
+    @Test
+    fun qrManagementModal_rendersReferenceDesignAndPersistsAllSettings() {
+        val initialEvent = PhotoEvent(
+            id = "evt_rahul_weds_pooja_01",
+            userId = "u1",
+            name = "Rahul weds Pooja",
+            category = "Wedding",
+            eventDate = "15 Dec 2026",
+            location = "Taj Palace",
+            qrCodeValue = "https://jummophotos.ai/guest/evt_rahul_weds_pooja_01",
+            qrEnabled = true,
+            qrExpirationDate = "01 Mar 2027",
+            guestAccessMode = GuestAccessModes.FACE_SEARCH_ONLY
+        )
+
+        var savedEvent: PhotoEvent? = null
+        var openedPortalEvent: PhotoEvent? = null
+
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                EventQrSystemDialog(
+                    event = initialEvent,
+                    onUpdateEvent = { updated, _ -> savedEvent = updated },
+                    onOpenGuestPortal = { evt -> openedPortalEvent = evt },
+                    onShowMessage = {},
+                    onDismiss = {}
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        // Verify header & hero branding from reference image
+        composeTestRule.onNodeWithTag("qr_management_modal").assertIsDisplayed()
+        composeTestRule.onNodeWithText("QR Management").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Create & manage guest access for your event").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Jummo Photos AI").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Guest Portal").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("qr_hero_event_name").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("qr_code_preview_image").assertIsDisplayed()
+
+        // Verify 3 hero action buttons
+        composeTestRule.onNodeWithTag("qr_download_button").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithTag("qr_share_button").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithTag("qr_open_guest_portal_button").performScrollTo().assertIsDisplayed()
+
+        // Verify Enable toggle, Expiration selector, and 3 Guest Access Modes
+        composeTestRule.onNodeWithTag("qr_enable_switch").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Enable Event QR Portal").assertIsDisplayed()
+
+        composeTestRule.onNodeWithTag("qr_expiration_selector").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("QR Expiration Date").assertIsDisplayed()
+        composeTestRule.onNodeWithText("01 Mar 2027").assertIsDisplayed()
+
+        composeTestRule.onNodeWithTag("qr_mode_organizer_approved").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithTag("qr_mode_face_search_only").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("qr_mode_view_all").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("qr_mode_organizer_approved").assertIsDisplayed()
+
+        // Select "View All + Face Search" mode
+        composeTestRule.onNodeWithTag("qr_mode_view_all").performClick()
+        composeTestRule.waitForIdle()
+
+        // Change expiration date via picker dialog
+        composeTestRule.onNodeWithTag("qr_expiration_selector").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("qr_exp_preset_15_Jun_2027").performClick()
+        composeTestRule.waitForIdle()
+
+        // Click "Save QR Settings" and verify settings are saved against the exact event ID
+        composeTestRule.onNodeWithTag("qr_save_settings_button").performClick()
+        composeTestRule.waitForIdle()
+
+        assertNotNull(savedEvent)
+        assertEquals("evt_rahul_weds_pooja_01", savedEvent?.id)
+        assertEquals(GuestAccessModes.VIEW_ALL_PERMITTED, savedEvent?.guestAccessMode)
+        assertEquals("15 Jun 2027", savedEvent?.qrExpirationDate)
+        assertEquals("https://jummophotos.ai/guest/evt_rahul_weds_pooja_01", savedEvent?.qrCodeValue)
+
+        // Click "Open Guest Portal" and verify it passes the updated event
+        composeTestRule.onNodeWithTag("qr_open_guest_portal_button").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        assertEquals("evt_rahul_weds_pooja_01", openedPortalEvent?.id)
+    }
+
+    @Test
+    fun guestPortal_validatesEventStatusQrStatusExpirationAndEnforcesThreeAccessModes() {
+        val baseEvent = PhotoEvent(
+            id = "evt_portal_check_99",
+            userId = "u1",
+            name = "Rahul weds Pooja",
+            category = "Wedding",
+            eventDate = "15 Dec 2026",
+            location = "New Delhi",
+            status = "Active",
+            qrCodeValue = "https://jummophotos.ai/guest/evt_portal_check_99",
+            qrEnabled = true,
+            qrExpirationDate = "01 Mar 2027",
+            guestAccessMode = GuestAccessModes.FACE_SEARCH_ONLY
+        )
+
+        // 1. Validate Disabled QR blocks guest access
+        val disabledResult = QrCodeGenerator.validateGuestPortalAccess(baseEvent.copy(qrEnabled = false))
+        assertFalse(disabledResult.isAllowed)
+        assertEquals("QR_DISABLED", disabledResult.statusCode)
+
+        // 2. Validate Archived Event blocks guest access
+        val archivedResult = QrCodeGenerator.validateGuestPortalAccess(baseEvent.copy(status = "Archived"))
+        assertFalse(archivedResult.isAllowed)
+        assertEquals("EVENT_ARCHIVED", archivedResult.statusCode)
+
+        // 3. Validate Expired QR date blocks guest access
+        val expiredResult = QrCodeGenerator.validateGuestPortalAccess(baseEvent.copy(qrExpirationDate = "01 Jan 2020"))
+        assertFalse(expiredResult.isAllowed)
+        assertEquals("QR_EXPIRED", expiredResult.statusCode)
+
+        // 4. Validate all three access modes when Active & Non-Expired
+        val mode1 = QrCodeGenerator.validateGuestPortalAccess(
+            baseEvent.copy(guestAccessMode = GuestAccessModes.FACE_SEARCH_ONLY)
+        )
+        assertTrue(mode1.isAllowed)
+        assertTrue(mode1.requiresFaceSearchConsent)
+        assertFalse(mode1.allowsImmediateGallery)
+
+        val mode2 = QrCodeGenerator.validateGuestPortalAccess(
+            baseEvent.copy(guestAccessMode = GuestAccessModes.VIEW_ALL_PERMITTED)
+        )
+        assertTrue(mode2.isAllowed)
+        assertTrue(mode2.allowsImmediateGallery)
+
+        val mode3 = QrCodeGenerator.validateGuestPortalAccess(
+            baseEvent.copy(guestAccessMode = GuestAccessModes.PIN_PROTECTED)
+        )
+        assertTrue(mode3.isAllowed)
+        assertTrue(mode3.requiresOrganizerApproval)
+
+        // 5. Verify UI enforcement in GuestPortalModalScreen for Organizer Approved Access
+        val currentEventState = androidx.compose.runtime.mutableStateOf(
+            baseEvent.copy(qrEnabled = false)
+        )
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                GuestPortalModalScreen(
+                    event = currentEventState.value,
+                    eventUploads = emptyList(),
+                    guestSessions = emptyList(),
+                    onRegisterConsentSession = { _, _, _ -> },
+                    onDeleteFaceData = {},
+                    onReportMismatch = { _, _ -> },
+                    onNotifyDownload = {},
+                    onClose = {}
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        // When QR is disabled, blocked card is displayed
+        composeTestRule.onNodeWithTag("guest_portal_access_blocked_card").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Event QR Portal Paused").assertIsDisplayed()
+
+        // When QR is expired, blocked card shows expired notice
+        currentEventState.value = baseEvent.copy(qrEnabled = true, qrExpirationDate = "01 Jan 2020")
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("guest_portal_access_blocked_card").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Event QR Code Expired").assertIsDisplayed()
+
+        // When QR is active with Organizer Approved Access, approval gate is shown and can be approved
+        currentEventState.value = baseEvent.copy(
+            qrEnabled = true,
+            qrExpirationDate = "01 Mar 2027",
+            guestAccessMode = GuestAccessModes.PIN_PROTECTED
+        )
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("guest_portal_list")
+            .performScrollToNode(hasTestTag("organizer_approval_gate_card"))
+        composeTestRule.onNodeWithTag("organizer_approval_gate_card").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("guest_portal_list")
+            .performScrollToNode(hasTestTag("organizer_approve_access_button"))
+        composeTestRule.onNodeWithTag("organizer_approve_access_button").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("guest_portal_list")
+            .performScrollToNode(hasTestTag("guest_portal_tab_face_search"))
+        composeTestRule.onNodeWithTag("guest_portal_tab_face_search").assertIsDisplayed()
     }
 }

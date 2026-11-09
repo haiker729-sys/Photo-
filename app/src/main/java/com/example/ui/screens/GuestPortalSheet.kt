@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,17 +25,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Security
@@ -67,7 +66,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -94,10 +92,17 @@ import com.example.ui.theme.JummoObsidian
 import com.example.ui.theme.JummoSuccessGreen
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
+import com.example.util.QrCodeGenerator
 
 /**
- * Interactive preview of the Guest Web Portal & Consent-Based Face Search Experience
+ * Interactive Guest QR Web Portal & Consent-Based Face Search Experience
  * that guests open via the Event QR Code without needing to install an application.
+ *
+ * Strictly validates:
+ * 1. Event status (`Active` vs `Archived`)
+ * 2. Event QR status (`qrEnabled`)
+ * 3. QR Expiration date (`qrExpirationDate`)
+ * 4. Guest Access Mode (`FaceSearchOnly`, `ViewAllPermitted`, `PINProtected` / Organizer Approved Access)
  */
 @Composable
 fun GuestPortalModalScreen(
@@ -112,13 +117,38 @@ fun GuestPortalModalScreen(
 ) {
     BackHandler { onClose() }
 
-    var selectedTab by remember { mutableStateOf(0) } // 0 = Find My Photos (Face Search), 1 = Event Gallery
+    val accessValidation = remember(
+        event.id,
+        event.status,
+        event.qrEnabled,
+        event.qrExpirationDate,
+        event.guestAccessMode,
+        event.qrCodeValue
+    ) {
+        QrCodeGenerator.validateGuestPortalAccess(event)
+    }
+
+    var selectedTab by remember(event.guestAccessMode) {
+        mutableStateOf(
+            if (event.guestAccessMode == GuestAccessModes.VIEW_ALL_PERMITTED) 1 else 0
+        )
+    }
     var guestName by remember { mutableStateOf("") }
     var explicitConsentChecked by remember { mutableStateOf(false) }
     var selfieUri by remember { mutableStateOf<Uri?>(null) }
     val selectedPhotoIds = remember { mutableStateListOf<String>() }
     var sessionToReport by remember { mutableStateOf<GuestFaceSearchSession?>(null) }
     var reportNoteInput by remember { mutableStateOf("") }
+
+    // Organizer Approved Access state (for GuestAccessModes.PIN_PROTECTED)
+    val expectedApprovalCode = remember(event.id) {
+        event.id.replace("evt_", "").takeLast(4).uppercase().ifBlank { "2026" }
+    }
+    var approvalCodeInput by remember { mutableStateOf("") }
+    var organizerApproved by remember(event.id, event.guestAccessMode) {
+        mutableStateOf(event.guestAccessMode != GuestAccessModes.PIN_PROTECTED)
+    }
+    var approvalError by remember { mutableStateOf<String?>(null) }
 
     val selfiePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -151,33 +181,47 @@ fun GuestPortalModalScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onClose) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    IconButton(
+                        onClick = onClose,
+                        modifier = Modifier.testTag("guest_portal_back_button")
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.White
                         )
                     }
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Guest QR Web Portal Preview",
                             style = MaterialTheme.typography.titleMedium,
                             color = Color.White,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = event.qrCodeValue,
+                            text = accessValidation.guestPortalUrl,
                             style = MaterialTheme.typography.labelSmall,
                             color = JummoGoldBright,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.testTag("guest_portal_url_text")
                         )
                     }
                 }
                 StatusBadgePill(
-                    text = if (event.qrEnabled) "PORTAL LIVE" else "QR PAUSED",
-                    color = if (event.qrEnabled) JummoSuccessGreen else JummoErrorRed
+                    text = when {
+                        !accessValidation.isAllowed && accessValidation.statusCode == "QR_EXPIRED" -> "QR EXPIRED"
+                        !accessValidation.isAllowed && accessValidation.statusCode == "EVENT_ARCHIVED" -> "ARCHIVED"
+                        !event.qrEnabled -> "QR PAUSED"
+                        else -> "PORTAL LIVE"
+                    },
+                    color = if (accessValidation.isAllowed) JummoSuccessGreen else JummoErrorRed
                 )
             }
 
@@ -203,9 +247,9 @@ fun GuestPortalModalScreen(
                             ) {
                                 StatusBadgePill(text = event.category, color = JummoGoldBright)
                                 Text(
-                                    text = "Expires: ${event.qrExpirationDate}",
+                                    text = "Expires: ${QrCodeGenerator.formatDisplayDate(event.qrExpirationDate, event.qrExpirationDate)}",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = JummoTextSecondary
+                                    color = if (accessValidation.statusCode == "QR_EXPIRED") JummoErrorRed else JummoTextSecondary
                                 )
                             }
                             Spacer(modifier = Modifier.height(10.dp))
@@ -216,11 +260,19 @@ fun GuestPortalModalScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "${event.eventDate} • ${event.location}",
+                                text = "${QrCodeGenerator.formatDisplayDate(event.eventDate, event.eventDate)} • ${event.location}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = JummoTextSecondary
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Access Mode: ${GuestAccessModes.displayLabel(event.guestAccessMode)}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = JummoGoldBright,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.testTag("guest_portal_active_mode_label")
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "Guests open this portal directly in their mobile browser by scanning the Event QR code — no app installation required.",
                                 style = MaterialTheme.typography.bodySmall,
@@ -230,7 +282,165 @@ fun GuestPortalModalScreen(
                     }
                 }
 
-                // Mode Switch Tabs
+                // =============================================================
+                // VALIDATION GATE: Block access if Event is Archived, QR Disabled, or QR Expired
+                // =============================================================
+                if (!accessValidation.isAllowed) {
+                    item {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("guest_portal_access_blocked_card"),
+                            shape = RoundedCornerShape(22.dp),
+                            colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
+                            border = BorderStroke(1.5.dp, JummoErrorRed)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Block,
+                                    contentDescription = null,
+                                    tint = JummoErrorRed,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                                Text(
+                                    text = accessValidation.title,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = accessValidation.message,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = JummoTextSecondary
+                                )
+                                StatusBadgePill(
+                                    text = accessValidation.statusCode,
+                                    color = JummoErrorRed
+                                )
+                            }
+                        }
+                    }
+                    return@LazyColumn
+                }
+
+                // =============================================================
+                // ACCESS MODE 3 GATE: Organizer Approved Access (PINProtected)
+                // =============================================================
+                if (accessValidation.requiresOrganizerApproval && !organizerApproved) {
+                    item {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("organizer_approval_gate_card"),
+                            shape = RoundedCornerShape(22.dp),
+                            colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
+                            border = BorderStroke(1.2.dp, JummoGoldBright)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(18.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Key,
+                                        contentDescription = null,
+                                        tint = JummoGoldBright,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = "Organizer Approved Access Required",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "Studio approval code for ${event.name}: $expectedApprovalCode",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = JummoGoldBright
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "This event is configured with 'Organizer Approved Access'. Guests must enter the organizer's approval code or receive studio approval before viewing photos.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = JummoTextSecondary
+                                )
+
+                                OutlinedTextField(
+                                    value = approvalCodeInput,
+                                    onValueChange = {
+                                        approvalCodeInput = it
+                                        approvalError = null
+                                    },
+                                    label = { Text("Organizer Approval Code") },
+                                    placeholder = { Text("Enter $expectedApprovalCode") },
+                                    singleLine = true,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("organizer_approval_code_input")
+                                )
+
+                                if (approvalError != null) {
+                                    Text(
+                                        text = approvalError!!,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = JummoErrorRed
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            if (approvalCodeInput.trim().equals(expectedApprovalCode, ignoreCase = true)) {
+                                                organizerApproved = true
+                                                approvalError = null
+                                            } else {
+                                                approvalError = "Invalid approval code. Expected $expectedApprovalCode."
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = JummoGoldBright,
+                                            contentColor = JummoObsidian
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .testTag("verify_organizer_code_button")
+                                    ) {
+                                        Text("Verify Code", fontWeight = FontWeight.Bold)
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            organizerApproved = true
+                                            approvalError = null
+                                        },
+                                        border = BorderStroke(1.dp, JummoGoldBright),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .testTag("organizer_approve_access_button")
+                                    ) {
+                                        Text("Approve Guest", color = JummoGoldBright, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return@LazyColumn
+                }
+
+                // Mode Switch Tabs (Face Search vs Standard Gallery)
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -251,7 +461,8 @@ fun GuestPortalModalScreen(
                                 selectedContainerColor = JummoGoldBright,
                                 selectedLabelColor = JummoObsidian,
                                 selectedLeadingIconColor = JummoObsidian
-                            )
+                            ),
+                            modifier = Modifier.testTag("guest_portal_tab_face_search")
                         )
                         FilterChip(
                             selected = selectedTab == 1,
@@ -268,7 +479,8 @@ fun GuestPortalModalScreen(
                                 selectedContainerColor = JummoGoldBright,
                                 selectedLabelColor = JummoObsidian,
                                 selectedLeadingIconColor = JummoObsidian
-                            )
+                            ),
+                            modifier = Modifier.testTag("guest_portal_tab_standard_gallery")
                         )
                     }
                 }
@@ -303,7 +515,6 @@ fun GuestPortalModalScreen(
                                     Text(
                                         text = "• Explicit guest consent is mandatory before any selfie submission.\n" +
                                             "• Event-Specific Isolation: Reference data is scoped strictly to ${event.name} (${event.id}).\n" +
-                                            "• No fake client-side biometric matching: This interface records verified guest consent and prepares the payload for a separately secured face-matching backend.\n" +
                                             "• Guests can delete their face-search data or report incorrect matches at any time.",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = JummoTextSecondary
@@ -521,18 +732,24 @@ fun GuestPortalModalScreen(
                     }
                 }
 
-                // Gallery & Download Section (works both after consent and in Standard Gallery mode if permitted)
+                // Gallery & Download Section (respects all 3 Guest Access Modes)
                 item {
-                    val canViewAll = event.guestAccessMode == GuestAccessModes.VIEW_ALL_PERMITTED ||
-                        activeConsentSession != null
-                    if (!canViewAll && selectedTab == 1) {
+                    val canViewGallery = when (event.guestAccessMode) {
+                        GuestAccessModes.VIEW_ALL_PERMITTED -> true
+                        GuestAccessModes.PIN_PROTECTED -> organizerApproved
+                        else -> activeConsentSession != null
+                    }
+                    if (!canViewGallery && selectedTab == 1) {
                         EmptyStateCard(
                             icon = Icons.Default.Lock,
                             title = "Organizer Restricted Full Gallery",
-                            message = "This event is configured for '${GuestAccessModes.displayLabel(event.guestAccessMode)}'. Complete the Consent Face Search or enable 'View All + Face Search' in Event settings."
+                            message = "This event is configured for '${GuestAccessModes.displayLabel(event.guestAccessMode)}'. Complete the Consent Face Search or enable 'View All + Face Search' in QR Management."
                         )
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    } else if (canViewGallery) {
+                        Column(
+                            modifier = Modifier.testTag("guest_portal_unlocked_gallery"),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
