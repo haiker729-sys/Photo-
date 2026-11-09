@@ -7,10 +7,15 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
+concurrency:
+  group: apk-build-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-apk:
     name: Assemble Debug APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout Repository
@@ -22,13 +27,34 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Android SDK
+      - name: Setup Android SDK 35
         uses: android-actions/setup-android@v3
 
-      - name: Setup Gradle 9.3.1
+      - name: Install Android SDK Platform 35 & Build Tools
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Normalize Gradle & SDK Versions for Public GitHub Runners
+        run: |
+          # Replace AI Studio internal mirror versions with public Google Maven stable versions on CI
+          sed -i 's/agp = ".*"/agp = "8.8.2"/' gradle/libs.versions.toml
+          sed -i 's/kotlin = ".*"/kotlin = "2.1.10"/' gradle/libs.versions.toml
+          sed -i 's/googleDevtoolsKsp = ".*"/googleDevtoolsKsp = "2.1.10-1.0.31"/' gradle/libs.versions.toml
+          sed -i 's/coreKtx = ".*"/coreKtx = "1.15.0"/' gradle/libs.versions.toml
+          sed -i 's/junitVersion = ".*"/junitVersion = "1.2.1"/' gradle/libs.versions.toml
+          sed -i 's/espressoCore = ".*"/espressoCore = "3.6.1"/' gradle/libs.versions.toml
+          sed -i 's/firebaseBom = ".*"/firebaseBom = "33.10.0"/' gradle/libs.versions.toml
+          sed -i 's/googleServices = ".*"/googleServices = "4.4.2"/' gradle/libs.versions.toml
+          sed -i 's/robolectric = ".*"/robolectric = "4.14.1"/' gradle/libs.versions.toml
+          sed -i 's/compileSdk { version = release(36) { minorApiLevel = 1 } }/compileSdk = 35/' app/build.gradle.kts
+          sed -i 's/targetSdk = 36/targetSdk = 35/' app/build.gradle.kts
+          sed -i '/kotlin.compiler.execution.strategy=in-process/d' gradle.properties
+
+      - name: Setup Gradle 8.11.1
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.3.1'
+          gradle-version: '8.11.1'
 
       - name: Prepare Debug Keystore & Environment
         run: |
@@ -50,7 +76,7 @@ jobs:
           fi
 
       - name: Build Debug APK with Gradle
-        run: gradle :app:assembleDebug --no-daemon
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload Jummo Photos AI APK Artifact
         uses: actions/upload-artifact@v4
