@@ -306,6 +306,14 @@ service cloud.firestore {
              data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 1000 &&
              data.isActive is bool &&
              data.slideDurationSeconds is int && data.slideDurationSeconds >= 1 && data.slideDurationSeconds <= 30 &&
+             (!('title' in data) || (data.title is string && data.title.size() <= 120)) &&
+             (!('visibility' in data) || (data.visibility in ['ALL', 'SELECTED', 'PLAN', 'DRAFT'])) &&
+             (!('targetPhotographerIds' in data) || (data.targetPhotographerIds is list && data.targetPhotographerIds.size() <= 50)) &&
+             (!('targetPlanIds' in data) || (data.targetPlanIds is list && data.targetPlanIds.size() <= 20)) &&
+             (!('startAt' in data) || data.startAt == null || data.startAt is timestamp) &&
+             (!('endAt' in data) || data.endAt == null || data.endAt is timestamp) &&
+             (!('aspectRatio' in data) || (data.aspectRatio is string && data.aspectRatio.size() <= 20)) &&
+             (!('cropMode' in data) || (data.cropMode is string && data.cropMode.size() <= 30)) &&
              data.createdAt is timestamp && data.createdAt <= request.time &&
              data.updatedAt is timestamp && data.updatedAt <= request.time;
     }
@@ -322,7 +330,9 @@ service cloud.firestore {
                        ]) &&
                        incoming().keys().hasOnly([
                          'userId', 'imageUri', 'storagePath', 'displayOrder',
-                         'isActive', 'slideDurationSeconds', 'createdAt', 'updatedAt'
+                         'isActive', 'slideDurationSeconds', 'createdAt', 'updatedAt',
+                         'title', 'visibility', 'targetPhotographerIds', 'targetPlanIds',
+                         'startAt', 'endAt', 'aspectRatio', 'cropMode'
                        ]) &&
                        isValidHomeBanner(incoming());
 
@@ -334,10 +344,20 @@ service cloud.firestore {
                        incoming().createdAt == existing().createdAt &&
                        incoming().diff(existing()).affectedKeys().hasOnly([
                          'imageUri', 'storagePath', 'displayOrder',
-                         'isActive', 'slideDurationSeconds', 'updatedAt'
+                         'isActive', 'slideDurationSeconds', 'updatedAt',
+                         'title', 'visibility', 'targetPhotographerIds', 'targetPlanIds',
+                         'startAt', 'endAt', 'aspectRatio', 'cropMode'
                        ]);
 
       allow delete: if isSignedIn() && isValidId(bannerId) && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // Global Slider & App Configuration
+    match /appConfig/{configId} {
+      allow get: if isSignedIn() && isValidId(configId);
+      allow list: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(configId) && isAdmin();
+      allow delete: if false;
     }
 
     // 6. WebsiteCustomization validation

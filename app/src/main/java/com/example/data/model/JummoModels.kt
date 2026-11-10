@@ -95,6 +95,35 @@ data class GuestFaceSearchSession(
     @ServerTimestamp val updatedAt: Timestamp? = null
 )
 
+object BannerVisibilityModes {
+    const val ALL = "ALL"
+    const val SELECTED = "SELECTED"
+    const val PLAN = "PLAN"
+    const val DRAFT = "DRAFT"
+
+    val ALL_MODES = listOf(ALL, SELECTED, PLAN, DRAFT)
+
+    fun displayLabel(mode: String): String = when (mode) {
+        ALL -> "All Photographers"
+        SELECTED -> "Selected Photographers"
+        PLAN -> "Selected Plans"
+        DRAFT -> "Hidden / Draft"
+        else -> mode
+    }
+}
+
+@IgnoreExtraProperties
+data class BannerSliderConfig(
+    val autoSlideEnabled: Boolean = true,
+    val slideDurationSeconds: Long = 5L,
+    val infiniteLoop: Boolean = true,
+    val transitionType: String = "SLIDE",
+    val defaultVisibility: String = BannerVisibilityModes.ALL,
+    val bannerTextOverlay: Boolean = false,
+    @ServerTimestamp val updatedAt: Timestamp? = null,
+    val updatedBy: String = ""
+)
+
 @IgnoreExtraProperties
 data class HomeBanner(
     @DocumentId val id: String = "",
@@ -103,10 +132,46 @@ data class HomeBanner(
     val storagePath: String = "",
     val displayOrder: Long = 0L,
     val isActive: Boolean = true,
-    val slideDurationSeconds: Long = 4L,
+    val slideDurationSeconds: Long = 5L,
+    val title: String = "",
+    val visibility: String = BannerVisibilityModes.ALL,
+    val targetPhotographerIds: List<String> = emptyList(),
+    val targetPlanIds: List<String> = emptyList(),
+    val startAt: Timestamp? = null,
+    val endAt: Timestamp? = null,
+    val aspectRatio: String = "16:9",
+    val cropMode: String = "CenterCrop",
     @ServerTimestamp val createdAt: Timestamp? = null,
     @ServerTimestamp val updatedAt: Timestamp? = null
-)
+) {
+    fun computedStatus(now: Timestamp = Timestamp.now()): String {
+        if (!isActive || visibility == BannerVisibilityModes.DRAFT) return "Draft"
+        val start = startAt
+        val end = endAt
+        if (start != null && start > now) return "Scheduled"
+        if (end != null && end <= now) return "Expired"
+        return "Active"
+    }
+
+    fun isCurrentlyVisibleToUser(
+        photographerId: String = "",
+        userPlan: String = "pro_studio",
+        now: Timestamp = Timestamp.now()
+    ): Boolean {
+        if (!isActive || visibility == BannerVisibilityModes.DRAFT) return false
+        val start = startAt
+        val end = endAt
+        if (start != null && start > now) return false
+        if (end != null && end <= now) return false
+        return when (visibility) {
+            BannerVisibilityModes.ALL -> true
+            BannerVisibilityModes.SELECTED -> targetPhotographerIds.isEmpty() || targetPhotographerIds.contains(photographerId)
+            BannerVisibilityModes.PLAN -> targetPlanIds.isEmpty() || targetPlanIds.contains(userPlan)
+            BannerVisibilityModes.DRAFT -> false
+            else -> true
+        }
+    }
+}
 
 object BannerPresets {
     const val PRESET_WEDDING = "preset://wedding_cover"

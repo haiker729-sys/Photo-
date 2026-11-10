@@ -79,8 +79,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Language
+import com.example.data.model.BannerSliderConfig
 import com.example.data.model.GuestFaceSearchSession
 import com.example.data.model.HomeBanner
+import com.google.firebase.Timestamp
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
@@ -121,9 +123,23 @@ fun AdminDashboardScreen(
     uploads: List<PhotoUploadRecord>,
     guestSessions: List<GuestFaceSearchSession>,
     banners: List<HomeBanner> = emptyList(),
+    sliderConfig: BannerSliderConfig = BannerSliderConfig(),
     websiteCustomizations: List<WebsiteCustomization> = emptyList(),
+    onSaveSliderConfig: (BannerSliderConfig) -> Unit = {},
     onUploadMultipleBanners: (List<Uri>) -> Unit = {},
     onAddPresetBanner: (String) -> Unit = {},
+    onSaveAdvancedBanner: (
+        bannerId: String?,
+        title: String,
+        imageUri: String,
+        visibility: String,
+        targetPhotographerIds: List<String>,
+        targetPlanIds: List<String>,
+        startAt: Timestamp?,
+        endAt: Timestamp?,
+        isActive: Boolean,
+        slideDurationSeconds: Long
+    ) -> Unit = { _, _, _, _, _, _, _, _, _, _ -> },
     onToggleBannerActive: (HomeBanner) -> Unit = {},
     onReplaceBannerFromUri: (HomeBanner, Uri) -> Unit = { _, _ -> },
     onReplaceBannerWithPreset: (HomeBanner, String) -> Unit = { _, _ -> },
@@ -459,8 +475,11 @@ fun AdminDashboardScreen(
                 item {
                     AdminBannerManagementSection(
                         banners = banners,
+                        sliderConfig = sliderConfig,
+                        onSaveSliderConfig = onSaveSliderConfig,
                         onUploadMultipleBanners = onUploadMultipleBanners,
                         onAddPresetBanner = onAddPresetBanner,
+                        onSaveAdvancedBanner = onSaveAdvancedBanner,
                         onToggleBannerActive = onToggleBannerActive,
                         onReplaceBannerFromUri = onReplaceBannerFromUri,
                         onReplaceBannerWithPreset = onReplaceBannerWithPreset,

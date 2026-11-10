@@ -2,6 +2,8 @@ package com.example.data.repository
 
 import android.content.Context
 import com.example.R
+import com.example.data.model.BannerSliderConfig
+import com.example.data.model.BannerVisibilityModes
 import com.example.data.model.GuestFaceSearchSession
 import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
@@ -717,12 +719,20 @@ class JummoRepository(private val db: FirebaseFirestore) {
         storagePath: String,
         displayOrder: Long,
         isActive: Boolean = true,
-        slideDurationSeconds: Long = 4L
+        slideDurationSeconds: Long = 5L,
+        title: String = "",
+        visibility: String = BannerVisibilityModes.ALL,
+        targetPhotographerIds: List<String> = emptyList(),
+        targetPlanIds: List<String> = emptyList(),
+        startAt: Timestamp? = null,
+        endAt: Timestamp? = null,
+        aspectRatio: String = "16:9",
+        cropMode: String = "CenterCrop"
     ): Result<String> = runCatching {
         val uid = requireUserId()
         val bannerId = "bnr_${UUID.randomUUID().toString().replace("-", "").take(16)}"
         val docRef = db.collection("home_banners").document(bannerId)
-        val payload = mapOf(
+        val payload = mutableMapOf<String, Any?>(
             "userId" to uid,
             "imageUri" to imageUri.trim().take(500),
             "storagePath" to storagePath.trim().take(300),
@@ -732,6 +742,15 @@ class JummoRepository(private val db: FirebaseFirestore) {
             "createdAt" to FieldValue.serverTimestamp(),
             "updatedAt" to FieldValue.serverTimestamp()
         )
+        if (title.isNotBlank()) payload["title"] = title.trim().take(120)
+        if (visibility.isNotBlank()) payload["visibility"] = visibility
+        if (targetPhotographerIds.isNotEmpty()) payload["targetPhotographerIds"] = targetPhotographerIds.take(50)
+        if (targetPlanIds.isNotEmpty()) payload["targetPlanIds"] = targetPlanIds.take(20)
+        if (startAt != null) payload["startAt"] = startAt
+        if (endAt != null) payload["endAt"] = endAt
+        if (aspectRatio.isNotBlank()) payload["aspectRatio"] = aspectRatio
+        if (cropMode.isNotBlank()) payload["cropMode"] = cropMode
+
         try {
             docRef.set(payload).await()
             bannerId
@@ -747,13 +766,21 @@ class JummoRepository(private val db: FirebaseFirestore) {
         requireUserId()
         require(banner.id.isNotBlank()) { "Banner ID must not be blank" }
         val docRef = db.collection("home_banners").document(banner.id)
-        val payload = mapOf(
+        val payload = mutableMapOf<String, Any?>(
             "imageUri" to banner.imageUri.trim().take(500),
             "storagePath" to banner.storagePath.trim().take(300),
             "displayOrder" to banner.displayOrder.coerceIn(0L, 1000L),
             "isActive" to banner.isActive,
             "slideDurationSeconds" to banner.slideDurationSeconds.coerceIn(1L, 30L),
-            "updatedAt" to FieldValue.serverTimestamp()
+            "updatedAt" to FieldValue.serverTimestamp(),
+            "title" to banner.title.trim().take(120),
+            "visibility" to banner.visibility,
+            "targetPhotographerIds" to banner.targetPhotographerIds.take(50),
+            "targetPlanIds" to banner.targetPlanIds.take(20),
+            "startAt" to banner.startAt,
+            "endAt" to banner.endAt,
+            "aspectRatio" to banner.aspectRatio,
+            "cropMode" to banner.cropMode
         )
         try {
             docRef.update(payload).await()
@@ -767,22 +794,25 @@ class JummoRepository(private val db: FirebaseFirestore) {
 
     suspend fun reorderHomeBanners(orderedBanners: List<HomeBanner>): Result<Unit> = runCatching {
         requireUserId()
+        val batch = db.batch()
         for ((index, banner) in orderedBanners.withIndex()) {
             if (banner.id.isBlank()) continue
             val docRef = db.collection("home_banners").document(banner.id)
-            try {
-                docRef.update(
-                    mapOf(
-                        "displayOrder" to index.toLong().coerceIn(0L, 1000L),
-                        "updatedAt" to FieldValue.serverTimestamp()
-                    )
-                ).await()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                handleFirestoreError(e, OperationType.UPDATE, docRef.path)
-                throw e
-            }
+            batch.update(
+                docRef,
+                mapOf(
+                    "displayOrder" to index.toLong().coerceIn(0L, 1000L),
+                    "updatedAt" to FieldValue.serverTimestamp()
+                )
+            )
+        }
+        try {
+            batch.commit().await()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            handleFirestoreError(e, OperationType.UPDATE, "home_banners_batch_reorder")
+            throw e
         }
     }
 
@@ -792,26 +822,29 @@ class JummoRepository(private val db: FirebaseFirestore) {
     ): Result<Unit> = runCatching {
         requireUserId()
         val safeDuration = slideDurationSeconds.coerceIn(1L, 30L)
+        val batch = db.batch()
         for (banner in banners) {
             if (banner.id.isBlank()) continue
             val docRef = db.collection("home_banners").document(banner.id)
-            try {
-                docRef.update(
-                    mapOf(
-                        "slideDurationSeconds" to safeDuration,
-                        "updatedAt" to FieldValue.serverTimestamp()
-                    )
-                ).await()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                handleFirestoreError(e, OperationType.UPDATE, docRef.path)
-                throw e
-            }
+            batch.update(
+                docRef,
+                mapOf(
+                    "slideDurationSeconds" to safeDuration,
+                    "updatedAt" to FieldValue.serverTimestamp()
+                )
+            )
+        }
+        try {
+            batch.commit().await()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            handleFirestoreError(e, OperationType.UPDATE, "home_banners_duration_update")
+            throw e
         }
     }
 
-    suspend fun deleteHomeBanner(bannerId: String): Result<Unit> = runCatching {
+    suspend fun deleteHomeBanner(bannerId: String, storagePath: String = ""): Result<Unit> = runCatching {
         requireUserId()
         require(bannerId.isNotBlank()) { "Banner ID must not be blank" }
         val docRef = db.collection("home_banners").document(bannerId)
@@ -823,6 +856,36 @@ class JummoRepository(private val db: FirebaseFirestore) {
             handleFirestoreError(e, OperationType.DELETE, docRef.path)
             throw e
         }
+    }
+
+    fun observeSliderConfig(): Flow<BannerSliderConfig> = flow {
+        val path = "appConfig/bannerSlider"
+        emitAll(
+            db.document(path)
+                .snapshots()
+                .map { snapshot ->
+                    snapshot.toObject(BannerSliderConfig::class.java) ?: BannerSliderConfig()
+                }
+                .catch {
+                    emit(BannerSliderConfig())
+                }
+        )
+    }
+
+    suspend fun saveSliderConfig(config: BannerSliderConfig): Result<Unit> = runCatching {
+        val uid = requireUserId()
+        val docRef = db.collection("appConfig").document("bannerSlider")
+        val payload = mapOf(
+            "autoSlideEnabled" to config.autoSlideEnabled,
+            "slideDurationSeconds" to config.slideDurationSeconds.coerceIn(1L, 30L),
+            "infiniteLoop" to config.infiniteLoop,
+            "transitionType" to config.transitionType,
+            "defaultVisibility" to config.defaultVisibility,
+            "bannerTextOverlay" to false,
+            "updatedAt" to FieldValue.serverTimestamp(),
+            "updatedBy" to uid
+        )
+        docRef.set(payload).await()
     }
 
     // --- Photographer Website Customizer & Versioned Publishing ---

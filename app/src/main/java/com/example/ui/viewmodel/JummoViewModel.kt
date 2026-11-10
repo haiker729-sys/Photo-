@@ -15,6 +15,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.model.BannerPresets
+import com.example.data.model.BannerSliderConfig
+import com.example.data.model.BannerVisibilityModes
 import com.example.data.model.GuestFaceSearchSession
 import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
@@ -23,6 +25,7 @@ import com.example.data.model.PhotographerProfile
 import com.example.data.model.UiState
 import com.example.data.model.WebsiteCustomization
 import com.example.data.model.WebsiteVersionSnapshot
+import com.google.firebase.Timestamp
 import com.example.data.repository.JummoRepository
 import com.example.worker.PhotoUploadScheduler
 import com.google.firebase.firestore.FirebaseFirestoreException
@@ -190,6 +193,14 @@ class JummoViewModel(
                 initialValue = UiState.Loading
             )
 
+    val sliderConfigState: StateFlow<BannerSliderConfig> =
+        repository.observeSliderConfig()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                initialValue = BannerSliderConfig()
+            )
+
     val websiteCustomizationsState: StateFlow<UiState<List<WebsiteCustomization>>> =
         repository.observeWebsiteCustomizations(currentUserId)
             .map<List<WebsiteCustomization>, UiState<List<WebsiteCustomization>>> { list ->
@@ -252,17 +263,19 @@ class JummoViewModel(
         val existing = repository.getUserHomeBanners().getOrNull() ?: return
         if (existing.isEmpty()) {
             val defaults = listOf(
-                BannerPresets.PRESET_WEDDING to "banners/preset_wedding_cover.jpg",
-                BannerPresets.PRESET_FESTIVAL to "banners/preset_festival_cover.jpg",
-                BannerPresets.PRESET_STUDIO to "banners/preset_hero_studio.jpg"
+                Triple("Royal Wedding Highlights", BannerPresets.PRESET_WEDDING, "banners/preset_wedding_cover.jpg"),
+                Triple("Live Festival Experience", BannerPresets.PRESET_FESTIVAL, "banners/preset_festival_cover.jpg"),
+                Triple("Luxury Editorial Studio", BannerPresets.PRESET_STUDIO, "banners/preset_hero_studio.jpg")
             )
-            defaults.forEachIndexed { idx, (uri, path) ->
+            defaults.forEachIndexed { idx, (title, uri, path) ->
                 repository.createHomeBanner(
                     imageUri = uri,
                     storagePath = path,
                     displayOrder = idx.toLong(),
                     isActive = true,
-                    slideDurationSeconds = 4L
+                    slideDurationSeconds = 5L,
+                    title = title,
+                    visibility = BannerVisibilityModes.ALL
                 )
             }
         }
@@ -907,7 +920,9 @@ class JummoViewModel(
                         storagePath = storagePath,
                         displayOrder = nextOrder,
                         isActive = true,
-                        slideDurationSeconds = currentDuration
+                        slideDurationSeconds = currentDuration,
+                        title = "Gallery Banner #${nextOrder + 1}",
+                        visibility = BannerVisibilityModes.ALL
                     )
                     if (createRes.isSuccess) {
                         nextOrder++
@@ -928,7 +943,7 @@ class JummoViewModel(
 
     fun addPresetHomeBanner(
         presetUri: String,
-        slideDurationSeconds: Long = 4L
+        slideDurationSeconds: Long = 5L
     ) {
         viewModelScope.launch {
             _isBusy.value = true
@@ -941,7 +956,9 @@ class JummoViewModel(
                 storagePath = storagePath,
                 displayOrder = nextOrder,
                 isActive = true,
-                slideDurationSeconds = currentDuration
+                slideDurationSeconds = currentDuration,
+                title = "Studio Preset #${nextOrder + 1}",
+                visibility = BannerVisibilityModes.ALL
             )
             _isBusy.value = false
             result.onSuccess {
@@ -1058,6 +1075,83 @@ class JummoViewModel(
                 _statusBanner.value = "Banner deleted."
             }.onFailure { err ->
                 _statusBanner.value = "Failed to delete banner: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun saveSliderConfig(config: BannerSliderConfig) {
+        viewModelScope.launch {
+            repository.saveSliderConfig(config).onSuccess {
+                _statusBanner.value = "Slider configuration updated."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to update slider configuration: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun saveAdvancedHomeBanner(
+        bannerId: String?,
+        title: String,
+        imageUri: String,
+        visibility: String,
+        targetPhotographerIds: List<String> = emptyList(),
+        targetPlanIds: List<String> = emptyList(),
+        startAt: Timestamp? = null,
+        endAt: Timestamp? = null,
+        isActive: Boolean = true,
+        slideDurationSeconds: Long = 5L
+    ) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            if (bannerId.isNullOrBlank()) {
+                val currentBanners = (bannersState.value as? UiState.Success)?.data.orEmpty()
+                val nextOrder = (currentBanners.maxOfOrNull { it.displayOrder } ?: -1L) + 1L
+                val storagePath = "banners/${System.currentTimeMillis()}_slider.jpg"
+                val result = repository.createHomeBanner(
+                    imageUri = imageUri,
+                    storagePath = storagePath,
+                    displayOrder = nextOrder,
+                    isActive = isActive,
+                    slideDurationSeconds = slideDurationSeconds,
+                    title = title,
+                    visibility = visibility,
+                    targetPhotographerIds = targetPhotographerIds,
+                    targetPlanIds = targetPlanIds,
+                    startAt = startAt,
+                    endAt = endAt
+                )
+                _isBusy.value = false
+                result.onSuccess {
+                    _statusBanner.value = "Created banner \"${title.ifBlank { "Home Banner" }}\"."
+                }.onFailure { err ->
+                    _statusBanner.value = "Failed to create banner: ${err.localizedMessage}"
+                }
+            } else {
+                val currentBanners = (bannersState.value as? UiState.Success)?.data.orEmpty()
+                val existing = currentBanners.find { it.id == bannerId }
+                val updated = (existing ?: HomeBanner(
+                    id = bannerId,
+                    userId = currentUserId,
+                    imageUri = imageUri,
+                    storagePath = "banners/$bannerId.jpg"
+                )).copy(
+                    title = title,
+                    imageUri = imageUri,
+                    visibility = visibility,
+                    targetPhotographerIds = targetPhotographerIds,
+                    targetPlanIds = targetPlanIds,
+                    startAt = startAt,
+                    endAt = endAt,
+                    isActive = isActive,
+                    slideDurationSeconds = slideDurationSeconds
+                )
+                val result = repository.updateHomeBanner(updated)
+                _isBusy.value = false
+                result.onSuccess {
+                    _statusBanner.value = "Updated banner \"${title.ifBlank { "Home Banner" }}\"."
+                }.onFailure { err ->
+                    _statusBanner.value = "Failed to update banner: ${err.localizedMessage}"
+                }
             }
         }
     }

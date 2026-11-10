@@ -72,8 +72,10 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.R
 import com.example.data.model.BannerPresets
+import com.example.data.model.BannerSliderConfig
 import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
+import com.google.firebase.Timestamp
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
 import com.example.ui.components.EmptyStateCard
@@ -106,6 +108,7 @@ fun HomeDashboardScreen(
     events: List<PhotoEvent>,
     uploads: List<PhotoUploadRecord>,
     banners: List<HomeBanner> = emptyList(),
+    sliderConfig: BannerSliderConfig = BannerSliderConfig(),
     onCreateNewEventClick: () -> Unit,
     onQuickCameraClick: () -> Unit = {},
     onOpenEventDetails: (PhotoEvent) -> Unit = {},
@@ -156,8 +159,12 @@ fun HomeDashboardScreen(
         JummoViewModel.computeStorageUsage(context, uploads)
     }
 
-    val activeBanners = remember(banners) {
-        banners.filter { it.isActive }.sortedBy { it.displayOrder }
+    val now = remember { Timestamp.now() }
+    val activeBanners = remember(banners, profile) {
+        val currentUid = profile?.userId.orEmpty()
+        banners
+            .filter { it.isCurrentlyVisibleToUser(currentUid, "pro_studio", now) }
+            .sortedBy { it.displayOrder }
     }
 
     Box(
@@ -334,7 +341,8 @@ fun HomeDashboardScreen(
             // 2. Premium Image-Only Banner Slider (STRICTLY IMAGE-ONLY — Zero Text/Captions/Logos/Buttons Over Image)
             item {
                 HomeImageOnlyBannerCarousel(
-                    activeBanners = activeBanners
+                    activeBanners = activeBanners,
+                    sliderConfig = sliderConfig
                 )
             }
 
@@ -696,11 +704,16 @@ fun HomeDashboardScreen(
 @Composable
 fun HomeImageOnlyBannerCarousel(
     activeBanners: List<HomeBanner>,
+    sliderConfig: BannerSliderConfig = BannerSliderConfig(),
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val slideDurationSeconds = remember(activeBanners) {
-        (activeBanners.firstOrNull()?.slideDurationSeconds ?: 4L).coerceIn(1L, 30L)
+    val slideDurationSeconds = remember(activeBanners, sliderConfig) {
+        if (sliderConfig.slideDurationSeconds in 1L..30L) {
+            sliderConfig.slideDurationSeconds
+        } else {
+            (activeBanners.firstOrNull()?.slideDurationSeconds ?: 5L).coerceIn(1L, 30L)
+        }
     }
     val pagerState = rememberPagerState(
         initialPage = 0,
@@ -738,8 +751,8 @@ fun HomeImageOnlyBannerCarousel(
                     )
                 }
             } else {
-                LaunchedEffect(activeBanners.size, slideDurationSeconds) {
-                    if (activeBanners.size > 1) {
+                LaunchedEffect(activeBanners.size, slideDurationSeconds, sliderConfig.autoSlideEnabled) {
+                    if (activeBanners.size > 1 && sliderConfig.autoSlideEnabled) {
                         while (true) {
                             delay(slideDurationSeconds * 1000L)
                             val nextPage = (pagerState.currentPage + 1) % activeBanners.size

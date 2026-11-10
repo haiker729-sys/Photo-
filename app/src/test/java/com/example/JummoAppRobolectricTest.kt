@@ -16,6 +16,8 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.model.BannerPresets
+import com.example.data.model.BannerSliderConfig
+import com.example.data.model.BannerVisibilityModes
 import com.example.data.model.GuestAccessModes
 import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
@@ -939,7 +941,7 @@ class JummoAppRobolectricTest {
         val adminList = composeTestRule.onNodeWithTag("admin_dashboard_list")
         adminList.performScrollToNode(hasTestTag("admin_banner_management_card"))
         composeTestRule.onNodeWithTag("admin_banner_management_card").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Home Banner Management").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Banner Slider Manager").assertIsDisplayed()
 
         // 2. Change Auto Slide Duration to 5s
         composeTestRule.onNodeWithTag("admin_banner_duration_5s").performScrollTo().performClick()
@@ -963,12 +965,14 @@ class JummoAppRobolectricTest {
         composeTestRule.waitForIdle()
         assertEquals(3, bannersState.value.size)
 
-        // 6. Deactivate bnr_alpha and delete bnr_added_2
+        // 6. Deactivate bnr_alpha and delete bnr_added_2 with confirmation
         composeTestRule.onNodeWithTag("admin_banner_toggle_bnr_alpha").performScrollTo().performClick()
         composeTestRule.waitForIdle()
         assertFalse(bannersState.value.first { it.id == "bnr_alpha" }.isActive)
 
         composeTestRule.onNodeWithTag("admin_banner_delete_bnr_added_2").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("admin_confirm_delete_banner_button").performClick()
         composeTestRule.waitForIdle()
         assertEquals(2, bannersState.value.size)
 
@@ -976,6 +980,136 @@ class JummoAppRobolectricTest {
         showAdmin.value = false
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("home_banner_slide_bnr_beta").assertIsDisplayed()
+    }
+
+    @Test
+    fun adminDashboardScreen_advancedBannerSliderManager_overviewFilterAndAddModal() {
+        val bannersState = androidx.compose.runtime.mutableStateOf(
+            listOf(
+                HomeBanner(
+                    id = "bnr_101",
+                    userId = "u1",
+                    title = "Royal Wedding Gala",
+                    imageUri = BannerPresets.PRESET_WEDDING,
+                    displayOrder = 0L,
+                    isActive = true,
+                    visibility = BannerVisibilityModes.ALL,
+                    slideDurationSeconds = 5L
+                ),
+                HomeBanner(
+                    id = "bnr_102",
+                    userId = "u1",
+                    title = "Live Festival Experience",
+                    imageUri = BannerPresets.PRESET_FESTIVAL,
+                    displayOrder = 1L,
+                    isActive = false,
+                    visibility = BannerVisibilityModes.DRAFT,
+                    slideDurationSeconds = 5L
+                )
+            )
+        )
+        val sliderConfigState = androidx.compose.runtime.mutableStateOf(
+            BannerSliderConfig(
+                autoSlideEnabled = true,
+                slideDurationSeconds = 5L,
+                infiniteLoop = true
+            )
+        )
+
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                AdminDashboardScreen(
+                    profile = PhotographerProfile(displayName = "Meraj Sir"),
+                    events = emptyList(),
+                    uploads = emptyList(),
+                    guestSessions = emptyList(),
+                    banners = bannersState.value,
+                    sliderConfig = sliderConfigState.value,
+                    onSaveSliderConfig = { sliderConfigState.value = it },
+                    onSaveAdvancedBanner = { bannerId, title, imageUri, visibility, _, _, startAt, endAt, isActive, duration ->
+                        val nextIdx = bannersState.value.size
+                        val newBanner = HomeBanner(
+                            id = bannerId ?: "bnr_new_$nextIdx",
+                            userId = "u1",
+                            title = title,
+                            imageUri = imageUri,
+                            visibility = visibility,
+                            startAt = startAt,
+                            endAt = endAt,
+                            isActive = isActive,
+                            slideDurationSeconds = duration,
+                            displayOrder = nextIdx.toLong()
+                        )
+                        bannersState.value = bannersState.value + newBanner
+                    },
+                    onToggleBannerActive = { target ->
+                        bannersState.value = bannersState.value.map {
+                            if (it.id == target.id) it.copy(isActive = !it.isActive) else it
+                        }
+                    },
+                    onReorderBanners = { reordered ->
+                        bannersState.value = reordered
+                    },
+                    onDeleteBanner = { target ->
+                        bannersState.value = bannersState.value.filter { it.id != target.id }
+                    },
+                    onNavigateToTab = {},
+                    onClose = {}
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        val adminList = composeTestRule.onNodeWithTag("admin_dashboard_list")
+        adminList.performScrollToNode(hasTestTag("admin_banner_management_card"))
+
+        // 1. Overview Metrics Tiles
+        composeTestRule.onNodeWithTag("admin_banner_overview_metrics").assertIsDisplayed()
+        composeTestRule.onNodeWithText("BANNER OVERVIEW").assertIsDisplayed()
+
+        // 2. Filter Tabs
+        // 2. Filter Tabs
+        composeTestRule.onNodeWithTag("admin_banner_filter_tabs").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("admin_banner_filter_ACTIVE").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("Royal Wedding Gala").performScrollTo().assertIsDisplayed()
+
+        // 3. Slider Settings Card: Toggle Infinite Loop & Duration
+        composeTestRule.onNodeWithTag("admin_banner_slider_config_card").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithTag("admin_banner_infinite_loop_toggle").performClick()
+        composeTestRule.waitForIdle()
+        assertFalse(sliderConfigState.value.infiniteLoop)
+
+        composeTestRule.onNodeWithTag("admin_banner_duration_7s").performClick()
+        composeTestRule.waitForIdle()
+        assertEquals(7L, sliderConfigState.value.slideDurationSeconds)
+
+        // 4. Open Dedicated Preview Modal for first banner
+        composeTestRule.onNodeWithTag("admin_banner_filter_ALL").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("admin_banner_preview_bnr_101").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("dedicated_banner_preview_surface").assertIsDisplayed()
+        composeTestRule.onNodeWithText("ADMIN METADATA AUDIT").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Done").performClick()
+        composeTestRule.waitForIdle()
+
+        // 5. Open Add Banner Dialog and save a new banner
+        composeTestRule.onNodeWithTag("admin_add_new_banner_button").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("admin_banner_title_input")
+            .performTextReplacement("Editorial Fashion Shoot")
+        composeTestRule.onNodeWithTag("admin_visibility_mode_${BannerVisibilityModes.DRAFT}")
+            .performScrollTo()
+            .performClick()
+        composeTestRule.onNodeWithTag("admin_save_banner_button").performClick()
+        composeTestRule.waitForIdle()
+
+        // Verify the newly created banner is persisted into bannersState
+        assertEquals(3, bannersState.value.size)
+        val created = bannersState.value.last()
+        assertEquals("Editorial Fashion Shoot", created.title)
+        assertEquals(BannerVisibilityModes.DRAFT, created.visibility)
     }
 
     @Test

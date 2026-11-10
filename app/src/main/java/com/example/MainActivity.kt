@@ -399,6 +399,7 @@ fun JummoAuthenticatedShell(
     val uploadsState by viewModel.uploadsState.collectAsStateWithLifecycle()
     val guestConsentsState by viewModel.guestConsentsState.collectAsStateWithLifecycle()
     val bannersState by viewModel.bannersState.collectAsStateWithLifecycle()
+    val sliderConfig by viewModel.sliderConfigState.collectAsStateWithLifecycle()
     val websiteCustomizationsState by viewModel.websiteCustomizationsState.collectAsStateWithLifecycle()
     val websiteVersionsState by viewModel.websiteVersionsState.collectAsStateWithLifecycle()
     val selectedEventId by viewModel.selectedEventId.collectAsStateWithLifecycle()
@@ -480,12 +481,30 @@ fun JummoAuthenticatedShell(
             uploads = uploads,
             guestSessions = guestConsents,
             banners = banners,
+            sliderConfig = sliderConfig,
             websiteCustomizations = websiteCustomizations,
+            onSaveSliderConfig = { config ->
+                viewModel.saveSliderConfig(config)
+            },
             onUploadMultipleBanners = { uris ->
                 viewModel.uploadHomeBannersFromUris(context, uris)
             },
             onAddPresetBanner = { presetUri ->
                 viewModel.addPresetHomeBanner(presetUri)
+            },
+            onSaveAdvancedBanner = { bannerId, title, imageUri, visibility, targetPhotographerIds, targetPlanIds, startAt, endAt, isActive, duration ->
+                viewModel.saveAdvancedHomeBanner(
+                    bannerId = bannerId,
+                    title = title,
+                    imageUri = imageUri,
+                    visibility = visibility,
+                    targetPhotographerIds = targetPhotographerIds,
+                    targetPlanIds = targetPlanIds,
+                    startAt = startAt,
+                    endAt = endAt,
+                    isActive = isActive,
+                    slideDurationSeconds = duration
+                )
             },
             onToggleBannerActive = { banner ->
                 viewModel.toggleHomeBannerActive(banner)
@@ -674,6 +693,7 @@ fun JummoAuthenticatedShell(
                                 events = events,
                                 uploads = uploads,
                                 banners = banners,
+                                sliderConfig = sliderConfig,
                                 onCreateNewEventClick = {
                                     openCreateEventModal = true
                                     currentTab = 1
