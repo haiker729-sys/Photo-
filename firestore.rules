@@ -128,6 +128,16 @@ service cloud.firestore {
                data.driveSyncStatus == 'Pending' ||
                data.driveSyncStatus == 'NotConnected'
              ) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
+             (!('storageDestination' in data) || (data.storageDestination is string && (
+               data.storageDestination == 'Phone Folder' ||
+               data.storageDestination == 'Google Drive' ||
+               data.storageDestination == 'Both'
+             ))) &&
+             (!('guestPin' in data) || (data.guestPin is string && data.guestPin.size() <= 30)) &&
+             (!('phoneFolderPath' in data) || (data.phoneFolderPath is string && data.phoneFolderPath.size() <= 500)) &&
+             (!('driveFolderId' in data) || (data.driveFolderId is string && data.driveFolderId.size() <= 200)) &&
+             (!('downloadEnabled' in data) || (data.downloadEnabled is bool)) &&
              data.createdAt is timestamp && data.createdAt <= request.time &&
              data.updatedAt is timestamp && data.updatedAt <= request.time;
     }
@@ -150,7 +160,9 @@ service cloud.firestore {
                          'coverType', 'coverUri', 'status', 'qrCodeValue', 'qrEnabled',
                          'qrExpirationDate', 'guestAccessMode', 'guestAllowDownload',
                          'totalPhotos', 'uploadedPhotos', 'pendingPhotos', 'failedPhotos',
-                         'driveSyncStatus', 'createdAt', 'updatedAt'
+                         'driveSyncStatus', 'description', 'storageDestination', 'guestPin',
+                         'phoneFolderPath', 'driveFolderId', 'downloadEnabled',
+                         'createdAt', 'updatedAt'
                        ]) &&
                        isValidPhotoEvent(incoming());
 
@@ -165,7 +177,9 @@ service cloud.firestore {
                          'coverType', 'coverUri', 'status', 'qrCodeValue', 'qrEnabled',
                          'qrExpirationDate', 'guestAccessMode', 'guestAllowDownload',
                          'totalPhotos', 'uploadedPhotos', 'pendingPhotos', 'failedPhotos',
-                         'driveSyncStatus', 'updatedAt'
+                         'driveSyncStatus', 'description', 'storageDestination', 'guestPin',
+                         'phoneFolderPath', 'driveFolderId', 'downloadEnabled',
+                         'updatedAt'
                        ]);
 
       allow delete: if isSignedIn() && isValidId(eventId) && (existing().userId == request.auth.uid || isAdmin());
@@ -193,6 +207,7 @@ service cloud.firestore {
                data.status == 'Uploaded' ||
                data.status == 'Pending' ||
                data.status == 'Uploading' ||
+               data.status == 'Verifying' ||
                data.status == 'Paused' ||
                data.status == 'Failed'
              ) &&

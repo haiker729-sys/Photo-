@@ -250,7 +250,7 @@ fun HomeDashboardScreen(
                                     Icon(
                                         imageVector = Icons.Default.NotificationsNone,
                                         contentDescription = "Upload Queue Notifications",
-                                        tint = Color.White,
+                                        tint = JummoTextPrimary,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
@@ -280,10 +280,10 @@ fun HomeDashboardScreen(
                                     .clip(CircleShape)
                                     .background(
                                         Brush.linearGradient(
-                                            colors = listOf(JummoVioletBright, JummoElevatedPurple)
+                                            colors = listOf(JummoVioletPrimary, JummoVioletBright)
                                         )
                                     )
-                                    .border(1.25.dp, JummoGoldBright, CircleShape)
+                                    .border(1.25.dp, JummoBorderSubtle, CircleShape)
                                     .clickable { onOpenDriveSettings() }
                                     .testTag("home_profile_avatar"),
                                 contentAlignment = Alignment.Center
@@ -356,7 +356,7 @@ fun HomeDashboardScreen(
                         onClick = onCreateNewEventClick,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = JummoGoldBright,
-                            contentColor = JummoObsidian
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(13.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
@@ -383,10 +383,10 @@ fun HomeDashboardScreen(
                     Button(
                         onClick = onQuickCameraClick,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = JummoVioletPrimary,
+                            containerColor = JummoVioletBright,
                             contentColor = Color.White
                         ),
-                        border = BorderStroke(1.dp, JummoBorderGlow),
+                        border = BorderStroke(1.dp, JummoBorderSubtle),
                         shape = RoundedCornerShape(13.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                         modifier = Modifier
@@ -515,20 +515,20 @@ fun HomeDashboardScreen(
                                         Text(
                                             text = "Google Drive",
                                             style = MaterialTheme.typography.titleSmall,
-                                            color = Color.White,
+                                            color = JummoTextPrimary,
                                             fontWeight = FontWeight.Bold,
                                             maxLines = 1
                                         )
                                         Text(
                                             text = if (driveConnected) "• Connected" else "• Not Connected",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = if (driveConnected) JummoSuccessGreen else JummoTextMuted,
+                                            color = if (driveConnected) JummoSuccessGreen else JummoTextSecondary,
                                             fontWeight = FontWeight.SemiBold,
                                             maxLines = 1
                                         )
                                     }
                                     Text(
-                                        text = "${storageMetrics.formatBytes(storageMetrics.combinedManagedBytes)} used • /${profile?.driveFolderName ?: "Jummo_Events_Cloud"}",
+                                        text = "${storageMetrics.formatBytes(storageMetrics.combinedManagedBytes)} • /${profile?.driveFolderName ?: "Jummo_Events_Cloud"}",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = JummoTextSecondary,
                                         maxLines = 1,
@@ -543,7 +543,7 @@ fun HomeDashboardScreen(
                                     LinearProgressIndicator(
                                         progress = { syncRatio },
                                         color = if (driveConnected) JummoSuccessGreen else JummoGoldBright,
-                                        trackColor = JummoDeepPurple,
+                                        trackColor = JummoBorderSubtle,
                                         modifier = Modifier
                                             .width(136.dp)
                                             .height(5.dp)
@@ -559,21 +559,14 @@ fun HomeDashboardScreen(
                                     .clip(RoundedCornerShape(9.dp))
                                     .clickable { onOpenDriveSettings() }
                                     .testTag("drive_action_button"),
-                                color = if (driveConnected) {
-                                    JummoElevatedPurple
-                                } else {
-                                    JummoGoldBright
-                                },
-                                border = BorderStroke(
-                                    0.75.dp,
-                                    if (driveConnected) JummoBorderSubtle else JummoGoldBright
-                                ),
+                                color = JummoVioletPrimary,
+                                border = BorderStroke(0.75.dp, JummoBorderGlow),
                                 shape = RoundedCornerShape(9.dp)
                             ) {
                                 Text(
                                     text = if (driveConnected) "Manage" else "Connect",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (driveConnected) Color.White else JummoObsidian,
+                                    color = Color.White,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                 )
@@ -658,14 +651,14 @@ fun HomeDashboardScreen(
                 item {
                     EmptyStateCard(
                         icon = Icons.Default.Event,
-                        title = "No Events Created Yet",
-                        message = "Create your first event to generate a branded QR code and start shooting.",
+                        title = "No Events Yet",
+                        message = "Create an event to start shooting.",
                         actionButton = {
                             Button(
                                 onClick = onCreateNewEventClick,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = JummoGoldBright,
-                                    contentColor = JummoObsidian
+                                    contentColor = Color.White
                                 ),
                                 shape = RoundedCornerShape(10.dp),
                                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
@@ -932,7 +925,7 @@ private fun RecentEventSummaryCard(
                     Text(
                         text = event.name,
                         style = MaterialTheme.typography.titleSmall,
-                        color = Color.White,
+                        color = JummoTextPrimary,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -961,7 +954,7 @@ private fun RecentEventSummaryCard(
                     Text(
                         text = "${event.totalPhotos} Photos",
                         style = MaterialTheme.typography.labelMedium,
-                        color = JummoVioletBright,
+                        color = JummoVioletPrimary,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -974,8 +967,8 @@ private fun RecentEventSummaryCard(
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable { onOpenQr() }
                                 .testTag("recent_event_qr_${event.id}"),
-                            color = JummoElevatedPurple,
-                            border = BorderStroke(0.75.dp, JummoBorderSubtle),
+                            color = JummoVioletPrimary,
+                            border = BorderStroke(0.75.dp, JummoBorderGlow),
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Row(
@@ -985,7 +978,7 @@ private fun RecentEventSummaryCard(
                                 Icon(
                                     imageVector = Icons.Default.QrCode2,
                                     contentDescription = "Event QR",
-                                    tint = JummoVioletBright,
+                                    tint = Color.White,
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))

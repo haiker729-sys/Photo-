@@ -119,6 +119,7 @@ import com.example.ui.theme.JummoErrorRed
 import com.example.ui.theme.JummoGoldBright
 import com.example.ui.theme.JummoObsidian
 import com.example.ui.theme.JummoSuccessGreen
+import com.example.ui.theme.JummoTextPrimary
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
 import com.example.ui.theme.JummoVioletPrimary
@@ -313,7 +314,7 @@ fun PhotographerWebsiteCustomizerScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White,
+                            tint = JummoTextPrimary,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -322,7 +323,7 @@ fun PhotographerWebsiteCustomizerScreen(
                         Text(
                             text = "Website Customizer",
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color.White,
+                            color = JummoTextPrimary,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -389,14 +390,14 @@ fun PhotographerWebsiteCustomizerScreen(
                                     Icon(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = null,
-                                        tint = JummoGoldBright,
+                                        tint = Color.White,
                                         modifier = Modifier.size(13.dp)
                                     )
                                 }
                                 Text(
                                     text = evt.name,
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = Color.White,
+                                    color = if (isSelected) Color.White else JummoTextPrimary,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                 )
                             }
@@ -530,14 +531,14 @@ fun PhotographerWebsiteCustomizerScreen(
                                     Icon(
                                         imageVector = Icons.Default.Edit,
                                         contentDescription = null,
-                                        tint = if (isEdit) JummoGoldBright else JummoTextSecondary,
+                                        tint = if (isEdit) Color.White else JummoTextSecondary,
                                         modifier = Modifier.size(15.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "Customize Website",
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = Color.White,
+                                        color = if (isEdit) Color.White else JummoTextPrimary,
                                         fontWeight = if (isEdit) FontWeight.Bold else FontWeight.Medium
                                     )
                                 }
@@ -560,14 +561,14 @@ fun PhotographerWebsiteCustomizerScreen(
                                     Icon(
                                         imageVector = Icons.Default.Visibility,
                                         contentDescription = null,
-                                        tint = if (isPreview) JummoGoldBright else JummoTextSecondary,
+                                        tint = if (isPreview) Color.White else JummoTextSecondary,
                                         modifier = Modifier.size(15.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "Live Website Preview",
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = Color.White,
+                                        color = if (isPreview) Color.White else JummoTextPrimary,
                                         fontWeight = if (isPreview) FontWeight.Bold else FontWeight.Medium
                                     )
                                 }
@@ -692,7 +693,7 @@ fun PhotographerWebsiteCustomizerScreen(
                         Text(
                             text = "Save Draft",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White,
+                            color = JummoTextPrimary,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -718,7 +719,7 @@ fun PhotographerWebsiteCustomizerScreen(
                         Text(
                             text = "Live Preview",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White,
+                            color = JummoTextPrimary,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -732,7 +733,7 @@ fun PhotographerWebsiteCustomizerScreen(
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = JummoGoldBright,
-                            contentColor = JummoObsidian
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
@@ -855,13 +856,13 @@ private fun ViewportChip(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (selected) JummoGoldBright else JummoTextSecondary,
+                tint = if (selected) Color.White else JummoTextSecondary,
                 modifier = Modifier.size(12.dp)
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White,
+                color = if (selected) Color.White else JummoTextPrimary,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
             )
         }
@@ -933,7 +934,7 @@ private fun WebsiteCustomizerEditorPanel(
                             Text(
                                 text = "A. Website Identity & Branding",
                                 style = MaterialTheme.typography.titleSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -953,7 +954,7 @@ private fun WebsiteCustomizerEditorPanel(
                                     onUpdateDraft(draftConfig.copy(brandingEnabled = it))
                                 },
                                 colors = SwitchDefaults.colors(
-                                    checkedThumbColor = JummoObsidian,
+                                    checkedThumbColor = Color.White,
                                     checkedTrackColor = JummoGoldBright
                                 ),
                                 modifier = Modifier.testTag("website_branding_switch")
@@ -972,8 +973,8 @@ private fun WebsiteCustomizerEditorPanel(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = JummoGoldBright,
                             unfocusedBorderColor = JummoBorderSubtle,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            focusedTextColor = JummoTextPrimary,
+                            unfocusedTextColor = JummoTextPrimary
                         )
                     )
 
@@ -988,8 +989,8 @@ private fun WebsiteCustomizerEditorPanel(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = JummoGoldBright,
                             unfocusedBorderColor = JummoBorderSubtle,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            focusedTextColor = JummoTextPrimary,
+                            unfocusedTextColor = JummoTextPrimary
                         )
                     )
 
@@ -1016,7 +1017,7 @@ private fun WebsiteCustomizerEditorPanel(
                             Text(
                                 text = if (draftConfig.logoUri.isBlank()) "Upload Logo" else "Replace Logo",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White
+                                color = JummoTextPrimary
                             )
                         }
 
@@ -1056,7 +1057,7 @@ private fun WebsiteCustomizerEditorPanel(
                             Text(
                                 text = "Cover Image",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White
+                                color = JummoTextPrimary
                             )
                         }
                     }
@@ -1092,7 +1093,7 @@ private fun WebsiteCustomizerEditorPanel(
                                 Text(
                                     text = WebsiteFonts.displayLabel(fontKey),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
+                                    color = if (selected) Color.White else JummoTextPrimary,
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                 )
@@ -1111,8 +1112,8 @@ private fun WebsiteCustomizerEditorPanel(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = JummoGoldBright,
                             unfocusedBorderColor = JummoBorderSubtle,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            focusedTextColor = JummoTextPrimary,
+                            unfocusedTextColor = JummoTextPrimary
                         )
                     )
 
@@ -1129,8 +1130,8 @@ private fun WebsiteCustomizerEditorPanel(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = JummoGoldBright,
                                 unfocusedBorderColor = JummoBorderSubtle,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
+                                focusedTextColor = JummoTextPrimary,
+                                unfocusedTextColor = JummoTextPrimary
                             )
                         )
                         OutlinedTextField(
@@ -1142,8 +1143,8 @@ private fun WebsiteCustomizerEditorPanel(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = JummoGoldBright,
                                 unfocusedBorderColor = JummoBorderSubtle,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
+                                focusedTextColor = JummoTextPrimary,
+                                unfocusedTextColor = JummoTextPrimary
                             )
                         )
                     }
@@ -1161,8 +1162,8 @@ private fun WebsiteCustomizerEditorPanel(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = JummoGoldBright,
                                 unfocusedBorderColor = JummoBorderSubtle,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
+                                focusedTextColor = JummoTextPrimary,
+                                unfocusedTextColor = JummoTextPrimary
                             )
                         )
                         OutlinedTextField(
@@ -1174,8 +1175,8 @@ private fun WebsiteCustomizerEditorPanel(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = JummoGoldBright,
                                 unfocusedBorderColor = JummoBorderSubtle,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
+                                focusedTextColor = JummoTextPrimary,
+                                unfocusedTextColor = JummoTextPrimary
                             )
                         )
                     }
@@ -1216,11 +1217,11 @@ private fun WebsiteCustomizerEditorPanel(
                                 Text(
                                     text = "B. Hero Banner Customization",
                                     style = MaterialTheme.typography.titleSmall,
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Strictly image-only • Zero overlaid text on photographs",
+                                    text = "Image-only hero slider",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = JummoTextSecondary
                                 )
@@ -1242,7 +1243,7 @@ private fun WebsiteCustomizerEditorPanel(
                                     onUpdateDraft(draftConfig.copy(autoSliderEnabled = it))
                                 },
                                 colors = SwitchDefaults.colors(
-                                    checkedThumbColor = JummoObsidian,
+                                    checkedThumbColor = Color.White,
                                     checkedTrackColor = JummoGoldBright
                                 ),
                                 modifier = Modifier.testTag("website_auto_slider_switch")
@@ -1362,7 +1363,7 @@ private fun WebsiteCustomizerEditorPanel(
                                     Text(
                                         text = "${sec}s",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White,
+                                        color = if (selected) Color.White else JummoTextPrimary,
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                     )
                                 }
@@ -1399,7 +1400,7 @@ private fun WebsiteCustomizerEditorPanel(
                                     Text(
                                         text = heightMode,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White,
+                                        color = if (selected) Color.White else JummoTextPrimary,
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                     )
                                 }
@@ -1434,7 +1435,7 @@ private fun WebsiteCustomizerEditorPanel(
                                     Text(
                                         text = BannerCropModes.displayLabel(cropMode),
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White,
+                                        color = if (selected) Color.White else JummoTextPrimary,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                     )
                                 }
@@ -1473,7 +1474,7 @@ private fun WebsiteCustomizerEditorPanel(
                             Text(
                                 text = "C. Website Theme Settings",
                                 style = MaterialTheme.typography.titleSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
@@ -1493,11 +1494,11 @@ private fun WebsiteCustomizerEditorPanel(
                         WebsiteThemes.ALL.forEach { themeKey ->
                             val selected = draftConfig.theme == themeKey
                             val swatchColors = when (themeKey) {
-                                WebsiteThemes.ROYAL_PURPLE -> listOf(Color(0xFF160B25), Color(0xFF8B20E8), Color(0xFFF7C747))
+                                WebsiteThemes.ROYAL_PURPLE -> listOf(Color(0xFFFAF9FF), Color(0xFFEDE9FE), Color(0xFF5B21B6))
                                 WebsiteThemes.MIDNIGHT_BLACK -> listOf(Color(0xFF050508), Color(0xFF27273A), Color(0xFFF7C747))
                                 WebsiteThemes.CHAMPAGNE_GOLD -> listOf(Color(0xFF1C130C), Color(0xFFF7C747), Color(0xFFFEF08A))
                                 WebsiteThemes.ELEGANT_IVORY -> listOf(Color(0xFF231B32), Color(0xFFD8B4FE), Color(0xFFFDE68A))
-                                else -> listOf(Color(0xFF160B25), Color(0xFFB33CF0), Color(0xFFF7C747))
+                                else -> listOf(Color(0xFFFAF9FF), Color(0xFF8B5CF6), Color(0xFF5B21B6))
                             }
 
                             Surface(
@@ -1531,7 +1532,7 @@ private fun WebsiteCustomizerEditorPanel(
                                     Text(
                                         text = WebsiteThemes.displayLabel(themeKey),
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = Color.White,
+                                        color = if (selected) Color.White else JummoTextPrimary,
                                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
                                     )
                                 }
@@ -1592,7 +1593,7 @@ private fun WebsiteCustomizerEditorPanel(
                             Text(
                                 text = "D. Gallery Layout Settings",
                                 style = MaterialTheme.typography.titleSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
@@ -1631,7 +1632,7 @@ private fun WebsiteCustomizerEditorPanel(
                                     Text(
                                         text = WebsiteLayouts.displayLabel(layoutKey),
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = Color.White,
+                                        color = if (selected) Color.White else JummoTextPrimary,
                                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -1643,7 +1644,7 @@ private fun WebsiteCustomizerEditorPanel(
                                             else -> "Multi-Aspect"
                                         },
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = if (selected) JummoGoldBright else JummoTextSecondary,
+                                        color = if (selected) Color.White.copy(alpha = 0.85f) else JummoTextSecondary,
                                         maxLines = 1
                                     )
                                 }
@@ -1682,7 +1683,7 @@ private fun WebsiteCustomizerEditorPanel(
                             Text(
                                 text = "E. Guest Features & Access Controls",
                                 style = MaterialTheme.typography.titleSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
@@ -1780,7 +1781,7 @@ private fun WebsiteCustomizerEditorPanel(
                                             Text(
                                                 text = GuestAccessModes.displayLabel(modeKey),
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = Color.White,
+                                                color = if (selected) Color.White else JummoTextPrimary,
                                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                                 modifier = Modifier.weight(1f)
                                             )
@@ -1788,7 +1789,7 @@ private fun WebsiteCustomizerEditorPanel(
                                                 Icon(
                                                     imageVector = Icons.Default.CheckCircle,
                                                     contentDescription = null,
-                                                    tint = JummoGoldBright,
+                                                    tint = Color.White,
                                                     modifier = Modifier.size(14.dp)
                                                 )
                                             }
@@ -1836,7 +1837,7 @@ private fun WebsiteCustomizerEditorPanel(
                             Text(
                                 text = "F. Published Guest URL & Event QR",
                                 style = MaterialTheme.typography.titleSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -1880,7 +1881,7 @@ private fun WebsiteCustomizerEditorPanel(
                             Text(
                                 text = verifiedPagesUrl,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -1915,7 +1916,7 @@ private fun WebsiteCustomizerEditorPanel(
                                     Text(
                                         text = "QR PNG",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White
+                                        color = JummoTextPrimary
                                     )
                                 }
 
@@ -1945,7 +1946,7 @@ private fun WebsiteCustomizerEditorPanel(
                                     Text(
                                         text = "Share URL",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White
+                                        color = JummoTextPrimary
                                     )
                                 }
                             }
@@ -1971,7 +1972,7 @@ private fun WebsiteCustomizerEditorPanel(
                                 modifier = Modifier.size(15.dp)
                             )
                             Text(
-                                text = "Hosting & DNS Status: Live portal is served via verified GitHub Pages ($verifiedPagesUrl). Custom domain jummophotos.ai requires DNS CNAME → haiker729-sys.github.io before activation.",
+                                text = "Hosting & DNS Status: Live portal is served via verified GitHub Pages ($verifiedPagesUrl).",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = JummoTextSecondary
                             )
@@ -1999,7 +2000,7 @@ private fun WebsiteCustomizerEditorPanel(
                                 Text(
                                     text = "Published Version History (${eventVersions.size})",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -2050,7 +2051,7 @@ private fun WebsiteFeatureToggleRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White,
+                color = JummoTextPrimary,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
@@ -2063,7 +2064,7 @@ private fun WebsiteFeatureToggleRow(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = JummoObsidian,
+                checkedThumbColor = Color.White,
                 checkedTrackColor = JummoGoldBright
             ),
             modifier = Modifier.testTag(tag)

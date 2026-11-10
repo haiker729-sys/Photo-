@@ -177,12 +177,6 @@ fun JummoRootApp() {
     }
 }
 
-/**
- * Screen 1 from the visual reference:
- * Luxury Cinematic Splash Screen with Animated Crown Camera Lens Logo,
- * "Jummo Photos AI", "Pro Studio" pill badge, "Smart Event Photography Suite",
- * Capture • Manage • Share with AI, and purple-to-gold progress bar.
- */
 @Composable
 fun JummoLuxurySplashScreen(
     onSkipOrFinish: () -> Unit
@@ -191,176 +185,70 @@ fun JummoLuxurySplashScreen(
     LaunchedEffect(Unit) { animStarted = true }
 
     val logoScale by animateFloatAsState(
-        targetValue = if (animStarted) 1f else 0.86f,
-        animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+        targetValue = if (animStarted) 1f else 0.88f,
+        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
         label = "splash_logo_scale"
     )
     val progressValue by animateFloatAsState(
         targetValue = if (animStarted) 1f else 0.15f,
-        animationSpec = tween(durationMillis = 1100, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 1050, easing = FastOutSlowInEasing),
         label = "splash_progress"
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(JummoObsidian)
-            .clickable { onSkipOrFinish() }
-            .testTag("jummo_splash_screen")
-    ) {
-        // Luxury Wedding / Studio Bokeh Backdrop
-        Image(
-            painter = painterResource(id = R.drawable.img_wedding_cover),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
-
-        // Deep Midnight Black & Royal Purple Cinematic Vignette Overlay
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            JummoObsidian.copy(alpha = 0.92f),
-                            JummoDeepPurple.copy(alpha = 0.82f),
-                            JummoObsidian.copy(alpha = 0.72f),
-                            JummoObsidian.copy(alpha = 0.96f)
-                        )
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFAF9FF),
+                        Color(0xFFEDE9FE),
+                        Color(0xFFFAF9FF)
                     )
                 )
-        )
-
+            )
+            .clickable { onSkipOrFinish() }
+            .testTag("jummo_splash_screen"),
+        contentAlignment = Alignment.Center
+    ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(horizontal = 24.dp, vertical = 28.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
+            JummoLuxuryCameraLogo(
+                size = 96.dp,
+                showCrown = false,
+                modifier = Modifier.scale(logoScale)
+            )
 
-            // Center Brand Emblem: Crown Camera Lens + Jummo Photos AI + Pro Studio Pill
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                JummoLuxuryCameraLogo(
-                    size = 116.dp,
-                    showCrown = true,
-                    modifier = Modifier.scale(logoScale)
-                )
+            Text(
+                text = "Jummo Photos AI",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color(0xFF24133F),
+                fontWeight = FontWeight.ExtraBold
+            )
 
-                Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = "Smart Event Photography Suite",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF6B5B83)
+            )
 
-                Text(
-                    text = "Jummo",
-                    style = MaterialTheme.typography.displayLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Photos AI",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = JummoGoldBright,
-                    fontWeight = FontWeight.Bold
-                )
+            Spacer(modifier = Modifier.height(8.dp))
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Surface(
-                    color = JummoCardPurple.copy(alpha = 0.88f),
-                    border = BorderStroke(1.dp, JummoGoldBright.copy(alpha = 0.65f)),
-                    shape = RoundedCornerShape(50)
-                ) {
-                    Text(
-                        text = "✦  Pro Studio  ✦",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = JummoGoldBright,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 5.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Text(
-                    text = "Smart Event Photography Suite",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = JummoTextSecondary
-                )
-            }
-
-            // Bottom Feature Trio: Capture • Manage • Share with AI + Progress Bar
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(28.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SplashFeatureIcon(icon = Icons.Default.CameraAlt, label = "Capture")
-                    SplashFeatureIcon(icon = Icons.Default.SettingsSuggest, label = "Manage")
-                    SplashFeatureIcon(icon = Icons.Default.Share, label = "Share")
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "with ",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "AI",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = JummoGoldBright,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                LinearProgressIndicator(
-                    progress = { progressValue },
-                    color = JummoGoldBright,
-                    trackColor = JummoVioletPrimary.copy(alpha = 0.35f),
-                    modifier = Modifier
-                        .width(180.dp)
-                        .height(5.dp)
-                        .clip(RoundedCornerShape(50))
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SplashFeatureIcon(
-    icon: ImageVector,
-    label: String
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(JummoCardPurple.copy(alpha = 0.85f))
-                .border(0.75.dp, JummoGoldBright.copy(alpha = 0.55f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = JummoGoldBright,
-                modifier = Modifier.size(17.dp)
+            LinearProgressIndicator(
+                progress = { progressValue },
+                color = Color(0xFF5B21B6),
+                trackColor = Color(0xFFC7B3FF),
+                modifier = Modifier
+                    .width(160.dp)
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(50))
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = JummoTextSecondary
-        )
     }
 }
 
@@ -632,7 +520,7 @@ fun JummoAuthenticatedShell(
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Dismiss notification",
-                                    tint = Color.White,
+                                    tint = Color(0xFF24133F),
                                     modifier = Modifier.size(14.dp)
                                 )
                             }
@@ -644,7 +532,7 @@ fun JummoAuthenticatedShell(
                     ?: (uploadsState as? UiState.Error)?.message
                 if (errorMsg != null) {
                     Surface(
-                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.18f),
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.14f),
                         border = BorderStroke(0.75.dp, MaterialTheme.colorScheme.error),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier
@@ -654,7 +542,7 @@ fun JummoAuthenticatedShell(
                         Text(
                             text = errorMsg,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFFCA5A5),
+                            color = MaterialTheme.colorScheme.error,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
@@ -675,9 +563,9 @@ fun JummoAuthenticatedShell(
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = "Loading studio workspace…",
+                                text = "Loading…",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White
+                                color = Color(0xFF24133F)
                             )
                         }
                     }
@@ -741,15 +629,33 @@ fun JummoAuthenticatedShell(
                                 onConsumeDetailsEvent = { detailsModalEvent = null },
                                 onCreateEvent = { name, cat, date, loc, covType, covUri, guestMode, allowDl, qrExp ->
                                     viewModel.createEvent(
-                                        name,
-                                        cat,
-                                        date,
-                                        loc,
-                                        covType,
-                                        covUri,
-                                        guestMode,
-                                        allowDl,
-                                        qrExp
+                                        name = name,
+                                        category = cat,
+                                        eventDate = date,
+                                        location = loc,
+                                        coverType = covType,
+                                        coverUri = covUri,
+                                        guestAccessMode = guestMode,
+                                        guestAllowDownload = allowDl,
+                                        qrExpirationDate = qrExp,
+                                        context = context
+                                    )
+                                },
+                                onCreateEventWithConfig = { name, cat, date, loc, covType, covUri, guestMode, allowDl, qrExp, desc, storageDest, pin ->
+                                    viewModel.createEvent(
+                                        name = name,
+                                        category = cat,
+                                        eventDate = date,
+                                        location = loc,
+                                        coverType = covType,
+                                        coverUri = covUri,
+                                        guestAccessMode = guestMode,
+                                        guestAllowDownload = allowDl,
+                                        qrExpirationDate = qrExp,
+                                        description = desc,
+                                        storageDestination = storageDest,
+                                        guestPin = pin,
+                                        context = context
                                     )
                                 },
                                 onUpdateEvent = { updated, msg ->

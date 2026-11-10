@@ -97,6 +97,7 @@ import com.example.ui.theme.JummoElevatedPurple
 import com.example.ui.theme.JummoGoldBright
 import com.example.ui.theme.JummoObsidian
 import com.example.ui.theme.JummoSuccessGreen
+import com.example.ui.theme.JummoTextPrimary
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
 import com.example.ui.theme.JummoVioletPrimary
@@ -378,7 +379,7 @@ fun AdminDashboardScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back to Studio",
-                        tint = Color.White,
+                        tint = JummoTextPrimary,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -387,7 +388,7 @@ fun AdminDashboardScreen(
                     Text(
                         text = "Jummo Photos AI",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
+                        color = JummoTextPrimary,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
@@ -522,11 +523,11 @@ fun AdminDashboardScreen(
                                         Text(
                                             text = "Website Management & Audit",
                                             style = MaterialTheme.typography.titleSmall,
-                                            color = Color.White,
+                                            color = JummoTextPrimary,
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
-                                            text = "${websiteCustomizations.size} configured website(s) • Non-destructive admin governance",
+                                            text = "${websiteCustomizations.size} configured website(s)",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = JummoTextSecondary
                                         )
@@ -537,7 +538,7 @@ fun AdminDashboardScreen(
                                     onClick = { onOpenWebsiteCustomizer(events.firstOrNull()) },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = JummoGoldBright,
-                                        contentColor = JummoObsidian
+                                        contentColor = Color.White
                                     ),
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                     modifier = Modifier.testTag("admin_open_website_customizer_button")
@@ -572,7 +573,7 @@ fun AdminDashboardScreen(
                                             Text(
                                                 text = "${webConfig.eventName} (${webConfig.studioName})",
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = Color.White,
+                                                color = JummoTextPrimary,
                                                 fontWeight = FontWeight.SemiBold,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
@@ -592,8 +593,8 @@ fun AdminDashboardScreen(
                                                 onToggleWebsiteSuspended(webConfig, !isSuspended)
                                             },
                                             colors = ButtonDefaults.buttonColors(
-                                                containerColor = if (isSuspended) JummoSuccessGreen else JummoElevatedPurple,
-                                                contentColor = if (isSuspended) JummoObsidian else Color.White
+                                                containerColor = if (isSuspended) JummoSuccessGreen else JummoVioletPrimary,
+                                                contentColor = Color.White
                                             ),
                                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                                             modifier = Modifier.testTag("admin_suspend_website_${webConfig.eventId}")
@@ -631,7 +632,7 @@ fun AdminDashboardScreen(
                                 Text(
                                     text = "Storage Used",
                                     style = MaterialTheme.typography.titleSmall,
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
@@ -709,7 +710,7 @@ fun AdminDashboardScreen(
                                 Text(
                                     text = "Uploads (Last 7 Days)",
                                     style = MaterialTheme.typography.titleSmall,
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                                 StatusBadgePill(
@@ -864,7 +865,7 @@ fun AdminDashboardScreen(
                                     Text(
                                         text = module.title,
                                         style = MaterialTheme.typography.titleSmall,
-                                        color = Color.White,
+                                        color = JummoTextPrimary,
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -910,7 +911,7 @@ fun AdminDashboardScreen(
                     )
                     Text(
                         text = mod.title,
-                        color = Color.White,
+                        color = JummoTextPrimary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -948,7 +949,7 @@ fun AdminDashboardScreen(
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = JummoGoldBright,
-                        contentColor = JummoObsidian
+                        contentColor = Color.White
                     )
                 ) {
                     Text("Open Workspace Module", fontWeight = FontWeight.Bold)
@@ -959,7 +960,7 @@ fun AdminDashboardScreen(
                     onClick = { selectedModule = null },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = JummoElevatedPurple,
-                        contentColor = Color.White
+                        contentColor = JummoTextPrimary
                     )
                 ) {
                     Text("Close")

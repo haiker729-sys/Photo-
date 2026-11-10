@@ -105,6 +105,7 @@ import com.example.ui.theme.JummoGoldBright
 import com.example.ui.theme.JummoGoldSoft
 import com.example.ui.theme.JummoObsidian
 import com.example.ui.theme.JummoSuccessGreen
+import com.example.ui.theme.JummoTextPrimary
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
 import com.example.ui.theme.JummoVioletPrimary
@@ -473,7 +474,7 @@ fun OfficialWebsiteScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back to App",
-                                tint = Color.White
+                                tint = JummoTextPrimary
                             )
                         }
                         Spacer(modifier = Modifier.width(6.dp))
@@ -525,7 +526,7 @@ fun OfficialWebsiteScreen(
                                 Text(
                                     text = if (useEmbeddedHtmlMode) "Native View" else "HTML5 View",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -652,11 +653,11 @@ fun OfficialWebsiteScreen(
                                     Text(
                                         text = "Jummo Photos AI",
                                         style = MaterialTheme.typography.displayMedium,
-                                        color = Color.White,
+                                        color = JummoTextPrimary,
                                         fontWeight = FontWeight.ExtraBold
                                     )
                                     Text(
-                                        text = "Luxury Android Event Photography, DSLR RAW/JPG Import, WorkManager Cloud Queue, Google Drive Sync, Branded Event QR Codes, and Consent-First AI Face Search.",
+                                        text = "Professional Android Event Photography, DSLR Import, Cloud Upload Queue, Google Drive Sync, Branded QR Codes, and AI Face Search.",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = JummoTextSecondary
                                     )
@@ -669,7 +670,7 @@ fun OfficialWebsiteScreen(
                                             onClick = { handleApkDownloadClick() },
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = JummoGoldBright,
-                                                contentColor = JummoObsidian
+                                                contentColor = Color.White
                                             ),
                                             shape = RoundedCornerShape(12.dp),
                                             modifier = Modifier
@@ -700,7 +701,7 @@ fun OfficialWebsiteScreen(
                                         ) {
                                             Text(
                                                 text = "Explore Features",
-                                                color = Color.White,
+                                                color = JummoTextPrimary,
                                                 fontWeight = FontWeight.Bold,
                                                 maxLines = 1
                                             )
@@ -759,13 +760,13 @@ fun OfficialWebsiteScreen(
                                 Text(
                                     text = "Official Android APK Release Hub",
                                     style = MaterialTheme.typography.headlineMedium,
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
                                     text = "Official Repository: https://github.com/haiker729-sys/Photo-",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = JummoGoldSoft
+                                    color = JummoTextSecondary
                                 )
 
                                 // 2x2 Metadata Grid: Version, Verified Size, Last Updated, Compatibility
@@ -805,7 +806,7 @@ fun OfficialWebsiteScreen(
                                     onClick = { handleApkDownloadClick() },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = JummoGoldBright,
-                                        contentColor = JummoObsidian
+                                        contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(14.dp),
                                     modifier = Modifier
@@ -855,14 +856,14 @@ fun OfficialWebsiteScreen(
                                         Text(
                                             text = "APK Release Status Notice",
                                             style = MaterialTheme.typography.labelLarge,
-                                            color = Color.White,
+                                            color = JummoTextPrimary,
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
                                             text = releaseInfo.diagnosticMessage
                                                 ?: "No published .apk asset was found yet in https://github.com/haiker729-sys/Photo-/releases.",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = Color(0xFFFECACA)
+                                            color = JummoErrorRed
                                         )
                                     }
                                 }
@@ -902,7 +903,7 @@ fun OfficialWebsiteScreen(
                         Text(
                             text = "Implemented Studio Features",
                             style = MaterialTheme.typography.headlineMedium,
-                            color = Color.White,
+                            color = JummoTextPrimary,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -942,7 +943,7 @@ fun OfficialWebsiteScreen(
                                             Text(
                                                 text = feat.title,
                                                 style = MaterialTheme.typography.titleSmall,
-                                                color = Color.White,
+                                                color = JummoTextPrimary,
                                                 fontWeight = FontWeight.Bold
                                             )
                                             Text(
@@ -973,7 +974,7 @@ fun OfficialWebsiteScreen(
                                 Text(
                                     text = "App Preview Gallery (8 Screens)",
                                     style = MaterialTheme.typography.headlineMedium,
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
 
@@ -990,7 +991,7 @@ fun OfficialWebsiteScreen(
                                             label = { Text(item.title) },
                                             colors = FilterChipDefaults.filterChipColors(
                                                 selectedContainerColor = JummoGoldBright,
-                                                selectedLabelColor = JummoObsidian
+                                                selectedLabelColor = Color.White
                                             )
                                         )
                                     }
@@ -1065,7 +1066,7 @@ fun OfficialWebsiteScreen(
                                 Text(
                                     text = "How It Works",
                                     style = MaterialTheme.typography.headlineMedium,
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                                 val steps = listOf(
@@ -1094,7 +1095,7 @@ fun OfficialWebsiteScreen(
                                             Text(
                                                 text = stepTitle,
                                                 style = MaterialTheme.typography.titleSmall,
-                                                color = Color.White,
+                                                color = JummoTextPrimary,
                                                 fontWeight = FontWeight.Bold
                                             )
                                             Text(
@@ -1124,11 +1125,11 @@ fun OfficialWebsiteScreen(
                                 Text(
                                     text = "Configurable Studio Plans",
                                     style = MaterialTheme.typography.headlineMedium,
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Connects directly to your own Firebase and Google Drive workspace. No in-app payment gateway or artificial paywall.",
+                                    text = "Connects directly to your own Firebase and Google Drive workspace.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = JummoTextSecondary
                                 )
@@ -1175,7 +1176,7 @@ fun OfficialWebsiteScreen(
                                                 else -> "Unlimited Active Events • Full DSLR RAW/JPG Queue • Google Drive Folder Sync • Consent-First Guest AI Face Search"
                                             },
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = Color.White
+                                            color = JummoTextPrimary
                                         )
                                     }
                                 }
@@ -1198,7 +1199,7 @@ fun OfficialWebsiteScreen(
                                 Text(
                                     text = "Frequently Asked Questions",
                                     style = MaterialTheme.typography.headlineMedium,
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
 
@@ -1224,7 +1225,7 @@ fun OfficialWebsiteScreen(
                                                 Text(
                                                     text = faq.question,
                                                     style = MaterialTheme.typography.titleSmall,
-                                                    color = Color.White,
+                                                    color = JummoTextPrimary,
                                                     fontWeight = FontWeight.Bold,
                                                     modifier = Modifier.weight(1f)
                                                 )
@@ -1281,16 +1282,16 @@ fun OfficialWebsiteScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     TextButton(onClick = { activeLegalModal = "About" }) {
-                                        Text("About", color = Color.White)
+                                        Text("About", color = JummoTextPrimary)
                                     }
                                     TextButton(onClick = { openExternalUrl("mailto:merajalam906090@gmail.com") }) {
-                                        Text("Contact", color = Color.White)
+                                        Text("Contact", color = JummoTextPrimary)
                                     }
                                     TextButton(onClick = { activeLegalModal = "Privacy Policy" }) {
-                                        Text("Privacy Policy", color = Color.White)
+                                        Text("Privacy Policy", color = JummoTextPrimary)
                                     }
                                     TextButton(onClick = { activeLegalModal = "Terms of Service" }) {
-                                        Text("Terms of Service", color = Color.White)
+                                        Text("Terms of Service", color = JummoTextPrimary)
                                     }
                                 }
 
@@ -1329,7 +1330,7 @@ fun OfficialWebsiteScreen(
                                             modifier = Modifier.size(15.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Official GitHub Repo", color = Color.White, maxLines = 1)
+                                        Text("Official GitHub Repo", color = JummoTextPrimary, maxLines = 1)
                                     }
                                 }
 
@@ -1387,7 +1388,7 @@ fun OfficialWebsiteScreen(
                     onClick = { activeLegalModal = null },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = JummoGoldBright,
-                        contentColor = JummoObsidian
+                        contentColor = Color.White
                     )
                 ) {
                     Text("Close", fontWeight = FontWeight.Bold)
@@ -1422,7 +1423,7 @@ private fun WebsiteMetaBox(
             Text(
                 text = value,
                 style = MaterialTheme.typography.labelLarge,
-                color = Color.White,
+                color = JummoTextPrimary,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

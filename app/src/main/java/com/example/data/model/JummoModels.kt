@@ -30,6 +30,21 @@ data class PhotographerProfile(
     @ServerTimestamp val updatedAt: Timestamp? = null
 )
 
+object StorageDestinations {
+    const val PHONE_FOLDER = "Phone Folder"
+    const val GOOGLE_DRIVE = "Google Drive"
+    const val BOTH = "Both"
+
+    val ALL = listOf(PHONE_FOLDER, GOOGLE_DRIVE, BOTH)
+
+    fun displayLabel(dest: String): String = when (dest) {
+        PHONE_FOLDER -> "Phone Folder"
+        GOOGLE_DRIVE -> "Google Drive"
+        BOTH -> "Both (Phone + Cloud)"
+        else -> dest
+    }
+}
+
 @IgnoreExtraProperties
 data class PhotoEvent(
     @DocumentId val id: String = "",
@@ -51,6 +66,12 @@ data class PhotoEvent(
     val pendingPhotos: Long = 0L,
     val failedPhotos: Long = 0L,
     val driveSyncStatus: String = "NotConnected",
+    val description: String = "",
+    val storageDestination: String = StorageDestinations.BOTH,
+    val guestPin: String = "",
+    val phoneFolderPath: String = "",
+    val driveFolderId: String = "",
+    val downloadEnabled: Boolean = true,
     @ServerTimestamp val createdAt: Timestamp? = null,
     @ServerTimestamp val updatedAt: Timestamp? = null
 ) {
@@ -267,11 +288,11 @@ object WebsiteThemes {
             secondaryHighlightHex = "#B45309"
         )
         else -> WebsiteThemePaletteSpec(
-            backgroundHex = "#0B0615",
-            surfaceHex = "#160B25",
-            cardHex = "#241238",
-            primaryAccentHex = "#8B20E8",
-            secondaryHighlightHex = "#F7C747"
+            backgroundHex = "#FAF9FF",
+            surfaceHex = "#EDE9FE",
+            cardHex = "#EDE9FE",
+            primaryAccentHex = "#5B21B6",
+            secondaryHighlightHex = "#8B5CF6"
         )
     }
 }
@@ -363,13 +384,13 @@ data class WebsiteCustomization(
     val websiteLayout: String = WebsiteLayouts.EDITORIAL,
     val fontFamily: String = WebsiteFonts.PLAYFAIR_DISPLAY,
     val fontStyle: String = WebsiteFonts.PLAYFAIR_DISPLAY,
-    val backgroundColorHex: String = "#0B0615",
-    val surfaceColorHex: String = "#160B25",
-    val cardColorHex: String = "#241238",
-    val primaryAccentHex: String = "#8B20E8",
-    val secondaryAccentHex: String = "#F7C747",
-    val secondaryHighlightHex: String = "#F7C747",
-    val welcomeMessage: String = "Welcome to our official event gallery. Scan or use AI Face Search to find your memories.",
+    val backgroundColorHex: String = "#FAF9FF",
+    val surfaceColorHex: String = "#EDE9FE",
+    val cardColorHex: String = "#EDE9FE",
+    val primaryAccentHex: String = "#5B21B6",
+    val secondaryAccentHex: String = "#8B5CF6",
+    val secondaryHighlightHex: String = "#8B5CF6",
+    val welcomeMessage: String = "Find and download your event photos.",
     val contactEmail: String = "merajalam906090@gmail.com",
     val contactPhone: String = "+91 98765 43210",
     val studioLocation: String = "Mumbai & Udaipur, India",

@@ -23,6 +23,7 @@ import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
+import com.example.data.model.StorageDestinations
 import com.example.data.model.WebsiteCustomization
 import com.example.data.model.WebsiteLayouts
 import com.example.data.model.WebsiteThemes
@@ -1519,5 +1520,81 @@ class JummoAppRobolectricTest {
         composeTestRule.waitForIdle()
         listNode.performScrollToNode(hasTestTag("upload_item_card_done_1"))
         composeTestRule.onNodeWithText("IMG_DONE_101.JPG").assertIsDisplayed()
+    }
+
+    @Test
+    fun eventsScreen_createsEventWithStorageDestinationAndGuestPinAndFolderStructure() {
+        var createdName = ""
+        var createdDesc = ""
+        var createdStorage = ""
+        var createdPin = ""
+
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                EventsScreen(
+                    events = emptyList(),
+                    uploads = emptyList(),
+                    showCreateDialogCommand = true,
+                    initialQrEvent = null,
+                    onConsumeCreateDialogCommand = {},
+                    onConsumeQrEvent = {},
+                    onCreateEvent = { _, _, _, _, _, _, _, _, _ -> },
+                    onCreateEventWithConfig = { name, _, _, _, _, _, _, _, _, desc, storageDest, pin ->
+                        createdName = name
+                        createdDesc = desc
+                        createdStorage = storageDest
+                        createdPin = pin
+                    },
+                    onUpdateEvent = { _, _ -> },
+                    onToggleArchive = {},
+                    onDeleteEvent = {},
+                    onOpenGuestPortal = {},
+                    onSelectEventForCamera = {},
+                    onShowMessage = {}
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        // 1. Verify Event Editor Dialog elements
+        composeTestRule.onNodeWithTag("event_name_input").performTextReplacement("Royal Gold Gala")
+        composeTestRule.onNodeWithTag("event_description_input").performTextReplacement("Exclusive gala shoot with luxury editorial coverage.")
+
+        // Select Storage Destination "Both"
+        composeTestRule.onNodeWithTag("storage_destination_both").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("storage_destination_phone").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("storage_destination_both").performClick()
+        composeTestRule.waitForIdle()
+
+        // Switch to Organizer Approved Access (PINProtected)
+        composeTestRule.onNodeWithText("Organizer Approved Access").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+
+        // Enter Guest PIN
+        composeTestRule.onNodeWithTag("guest_pin_input").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithTag("guest_pin_input").performTextReplacement("9876")
+
+        // Save Event
+        composeTestRule.onNodeWithTag("save_event_button").performClick()
+        composeTestRule.waitForIdle()
+
+        assertEquals("Royal Gold Gala", createdName)
+        assertEquals("Exclusive gala shoot with luxury editorial coverage.", createdDesc)
+        assertEquals(StorageDestinations.BOTH, createdStorage)
+        assertEquals("9876", createdPin)
+
+        // 2. Verify Folder Structure creation helper
+        val clean = createdName.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
+        val basePhoneDir = File(context.filesDir, "Jummo_Photos/Events/$clean")
+        val originals = File(basePhoneDir, "Original_Photos").apply { mkdirs() }
+        val thumbs = File(basePhoneDir, "Thumbnails").apply { mkdirs() }
+        val exports = File(basePhoneDir, "Guest_Exports").apply { mkdirs() }
+
+        assertTrue(originals.exists() && originals.isDirectory)
+        assertTrue(thumbs.exists() && thumbs.isDirectory)
+        assertTrue(exports.exists() && exports.isDirectory)
     }
 }

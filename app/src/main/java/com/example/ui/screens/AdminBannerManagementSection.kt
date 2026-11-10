@@ -94,6 +94,7 @@ import com.example.ui.theme.JummoGoldBright
 import com.example.ui.theme.JummoObsidian
 import com.example.ui.theme.JummoSuccessGreen
 import com.example.ui.theme.JummoTextMuted
+import com.example.ui.theme.JummoTextPrimary
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
 import com.example.ui.theme.JummoVioletPrimary
@@ -246,11 +247,11 @@ fun AdminBannerManagementSection(
                         Text(
                             text = "Banner Slider Manager",
                             style = MaterialTheme.typography.titleSmall,
-                            color = Color.White,
+                            color = JummoTextPrimary,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Admin control • Zero text on Home Screen photographs",
+                            text = "Admin control • Image-only Home Slider",
                             style = MaterialTheme.typography.labelSmall,
                             color = JummoTextSecondary
                         )
@@ -281,7 +282,7 @@ fun AdminBannerManagementSection(
                     BannerMetricTile(
                         label = "Total",
                         count = totalCount,
-                        accentColor = Color.White,
+                        accentColor = JummoTextPrimary,
                         modifier = Modifier.weight(1f)
                     )
                     BannerMetricTile(
@@ -335,7 +336,7 @@ fun AdminBannerManagementSection(
                             Text(
                                 text = filterKey,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (isSelected) JummoObsidian else JummoTextSecondary,
+                                color = if (isSelected) Color.White else JummoTextSecondary,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(vertical = 5.dp)
@@ -376,7 +377,7 @@ fun AdminBannerManagementSection(
                             Text(
                                 text = "Auto Slide",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -386,7 +387,7 @@ fun AdminBannerManagementSection(
                                 onSaveSliderConfig(sliderConfig.copy(autoSlideEnabled = enabled))
                             },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = JummoObsidian,
+                                checkedThumbColor = Color.White,
                                 checkedTrackColor = JummoGoldBright,
                                 uncheckedThumbColor = JummoTextSecondary,
                                 uncheckedTrackColor = JummoCardPurple
@@ -415,7 +416,7 @@ fun AdminBannerManagementSection(
                             Text(
                                 text = "Slide Duration",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -441,7 +442,7 @@ fun AdminBannerManagementSection(
                                     Text(
                                         text = "${sec}s",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = if (selected) JummoObsidian else JummoTextSecondary,
+                                        color = if (selected) Color.White else JummoTextSecondary,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
                                     )
@@ -470,7 +471,7 @@ fun AdminBannerManagementSection(
                             Text(
                                 text = "Infinite Looping & Smooth Swipe",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -480,7 +481,7 @@ fun AdminBannerManagementSection(
                                 onSaveSliderConfig(sliderConfig.copy(infiniteLoop = loop))
                             },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = JummoObsidian,
+                                checkedThumbColor = Color.White,
                                 checkedTrackColor = JummoGoldBright,
                                 uncheckedThumbColor = JummoTextSecondary,
                                 uncheckedTrackColor = JummoCardPurple
@@ -518,7 +519,7 @@ fun AdminBannerManagementSection(
                     onClick = { isCreatingNewBanner = true },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = JummoGoldBright,
-                        contentColor = JummoObsidian
+                        contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(11.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
@@ -632,7 +633,7 @@ fun AdminBannerManagementSection(
                         Text(
                             text = if (sortedBanners.isEmpty()) "No Home Banners Configured" else "No $selectedFilterTab Banners",
                             style = MaterialTheme.typography.labelLarge,
-                            color = Color.White,
+                            color = JummoTextPrimary,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
@@ -760,7 +761,7 @@ fun AdminBannerManagementSection(
             title = {
                 Text(
                     text = "Delete Banner?",
-                    color = Color.White,
+                    color = JummoTextPrimary,
                     fontWeight = FontWeight.Bold
                 )
             },
@@ -811,7 +812,7 @@ fun AdminBannerManagementSection(
                     onClick = { bannerToDelete = null },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = JummoElevatedPurple,
-                        contentColor = Color.White
+                        contentColor = JummoTextPrimary
                     )
                 ) {
                     Text("Cancel")
@@ -976,7 +977,7 @@ private fun AdminBannerRowItem(
                             Text(
                                 text = banner.title.ifBlank { "Banner #${index + 1}" },
                                 style = MaterialTheme.typography.labelLarge,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -1030,7 +1031,7 @@ private fun AdminBannerRowItem(
                     checked = banner.isActive,
                     onCheckedChange = { onToggleActive() },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = JummoObsidian,
+                        checkedThumbColor = Color.White,
                         checkedTrackColor = JummoGoldBright,
                         uncheckedThumbColor = JummoTextSecondary,
                         uncheckedTrackColor = JummoCardPurple
@@ -1060,7 +1061,7 @@ private fun AdminBannerRowItem(
                         Icon(
                             imageVector = Icons.Default.ArrowUpward,
                             contentDescription = "Move Up",
-                            tint = if (index > 0) Color.White else JummoTextMuted.copy(alpha = 0.4f),
+                            tint = if (index > 0) JummoTextPrimary else JummoTextMuted.copy(alpha = 0.4f),
                             modifier = Modifier.size(14.dp)
                         )
                     }
@@ -1078,7 +1079,7 @@ private fun AdminBannerRowItem(
                         Icon(
                             imageVector = Icons.Default.ArrowDownward,
                             contentDescription = "Move Down",
-                            tint = if (index < totalCount - 1) Color.White else JummoTextMuted.copy(alpha = 0.4f),
+                            tint = if (index < totalCount - 1) JummoTextPrimary else JummoTextMuted.copy(alpha = 0.4f),
                             modifier = Modifier.size(14.dp)
                         )
                     }
@@ -1110,7 +1111,7 @@ private fun AdminBannerRowItem(
                             Text(
                                 text = "Preview",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -1140,7 +1141,7 @@ private fun AdminBannerRowItem(
                             Text(
                                 text = "Edit",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -1189,7 +1190,7 @@ private fun AdminBannerRowItem(
                             Text(
                                 text = "Replace",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -1275,7 +1276,7 @@ private fun AddOrEditBannerDialog(
                 )
                 Text(
                     text = if (banner == null) "Add New Home Banner" else "Edit Banner #${banner.displayOrder + 1}",
-                    color = Color.White,
+                    color = JummoTextPrimary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -1302,15 +1303,15 @@ private fun AddOrEditBannerDialog(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = JummoGoldBright,
                         unfocusedBorderColor = JummoBorderSubtle,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                        focusedTextColor = JummoTextPrimary,
+                        unfocusedTextColor = JummoTextPrimary
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("admin_banner_title_input")
                 )
                 Text(
-                    text = "Note: Banner name is for admin records only. The photographer Home Screen renders STRICTLY the image with zero text overlay.",
+                    text = "Admin record only. Home Screen renders strictly the image.",
                     style = MaterialTheme.typography.labelSmall,
                     color = JummoTextSecondary
                 )
@@ -1351,7 +1352,7 @@ private fun AddOrEditBannerDialog(
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = JummoGoldBright,
-                            contentColor = JummoObsidian
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
@@ -1367,7 +1368,7 @@ private fun AddOrEditBannerDialog(
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = JummoElevatedPurple,
-                            contentColor = Color.White
+                            contentColor = JummoTextPrimary
                         ),
                         border = BorderStroke(0.75.dp, JummoBorderSubtle),
                         shape = RoundedCornerShape(8.dp),
@@ -1410,7 +1411,7 @@ private fun AddOrEditBannerDialog(
                             Text(
                                 text = label,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (selected) JummoObsidian else JummoTextSecondary,
+                                color = if (selected) Color.White else JummoTextSecondary,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(vertical = 6.dp)
@@ -1440,7 +1441,7 @@ private fun AddOrEditBannerDialog(
                         Text(
                             text = "Schedule Banner",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White,
+                            color = JummoTextPrimary,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -1448,7 +1449,7 @@ private fun AddOrEditBannerDialog(
                         checked = isScheduled,
                         onCheckedChange = { isScheduled = it },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = JummoObsidian,
+                            checkedThumbColor = Color.White,
                             checkedTrackColor = JummoGoldBright,
                             uncheckedThumbColor = JummoTextSecondary,
                             uncheckedTrackColor = JummoCardPurple
@@ -1479,7 +1480,7 @@ private fun AddOrEditBannerDialog(
                                     Text(
                                         text = lbl,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White,
+                                        color = if (sel) Color.White else JummoTextPrimary,
                                         fontWeight = FontWeight.Bold,
                                         textAlign = TextAlign.Center,
                                         modifier = Modifier.padding(vertical = 5.dp)
@@ -1508,7 +1509,7 @@ private fun AddOrEditBannerDialog(
                                     Text(
                                         text = lbl,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White,
+                                        color = if (sel) Color.White else JummoTextPrimary,
                                         fontWeight = FontWeight.Bold,
                                         textAlign = TextAlign.Center,
                                         modifier = Modifier.padding(vertical = 5.dp)
@@ -1530,14 +1531,14 @@ private fun AddOrEditBannerDialog(
                     Text(
                         text = "Active Status",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.White,
+                        color = JummoTextPrimary,
                         fontWeight = FontWeight.SemiBold
                     )
                     Switch(
                         checked = isActive,
                         onCheckedChange = { isActive = it },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = JummoObsidian,
+                            checkedThumbColor = Color.White,
                             checkedTrackColor = JummoGoldBright,
                             uncheckedThumbColor = JummoTextSecondary,
                             uncheckedTrackColor = JummoCardPurple
@@ -1579,7 +1580,7 @@ private fun AddOrEditBannerDialog(
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = JummoGoldBright,
-                    contentColor = JummoObsidian
+                    contentColor = Color.White
                 ),
                 modifier = Modifier.testTag("admin_save_banner_button")
             ) {
@@ -1591,7 +1592,7 @@ private fun AddOrEditBannerDialog(
                 onClick = onDismiss,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = JummoElevatedPurple,
-                    contentColor = Color.White
+                    contentColor = JummoTextPrimary
                 )
             ) {
                 Text("Cancel")
@@ -1626,7 +1627,7 @@ private fun DedicatedBannerPreviewDialog(
                 Column {
                     Text(
                         text = "Home Slider Simulation",
-                        color = Color.White,
+                        color = JummoTextPrimary,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -1637,7 +1638,7 @@ private fun DedicatedBannerPreviewDialog(
                     )
                 }
                 IconButton(onClick = onDismiss) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = JummoTextPrimary)
                 }
             }
         },
@@ -1685,7 +1686,7 @@ private fun DedicatedBannerPreviewDialog(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(text = "Name:", style = MaterialTheme.typography.labelSmall, color = JummoTextSecondary)
-                            Text(text = banner.title.ifBlank { "Home Banner" }, style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(text = banner.title.ifBlank { "Home Banner" }, style = MaterialTheme.typography.labelSmall, color = JummoTextPrimary, fontWeight = FontWeight.Bold)
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1699,7 +1700,7 @@ private fun DedicatedBannerPreviewDialog(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(text = "Audience:", style = MaterialTheme.typography.labelSmall, color = JummoTextSecondary)
-                            Text(text = banner.visibility, style = MaterialTheme.typography.labelSmall, color = Color.White)
+                            Text(text = banner.visibility, style = MaterialTheme.typography.labelSmall, color = JummoTextPrimary)
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1713,7 +1714,7 @@ private fun DedicatedBannerPreviewDialog(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(text = "Slide Duration:", style = MaterialTheme.typography.labelSmall, color = JummoTextSecondary)
-                            Text(text = "${banner.slideDurationSeconds} seconds", style = MaterialTheme.typography.labelSmall, color = Color.White)
+                            Text(text = "${banner.slideDurationSeconds} seconds", style = MaterialTheme.typography.labelSmall, color = JummoTextPrimary)
                         }
                     }
                 }
@@ -1724,7 +1725,7 @@ private fun DedicatedBannerPreviewDialog(
                 onClick = onDismiss,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = JummoGoldBright,
-                    contentColor = JummoObsidian
+                    contentColor = Color.White
                 )
             ) {
                 Text("Done", fontWeight = FontWeight.Bold)

@@ -101,6 +101,7 @@ import com.example.data.model.EventCategories
 import com.example.data.model.GuestAccessModes
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
+import com.example.data.model.StorageDestinations
 import com.example.ui.components.EmptyStateCard
 import com.example.ui.components.SectionHeaderRow
 import com.example.ui.components.StatusBadgePill
@@ -115,6 +116,7 @@ import com.example.ui.theme.JummoGoldBright
 import com.example.ui.theme.JummoObsidian
 import com.example.ui.theme.JummoSuccessGreen
 import com.example.ui.theme.JummoTextMuted
+import com.example.ui.theme.JummoTextPrimary
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
 import com.example.ui.theme.JummoVioletPrimary
@@ -142,6 +144,22 @@ fun EventsScreen(
         guestAllowDownload: Boolean,
         qrExpirationDate: String
     ) -> Unit,
+    onCreateEventWithConfig: (
+        name: String,
+        category: String,
+        eventDate: String,
+        location: String,
+        coverType: String,
+        coverUri: String,
+        guestAccessMode: String,
+        guestAllowDownload: Boolean,
+        qrExpirationDate: String,
+        description: String,
+        storageDestination: String,
+        guestPin: String
+    ) -> Unit = { name, cat, date, loc, covType, covUri, guestMode, allowDl, qrExp, _, _, _ ->
+        onCreateEvent(name, cat, date, loc, covType, covUri, guestMode, allowDl, qrExp)
+    },
     onUpdateEvent: (PhotoEvent, String) -> Unit,
     onToggleArchive: (PhotoEvent) -> Unit,
     onDeleteEvent: (PhotoEvent) -> Unit,
@@ -225,7 +243,7 @@ fun EventsScreen(
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = JummoGoldBright,
-                                    contentColor = JummoObsidian
+                                    contentColor = Color.White
                                 ),
                                 shape = RoundedCornerShape(50),
                                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
@@ -293,7 +311,7 @@ fun EventsScreen(
                                 },
                                 singleLine = true,
                                 shape = RoundedCornerShape(50),
-                                textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(color = JummoTextPrimary),
                                 modifier = Modifier
                                     .weight(1f)
                                     .testTag("events_search_input")
@@ -315,14 +333,14 @@ fun EventsScreen(
                                     Icon(
                                         imageVector = Icons.Default.FilterList,
                                         contentDescription = "Reset Filters",
-                                        tint = Color.White,
+                                        tint = JummoTextPrimary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
                         }
 
-                        // Category Filter Pills Row (All golden when selected)
+                        // Category Filter Pills Row
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -347,7 +365,7 @@ fun EventsScreen(
                                     Text(
                                         text = category,
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = if (selected) JummoObsidian else Color.White,
+                                        color = if (selected) Color.White else JummoTextPrimary,
                                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                                     )
@@ -378,7 +396,7 @@ fun EventsScreen(
                                 Text(
                                     text = "Active ($activeCount)",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = Color.White,
+                                    color = if (!showArchived) Color.White else JummoTextSecondary,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                                 )
@@ -412,7 +430,7 @@ fun EventsScreen(
                         EmptyStateCard(
                             icon = Icons.Default.Event,
                             title = if (showArchived) "No Archived Events" else "No Matching Events",
-                            message = "Create an event with a category, date, venue, cover photograph, and QR access rules.",
+                            message = "Create an event to organize photos and QR access.",
                             actionButton = {
                                 if (!showArchived) {
                                     Button(
@@ -422,7 +440,7 @@ fun EventsScreen(
                                         },
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = JummoGoldBright,
-                                            contentColor = JummoObsidian
+                                            contentColor = Color.White
                                         ),
                                         shape = RoundedCornerShape(10.dp)
                                     ) {
@@ -465,8 +483,8 @@ fun EventsScreen(
                 editingEvent = null
                 onConsumeCreateDialogCommand()
             },
-            onSaveNew = { name, cat, date, loc, covType, covUri, guestMode, allowDl, qrExp ->
-                onCreateEvent(name, cat, date, loc, covType, covUri, guestMode, allowDl, qrExp)
+            onSaveNew = { name, cat, date, loc, covType, covUri, guestMode, allowDl, qrExp, desc, storageDest, pin ->
+                onCreateEventWithConfig(name, cat, date, loc, covType, covUri, guestMode, allowDl, qrExp, desc, storageDest, pin)
                 isCreatingNew = false
                 onConsumeCreateDialogCommand()
             },
@@ -486,13 +504,13 @@ fun EventsScreen(
             title = {
                 Text(
                     text = "Delete Event?",
-                    color = Color.White,
+                    color = JummoTextPrimary,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    text = "Delete \"${target.name}\"? Original photos stored locally on your device will remain untouched, while the event record and QR link will be removed.",
+                    text = "Delete \"${target.name}\"? Original device photos remain untouched.",
                     style = MaterialTheme.typography.bodySmall,
                     color = JummoTextSecondary
                 )
@@ -635,7 +653,7 @@ private fun EventManagementCard(
                     Text(
                         text = event.name,
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
+                        color = JummoTextPrimary,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -659,7 +677,7 @@ private fun EventManagementCard(
                 Text(
                     text = "${event.totalPhotos} Photos • $sizeText",
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color.White,
+                    color = JummoTextPrimary,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -677,7 +695,7 @@ private fun EventManagementCard(
                     EventSquareActionButton(
                         icon = Icons.Default.PhotoLibrary,
                         contentDescription = "Details & Photos",
-                        tint = Color.White,
+                        tint = JummoTextPrimary,
                         containerColor = JummoElevatedPurple,
                         onClick = onOpenDetails,
                         modifier = Modifier.testTag("details_button_${event.id}")
@@ -687,7 +705,7 @@ private fun EventManagementCard(
                     EventSquareActionButton(
                         icon = Icons.Default.QrCode2,
                         contentDescription = "QR Code",
-                        tint = JummoVioletBright,
+                        tint = JummoVioletPrimary,
                         containerColor = JummoElevatedPurple,
                         onClick = onOpenQrModal,
                         modifier = Modifier.testTag("qr_button_${event.id}")
@@ -707,7 +725,7 @@ private fun EventManagementCard(
                     EventSquareActionButton(
                         icon = Icons.Default.Edit,
                         contentDescription = "Edit Event",
-                        tint = Color.White,
+                        tint = JummoTextPrimary,
                         containerColor = JummoElevatedPurple,
                         onClick = onEdit
                     )
@@ -837,14 +855,14 @@ private fun EventDetailsAndPhotosView(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back to Events",
-                                tint = Color.White
+                                tint = JummoTextPrimary
                             )
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = event.name,
                                 style = MaterialTheme.typography.headlineMedium,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -883,7 +901,7 @@ private fun EventDetailsAndPhotosView(
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
                                 contentDescription = "Edit Event Options",
-                                tint = Color.White,
+                                tint = JummoTextPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -931,7 +949,7 @@ private fun EventDetailsAndPhotosView(
                         onClick = onOpenCamera,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = JummoGoldBright,
-                            contentColor = JummoObsidian
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
@@ -983,11 +1001,11 @@ private fun EventDetailsAndPhotosView(
                         Icon(
                             imageVector = Icons.Default.Visibility,
                             contentDescription = null,
-                            tint = JummoVioletBright,
+                            tint = JummoVioletPrimary,
                             modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(5.dp))
-                        Text("Guest AI", color = Color.White, maxLines = 1)
+                        Text("Guest AI", color = JummoTextPrimary, maxLines = 1)
                     }
                 }
             }
@@ -1179,7 +1197,7 @@ private fun GalleryFilterPill(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.White,
+                color = if (selected) Color.White else JummoTextPrimary,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
             )
         }
@@ -1204,7 +1222,7 @@ private fun BottomGalleryActionItem(
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (active) JummoGoldBright else Color.White,
+            tint = if (active) JummoGoldBright else JummoTextPrimary,
             modifier = Modifier.size(20.dp)
         )
         Text(
@@ -1229,7 +1247,10 @@ private fun EventEditorDialog(
         coverUri: String,
         guestAccessMode: String,
         guestAllowDownload: Boolean,
-        qrExpirationDate: String
+        qrExpirationDate: String,
+        description: String,
+        storageDestination: String,
+        guestPin: String
     ) -> Unit,
     onSaveEdited: (PhotoEvent) -> Unit
 ) {
@@ -1237,6 +1258,11 @@ private fun EventEditorDialog(
     var category by remember { mutableStateOf(existingEvent?.category ?: "Wedding") }
     var eventDate by remember { mutableStateOf(existingEvent?.eventDate ?: "2026-12-15") }
     var location by remember { mutableStateOf(existingEvent?.location ?: "") }
+    var description by remember { mutableStateOf(existingEvent?.description ?: "") }
+    var storageDestination by remember {
+        mutableStateOf(existingEvent?.storageDestination ?: StorageDestinations.BOTH)
+    }
+    var guestPin by remember { mutableStateOf(existingEvent?.guestPin ?: "") }
     var coverType by remember { mutableStateOf(existingEvent?.coverType ?: "wedding") }
     var coverUri by remember { mutableStateOf(existingEvent?.coverUri ?: "") }
     var guestAccessMode by remember {
@@ -1260,7 +1286,7 @@ private fun EventEditorDialog(
         title = {
             Text(
                 text = if (existingEvent == null) "Create Event" else "Edit Event",
-                color = Color.White,
+                color = JummoTextPrimary,
                 fontWeight = FontWeight.Bold
             )
         },
@@ -1280,6 +1306,47 @@ private fun EventEditorDialog(
                         .fillMaxWidth()
                         .testTag("event_name_input")
                 )
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Event Description / Notes") },
+                    singleLine = false,
+                    maxLines = 3,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("event_description_input")
+                )
+
+                Text(
+                    text = "Storage Destination",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = JummoGoldBright
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    StorageDestinations.ALL.forEach { dest ->
+                        val chipTag = when (dest) {
+                            StorageDestinations.PHONE_FOLDER -> "storage_destination_phone"
+                            StorageDestinations.GOOGLE_DRIVE -> "storage_destination_drive"
+                            else -> "storage_destination_both"
+                        }
+                        FilterChip(
+                            selected = storageDestination == dest,
+                            onClick = { storageDestination = dest },
+                            label = { Text(StorageDestinations.displayLabel(dest)) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = JummoGoldBright,
+                                selectedLabelColor = Color.White
+                            ),
+                            modifier = Modifier.testTag(chipTag)
+                        )
+                    }
+                }
 
                 Text(
                     text = "Event Category",
@@ -1308,7 +1375,7 @@ private fun EventEditorDialog(
                             label = { Text(cat) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = JummoGoldBright,
-                                selectedLabelColor = JummoObsidian
+                                selectedLabelColor = Color.White
                             )
                         )
                     }
@@ -1340,7 +1407,7 @@ private fun EventEditorDialog(
                         Text(
                             text = "Event Cover",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White
+                            color = JummoTextPrimary
                         )
                         Text(
                             text = if (coverUri.isNotBlank()) "Custom cover selected" else "Default category cover ($coverType)",
@@ -1389,6 +1456,19 @@ private fun EventEditorDialog(
                     }
                 }
 
+                if (guestAccessMode == GuestAccessModes.PIN_PROTECTED) {
+                    OutlinedTextField(
+                        value = guestPin,
+                        onValueChange = { guestPin = it },
+                        label = { Text("Guest Security PIN (e.g. 7290)") },
+                        placeholder = { Text("4-6 digit numeric PIN") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("guest_pin_input")
+                    )
+                }
+
                 OutlinedTextField(
                     value = qrExpirationDate,
                     onValueChange = { qrExpirationDate = it },
@@ -1405,13 +1485,13 @@ private fun EventEditorDialog(
                     Text(
                         text = "Allow Guest Photo Downloads",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
+                        color = JummoTextPrimary
                     )
                     Switch(
                         checked = guestAllowDownload,
                         onCheckedChange = { guestAllowDownload = it },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = JummoObsidian,
+                            checkedThumbColor = Color.White,
                             checkedTrackColor = JummoGoldBright
                         )
                     )
@@ -1433,7 +1513,10 @@ private fun EventEditorDialog(
                             coverUri,
                             guestAccessMode,
                             guestAllowDownload,
-                            qrExpirationDate
+                            qrExpirationDate,
+                            description,
+                            storageDestination,
+                            guestPin
                         )
                     } else {
                         onSaveEdited(
@@ -1446,14 +1529,17 @@ private fun EventEditorDialog(
                                 coverUri = coverUri,
                                 guestAccessMode = guestAccessMode,
                                 guestAllowDownload = guestAllowDownload,
-                                qrExpirationDate = qrExpirationDate
+                                qrExpirationDate = qrExpirationDate,
+                                description = description,
+                                storageDestination = storageDestination,
+                                guestPin = guestPin
                             )
                         )
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = JummoGoldBright,
-                    contentColor = JummoObsidian
+                    contentColor = Color.White
                 ),
                 modifier = Modifier.testTag("save_event_button")
             ) {

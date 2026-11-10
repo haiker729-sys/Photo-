@@ -82,12 +82,17 @@ import com.example.R
 import com.example.data.model.GuestAccessModes
 import com.example.data.model.PhotoEvent
 import com.example.ui.components.JummoLuxuryCameraLogo
+import com.example.ui.theme.JummoBorderGlow
+import com.example.ui.theme.JummoBorderSubtle
 import com.example.ui.theme.JummoCardPurple
 import com.example.ui.theme.JummoDeepPurple
 import com.example.ui.theme.JummoErrorRed
 import com.example.ui.theme.JummoGoldBright
 import com.example.ui.theme.JummoObsidian
+import com.example.ui.theme.JummoTextPrimary
 import com.example.ui.theme.JummoTextSecondary
+import com.example.ui.theme.JummoVioletBright
+import com.example.ui.theme.JummoVioletPrimary
 import com.example.util.QrCodeGenerator
 
 /**
@@ -174,15 +179,14 @@ fun EventQrSystemDialog(
                 .padding(vertical = 10.dp)
                 .testTag("qr_management_modal"),
             shape = RoundedCornerShape(26.dp),
-            color = Color(0xFF0E051F),
+            color = JummoObsidian,
             border = BorderStroke(
                 width = 1.3.dp,
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color(0xFFE879F9),
-                        Color(0xFFA855F7),
-                        Color(0xFF6D28D9),
-                        Color(0xFFF59E0B)
+                        JummoVioletPrimary,
+                        JummoVioletBright,
+                        JummoBorderSubtle
                     )
                 )
             )
@@ -193,9 +197,9 @@ fun EventQrSystemDialog(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF190A33),
-                                Color(0xFF0E051F),
-                                Color(0xFF080312)
+                                JummoObsidian,
+                                JummoDeepPurple,
+                                JummoObsidian
                             )
                         )
                     )
@@ -220,12 +224,12 @@ fun EventQrSystemDialog(
                                 .clip(RoundedCornerShape(11.dp))
                                 .background(
                                     Brush.linearGradient(
-                                        colors = listOf(Color(0xFF28124D), Color(0xFF16082E))
+                                        colors = listOf(JummoCardPurple, JummoBorderSubtle)
                                     )
                                 )
                                 .border(
                                     width = 1.dp,
-                                    color = Color(0xFF7E22CE),
+                                    color = JummoBorderGlow,
                                     shape = RoundedCornerShape(11.dp)
                                 ),
                             contentAlignment = Alignment.Center
@@ -233,7 +237,7 @@ fun EventQrSystemDialog(
                             Icon(
                                 imageVector = Icons.Default.QrCode2,
                                 contentDescription = "QR Management Icon",
-                                tint = JummoGoldBright,
+                                tint = JummoVioletPrimary,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -241,7 +245,7 @@ fun EventQrSystemDialog(
                         Column {
                             Text(
                                 text = "QR Management",
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontSize = 19.sp,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
@@ -249,7 +253,7 @@ fun EventQrSystemDialog(
                             )
                             Text(
                                 text = "Create & manage guest access for your event",
-                                color = Color(0xFFC4B5FD),
+                                color = JummoTextSecondary,
                                 fontSize = 11.5.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -266,7 +270,7 @@ fun EventQrSystemDialog(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close QR Management",
-                            tint = Color(0xFFD8B4FE),
+                            tint = JummoTextPrimary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -291,15 +295,14 @@ fun EventQrSystemDialog(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(22.dp),
-                        color = Color(0xFF120626),
+                        color = JummoCardPurple,
                         border = BorderStroke(
                             width = 1.25.dp,
                             brush = Brush.linearGradient(
                                 colors = listOf(
-                                    Color(0xFFD946EF),
-                                    Color(0xFFA855F7),
-                                    Color(0xFF7E22CE),
-                                    Color(0xFFD946EF)
+                                    JummoVioletPrimary,
+                                    JummoVioletBright,
+                                    JummoBorderSubtle
                                 )
                             )
                         )
@@ -310,9 +313,9 @@ fun EventQrSystemDialog(
                                 .background(
                                     Brush.verticalGradient(
                                         colors = listOf(
-                                            Color(0xFF1F0C3D),
-                                            Color(0xFF110624),
-                                            Color(0xFF190A35)
+                                            JummoCardPurple,
+                                            JummoObsidian,
+                                            JummoCardPurple
                                         )
                                     )
                                 )
@@ -357,8 +360,8 @@ fun EventQrSystemDialog(
                                                 Brush.horizontalGradient(
                                                     colors = listOf(
                                                         Color.Transparent,
-                                                        Color(0xFF120626).copy(alpha = 0.85f),
-                                                        Color(0xFF120626)
+                                                        JummoCardPurple.copy(alpha = 0.85f),
+                                                        JummoCardPurple
                                                     )
                                                 )
                                             )
@@ -385,8 +388,8 @@ fun EventQrSystemDialog(
                                             .background(
                                                 Brush.horizontalGradient(
                                                     colors = listOf(
-                                                        Color(0xFF120626),
-                                                        Color(0xFF120626).copy(alpha = 0.78f),
+                                                        JummoCardPurple,
+                                                        JummoCardPurple.copy(alpha = 0.78f),
                                                         Color.Transparent
                                                     )
                                                 )
@@ -417,13 +420,13 @@ fun EventQrSystemDialog(
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(
                                             text = "Jummo Photos AI",
-                                            color = Color.White,
+                                            color = JummoTextPrimary,
                                             fontSize = 13.5.sp,
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
                                             text = "Guest Portal",
-                                            color = Color(0xFFD8B4FE),
+                                            color = JummoTextSecondary,
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -437,7 +440,7 @@ fun EventQrSystemDialog(
                                 // Event Title
                                 Text(
                                     text = event.name.ifBlank { "Rahul weds Pooja" },
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     maxLines = 1,
@@ -462,13 +465,13 @@ fun EventQrSystemDialog(
                                     Icon(
                                         imageVector = Icons.Default.Event,
                                         contentDescription = null,
-                                        tint = Color(0xFFC084FC),
+                                        tint = JummoVioletPrimary,
                                         modifier = Modifier.size(13.dp)
                                     )
                                     Spacer(modifier = Modifier.width(5.dp))
                                     Text(
                                         text = "${event.category} • $formattedEventDate",
-                                        color = Color(0xFFE9D5FF),
+                                        color = JummoTextSecondary,
                                         fontSize = 11.5.sp,
                                         fontWeight = FontWeight.Medium
                                     )
@@ -558,11 +561,11 @@ fun EventQrSystemDialog(
                                 Text(
                                     text = buildAnnotatedString {
                                         append("Scan to Find ")
-                                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Color.White)) {
-                                            append("Your Event Photos Instantly")
+                                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = JummoTextPrimary)) {
+                                            append("Your Event Photos")
                                         }
                                     },
-                                    color = Color(0xFFE9D5FF),
+                                    color = JummoTextSecondary,
                                     fontSize = 11.5.sp,
                                     textAlign = TextAlign.Center
                                 )
@@ -575,10 +578,10 @@ fun EventQrSystemDialog(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // 1. Download QR (Gold-outlined purple-gold pill)
+                                    // 1. Download QR
                                     QrHeroActionButton(
                                         icon = Icons.Default.Download,
-                                        iconTint = JummoGoldBright,
+                                        iconTint = Color.White,
                                         label = "Download QR",
                                         isGoldHighlighted = true,
                                         onClick = {
@@ -602,7 +605,7 @@ fun EventQrSystemDialog(
                                     // 2. Share QR
                                     QrHeroActionButton(
                                         icon = Icons.Default.Share,
-                                        iconTint = JummoGoldBright,
+                                        iconTint = Color.White,
                                         label = "Share QR",
                                         isGoldHighlighted = false,
                                         onClick = {
@@ -626,7 +629,7 @@ fun EventQrSystemDialog(
                                     // 3. Open Guest Portal
                                     QrHeroActionButton(
                                         icon = Icons.AutoMirrored.Filled.OpenInNew,
-                                        iconTint = Color(0xFFC084FC),
+                                        iconTint = Color.White,
                                         label = "Open Guest Portal",
                                         isGoldHighlighted = false,
                                         onClick = {
@@ -652,8 +655,8 @@ fun EventQrSystemDialog(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(15.dp),
-                        color = Color(0xFF170B2C),
-                        border = BorderStroke(0.9.dp, Color(0xFF4C1D95))
+                        color = JummoCardPurple,
+                        border = BorderStroke(0.9.dp, JummoBorderSubtle)
                     ) {
                         Row(
                             modifier = Modifier
@@ -671,14 +674,14 @@ fun EventQrSystemDialog(
                                     modifier = Modifier
                                         .size(34.dp)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(Color(0xFF28134B))
-                                        .border(0.75.dp, Color(0xFF6D28D9), RoundedCornerShape(10.dp)),
+                                        .background(JummoBorderSubtle)
+                                        .border(0.75.dp, JummoBorderGlow, RoundedCornerShape(10.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Refresh,
                                         contentDescription = null,
-                                        tint = JummoGoldBright,
+                                        tint = JummoVioletPrimary,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
@@ -686,7 +689,7 @@ fun EventQrSystemDialog(
                                 Column {
                                     Text(
                                         text = "Enable Event QR Portal",
-                                        color = Color.White,
+                                        color = JummoTextPrimary,
                                         fontSize = 13.5.sp,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -696,7 +699,7 @@ fun EventQrSystemDialog(
                                         } else {
                                             "QR access is paused for guests"
                                         },
-                                        color = Color(0xFFB8A5D6),
+                                        color = JummoTextSecondary,
                                         fontSize = 11.sp
                                     )
                                 }
@@ -726,10 +729,10 @@ fun EventQrSystemDialog(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(15.dp),
-                        color = Color(0xFF170B2C),
+                        color = JummoCardPurple,
                         border = BorderStroke(
                             0.9.dp,
-                            if (isExpiredNow) JummoErrorRed.copy(alpha = 0.8f) else Color(0xFF4C1D95)
+                            if (isExpiredNow) JummoErrorRed.copy(alpha = 0.8f) else JummoBorderSubtle
                         )
                     ) {
                         Row(
@@ -746,20 +749,20 @@ fun EventQrSystemDialog(
                                 Icon(
                                     imageVector = Icons.Default.DateRange,
                                     contentDescription = null,
-                                    tint = JummoGoldBright,
+                                    tint = JummoVioletPrimary,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Column {
                                     Text(
                                         text = "QR Expiration Date",
-                                        color = Color.White,
+                                        color = JummoTextPrimary,
                                         fontSize = 13.5.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                     if (isExpiredNow) {
                                         Text(
                                             text = "Expired — guest access blocked",
-                                            color = Color(0xFFFCA5A5),
+                                            color = JummoErrorRed,
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.SemiBold
                                         )
@@ -773,8 +776,8 @@ fun EventQrSystemDialog(
                                     .clickable { showExpirationPicker = true }
                                     .testTag("qr_expiration_selector"),
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFF261347),
-                                border = BorderStroke(0.9.dp, Color(0xFF6D28D9))
+                                color = JummoObsidian,
+                                border = BorderStroke(0.9.dp, JummoBorderGlow)
                             ) {
                                 Row(
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -783,7 +786,7 @@ fun EventQrSystemDialog(
                                 ) {
                                     Text(
                                         text = expirationDate.ifBlank { "01 Mar 2027" },
-                                        color = Color.White,
+                                        color = JummoTextPrimary,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium,
                                         modifier = Modifier.testTag("qr_expiration_value_text")
@@ -791,7 +794,7 @@ fun EventQrSystemDialog(
                                     Icon(
                                         imageVector = Icons.Default.KeyboardArrowDown,
                                         contentDescription = "Select Expiration Date",
-                                        tint = Color(0xFFD8B4FE),
+                                        tint = JummoVioletPrimary,
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
@@ -805,8 +808,8 @@ fun EventQrSystemDialog(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFF170B2C),
-                        border = BorderStroke(0.9.dp, Color(0xFF4C1D95))
+                        color = JummoCardPurple,
+                        border = BorderStroke(0.9.dp, JummoBorderSubtle)
                     ) {
                         Column(
                             modifier = Modifier
@@ -821,12 +824,12 @@ fun EventQrSystemDialog(
                                 Icon(
                                     imageVector = Icons.Default.Groups,
                                     contentDescription = null,
-                                    tint = JummoGoldBright,
+                                    tint = JummoVioletPrimary,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
                                     text = "Guest Access Mode",
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     fontSize = 13.5.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -895,20 +898,20 @@ fun EventQrSystemDialog(
                             .clickable { onDismiss() }
                             .testTag("qr_close_button"),
                         shape = RoundedCornerShape(50),
-                        color = Color(0xFF1B0C33),
-                        border = BorderStroke(1.dp, Color(0xFF4C1D95))
+                        color = JummoCardPurple,
+                        border = BorderStroke(1.dp, JummoBorderSubtle)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 text = "Close",
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
 
-                    // Save QR Settings Golden Pill Button
+                    // Save QR Settings Purple Pill Button
                     Surface(
                         modifier = Modifier
                             .weight(0.58f)
@@ -925,7 +928,7 @@ fun EventQrSystemDialog(
                             .testTag("qr_save_settings_button"),
                         shape = RoundedCornerShape(50),
                         color = Color.Transparent,
-                        border = BorderStroke(1.dp, Color(0xFFFDE68A))
+                        border = BorderStroke(1.dp, JummoBorderGlow)
                     ) {
                         Box(
                             modifier = Modifier
@@ -933,9 +936,8 @@ fun EventQrSystemDialog(
                                 .background(
                                     Brush.verticalGradient(
                                         colors = listOf(
-                                            Color(0xFFFDE047),
-                                            Color(0xFFFBBF24),
-                                            Color(0xFFD97706)
+                                            JummoVioletPrimary,
+                                            JummoVioletBright
                                         )
                                     )
                                 ),
@@ -948,13 +950,13 @@ fun EventQrSystemDialog(
                                 Icon(
                                     imageVector = Icons.Default.Check,
                                     contentDescription = null,
-                                    tint = JummoObsidian,
+                                    tint = Color.White,
                                     modifier = Modifier.size(17.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = "Save QR Settings",
-                                    color = JummoObsidian,
+                                    color = Color.White,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     maxLines = 1
@@ -998,7 +1000,7 @@ private fun QrHeroActionButton(
         color = Color.Transparent,
         border = BorderStroke(
             width = if (isGoldHighlighted) 1.1.dp else 0.85.dp,
-            color = if (isGoldHighlighted) JummoGoldBright else Color(0xFF7E22CE)
+            color = if (isGoldHighlighted) JummoVioletPrimary else JummoBorderGlow
         )
     ) {
         Box(
@@ -1008,16 +1010,15 @@ private fun QrHeroActionButton(
                     if (isGoldHighlighted) {
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF581C87),
-                                Color(0xFF3B1261),
-                                Color(0xFF5C3A1D)
+                                JummoVioletPrimary,
+                                JummoVioletBright
                             )
                         )
                     } else {
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF241046),
-                                Color(0xFF15082B)
+                                JummoVioletBright,
+                                JummoVioletPrimary
                             )
                         )
                     }
@@ -1063,17 +1064,17 @@ private fun LuxuryGoldSwitch(
             .background(
                 if (checked) {
                     Brush.horizontalGradient(
-                        colors = listOf(Color(0xFFFDE047), Color(0xFFF59E0B))
+                        colors = listOf(JummoVioletPrimary, JummoVioletBright)
                     )
                 } else {
                     Brush.horizontalGradient(
-                        colors = listOf(Color(0xFF2A164D), Color(0xFF1B0C36))
+                        colors = listOf(JummoBorderSubtle, JummoCardPurple)
                     )
                 }
             )
             .border(
                 width = 1.dp,
-                color = if (checked) Color(0xFFFDE68A) else Color(0xFF581C87),
+                color = if (checked) JummoVioletPrimary else JummoBorderSubtle,
                 shape = RoundedCornerShape(50)
             )
             .clickable { onCheckedChange(!checked) }
@@ -1084,10 +1085,10 @@ private fun LuxuryGoldSwitch(
             modifier = Modifier
                 .size(20.dp)
                 .clip(CircleShape)
-                .background(if (checked) Color(0xFF15082B) else Color(0xFF9CA3AF))
+                .background(if (checked) Color.White else JummoTextSecondary)
                 .border(
                     width = 0.8.dp,
-                    color = if (checked) JummoGoldBright else Color.Transparent,
+                    color = if (checked) JummoVioletPrimary else Color.Transparent,
                     shape = CircleShape
                 )
         )
@@ -1111,7 +1112,7 @@ private fun GuestAccessModeOptionCard(
         color = Color.Transparent,
         border = BorderStroke(
             width = if (selected) 1.3.dp else 0.85.dp,
-            color = if (selected) JummoGoldBright else Color(0xFF4C1D95)
+            color = if (selected) JummoVioletPrimary else JummoBorderSubtle
         )
     ) {
         Box(
@@ -1121,15 +1122,15 @@ private fun GuestAccessModeOptionCard(
                     if (selected) {
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF6B21A8),
-                                Color(0xFF3B0764)
+                                JummoVioletPrimary,
+                                JummoVioletBright
                             )
                         )
                     } else {
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF1D0D36),
-                                Color(0xFF130726)
+                                JummoObsidian,
+                                JummoCardPurple
                             )
                         )
                     }
@@ -1143,7 +1144,7 @@ private fun GuestAccessModeOptionCard(
             ) {
                 Text(
                     text = topLine,
-                    color = Color.White,
+                    color = if (selected) Color.White else JummoTextPrimary,
                     fontSize = 11.sp,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                     textAlign = TextAlign.Center,
@@ -1152,7 +1153,7 @@ private fun GuestAccessModeOptionCard(
                 )
                 Text(
                     text = bottomLine,
-                    color = if (selected) Color(0xFFF3E8FF) else Color(0xFFD8B4FE),
+                    color = if (selected) Color.White else JummoTextSecondary,
                     fontSize = 10.sp,
                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                     textAlign = TextAlign.Center,
@@ -1167,13 +1168,13 @@ private fun GuestAccessModeOptionCard(
                         .align(Alignment.TopEnd)
                         .size(16.dp)
                         .clip(CircleShape)
-                        .background(JummoGoldBright),
+                        .background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Selected Mode",
-                        tint = JummoObsidian,
+                        tint = JummoVioletPrimary,
                         modifier = Modifier.size(11.dp)
                     )
                 }
@@ -1185,7 +1186,7 @@ private fun GuestAccessModeOptionCard(
 @Composable
 private fun GoldLaurelBranch(isLeft: Boolean) {
     Canvas(modifier = Modifier.size(width = 16.dp, height = 24.dp)) {
-        val gold = Color(0xFFFBBF24)
+        val gold = Color(0xFF5B21B6)
         val path = Path().apply {
             if (isLeft) {
                 moveTo(size.width * 0.75f, size.height * 0.90f)
@@ -1239,7 +1240,7 @@ private fun QrExpirationPickerDialog(
         title = {
             Text(
                 text = "Set QR Expiration Date",
-                color = Color.White,
+                color = JummoTextPrimary,
                 fontWeight = FontWeight.Bold
             )
         },
@@ -1249,7 +1250,7 @@ private fun QrExpirationPickerDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Select a preset expiration date or enter a custom date (e.g., 01 Mar 2027 or YYYY-MM-DD):",
+                    text = "Select an expiration date or enter a custom date:",
                     style = MaterialTheme.typography.bodySmall,
                     color = JummoTextSecondary
                 )
@@ -1266,10 +1267,10 @@ private fun QrExpirationPickerDialog(
                             }
                             .testTag("qr_exp_preset_${preset.replace(" ", "_")}"),
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isSelected) Color(0xFF4C1D95) else JummoDeepPurple,
+                        color = if (isSelected) JummoVioletPrimary else JummoObsidian,
                         border = BorderStroke(
                             width = 0.9.dp,
-                            color = if (isSelected) JummoGoldBright else Color(0xFF581C87)
+                            color = if (isSelected) JummoVioletPrimary else JummoBorderSubtle
                         )
                     ) {
                         Row(
@@ -1279,14 +1280,14 @@ private fun QrExpirationPickerDialog(
                         ) {
                             Text(
                                 text = preset,
-                                color = Color.White,
+                                color = if (isSelected) Color.White else JummoTextPrimary,
                                 fontSize = 13.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                             )
                             if (QrCodeGenerator.isQrExpired(preset)) {
                                 Text(
                                     text = "Expired",
-                                    color = Color(0xFFFCA5A5),
+                                    color = JummoErrorRed,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -1316,8 +1317,8 @@ private fun QrExpirationPickerDialog(
                     onSelectDate(formatted)
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = JummoGoldBright,
-                    contentColor = JummoObsidian
+                    containerColor = JummoVioletPrimary,
+                    contentColor = Color.White
                 ),
                 modifier = Modifier.testTag("qr_apply_expiration_button")
             ) {

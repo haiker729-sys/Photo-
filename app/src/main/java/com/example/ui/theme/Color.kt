@@ -2,43 +2,52 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Jummo Photos AI — Ultra Luxury Edition Brand Palette (Strict Reference Match)
-// Midnight Black: #090610
-val JummoObsidian = Color(0xFF090610)
-val JummoMidnightBlack = Color(0xFF090610)
+// Jummo Photos AI — Official Purple Premium Palette
+// Primary: #5B21B6 | Accent: #8B5CF6 | Secondary: #C7B3FF | Surface: #EDE9FE | Background: #FAF9FF
+// Primary Text: #24133F | Secondary Text: #6B5B83 | Button Text: #FFFFFF
+val JummoPrimary = Color(0xFF5B21B6)
+val JummoAccent = Color(0xFF8B5CF6)
+val JummoSecondary = Color(0xFFC7B3FF)
+val JummoSurface = Color(0xFFEDE9FE)
+val JummoBackground = Color(0xFFFAF9FF)
+val JummoButtonText = Color(0xFFFFFFFF)
 
-// Royal Purple: #24113F
-val JummoDeepPurple = Color(0xFF150A26)
-val JummoSurfacePurple = Color(0xFF1C0E33)
-val JummoCardPurple = Color(0xFF24113F)
-val JummoElevatedPurple = Color(0xFF311854)
-val JummoRoyalPurple = Color(0xFF24113F)
+// Background & Container Tokens (#FAF9FF)
+val JummoObsidian = Color(0xFFFAF9FF)
+val JummoMidnightBlack = Color(0xFFFAF9FF)
 
-// Glassmorphism & Glowing Purple Outlines
-val JummoGlassSurface = Color(0xD924113F)
-val JummoGlassHighlight = Color(0x28FFFFFF)
-val JummoBorderSubtle = Color(0xFF472578)
-val JummoBorderGlow = Color(0xFF7B2CBF)
-val JummoBorderGoldSubtle = Color(0x66F6C445)
+// Surface & Card Tokens (#EDE9FE)
+val JummoDeepPurple = Color(0xFFFAF9FF)
+val JummoSurfacePurple = Color(0xFFEDE9FE)
+val JummoCardPurple = Color(0xFFEDE9FE)
+val JummoElevatedPurple = Color(0xFFEDE9FE)
+val JummoRoyalPurple = Color(0xFF5B21B6)
 
-// Electric Violet: #A020F0
-val JummoVioletPrimary = Color(0xFFA020F0)
-val JummoVioletBright = Color(0xFFB537F2)
-val JummoElectricViolet = Color(0xFFA020F0)
-val JummoVioletSoft = Color(0xFFE9D5FF)
-val JummoVioletDeep = Color(0xFF4C1D95)
+// Borders & Highlights (#C7B3FF / #8B5CF6)
+val JummoGlassSurface = Color(0xF5EDE9FE)
+val JummoGlassHighlight = Color(0x40C7B3FF)
+val JummoBorderSubtle = Color(0xFFC7B3FF)
+val JummoBorderGlow = Color(0xFF8B5CF6)
+val JummoBorderGoldSubtle = Color(0xFFC7B3FF)
 
-// Champagne Gold: #F6C445
-val JummoGold = Color(0xFFD9A426)
-val JummoGoldBright = Color(0xFFF6C445)
-val JummoChampagneGold = Color(0xFFF6C445)
-val JummoGoldSoft = Color(0xFFFDE68A)
-val JummoGoldDeep = Color(0xFF926B16)
+// Primary & Accent Purple Tokens (#5B21B6 / #8B5CF6 / #C7B3FF)
+val JummoVioletPrimary = Color(0xFF5B21B6)
+val JummoVioletBright = Color(0xFF8B5CF6)
+val JummoElectricViolet = Color(0xFF8B5CF6)
+val JummoVioletSoft = Color(0xFFC7B3FF)
+val JummoVioletDeep = Color(0xFF5B21B6)
 
-// Soft White: #F8F5FF & Muted Lavender: #B9A9D0
-val JummoTextPrimary = Color(0xFFF8F5FF)
-val JummoTextSecondary = Color(0xFFB9A9D0)
-val JummoTextMuted = Color(0xFF907DA8)
+// Action & Brand Highlight Tokens mapped to Official Purple Palette (#5B21B6 / #8B5CF6 / #C7B3FF)
+val JummoGold = Color(0xFF5B21B6)
+val JummoGoldBright = Color(0xFF5B21B6)
+val JummoChampagneGold = Color(0xFF8B5CF6)
+val JummoGoldSoft = Color(0xFFC7B3FF)
+val JummoGoldDeep = Color(0xFF5B21B6)
+
+// Official Typography Colours (#24133F & #6B5B83)
+val JummoTextPrimary = Color(0xFF24133F)
+val JummoTextSecondary = Color(0xFF6B5B83)
+val JummoTextMuted = Color(0xFF6B5B83)
 
 // Semantic Status Colors
 val JummoSuccessGreen = Color(0xFF10B981)

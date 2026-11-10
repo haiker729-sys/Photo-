@@ -302,10 +302,24 @@ class JummoViewModel(
         coverUri: String,
         guestAccessMode: String,
         guestAllowDownload: Boolean,
-        qrExpirationDate: String
+        qrExpirationDate: String,
+        description: String = "",
+        storageDestination: String = com.example.data.model.StorageDestinations.BOTH,
+        guestPin: String = "",
+        context: Context? = null
     ) {
         viewModelScope.launch {
             _isBusy.value = true
+            var phonePath = ""
+            val clean = name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_").ifBlank { "Untitled_Event" }
+            val drivePath = "Jummo_Events_Cloud/$clean"
+            if (context != null) {
+                val base = File(context.filesDir, "Jummo_Photos/Events/$clean")
+                File(base, "Original_Photos").mkdirs()
+                File(base, "Thumbnails").mkdirs()
+                File(base, "Guest_Exports").mkdirs()
+                phonePath = base.absolutePath
+            }
             val result = repository.createEvent(
                 name = name,
                 category = category,
@@ -315,7 +329,12 @@ class JummoViewModel(
                 coverUri = coverUri,
                 guestAccessMode = guestAccessMode,
                 guestAllowDownload = guestAllowDownload,
-                qrExpirationDate = qrExpirationDate
+                qrExpirationDate = qrExpirationDate,
+                description = description,
+                storageDestination = storageDestination,
+                guestPin = guestPin,
+                phoneFolderPath = phonePath,
+                driveFolderId = drivePath
             )
             _isBusy.value = false
             result.onSuccess { newId ->
@@ -378,10 +397,25 @@ class JummoViewModel(
             val autoUpload = profile?.autoUploadEnabled ?: true
             val uploadMode = if (autoUpload) "Automatic" else "Manual"
             val actualBytes = capturedFile.length().coerceAtLeast(0L)
+
+            // Organize into Jummo_Photos/Events/{Event_Name}/Original_Photos & Thumbnails
+            val cleanName = event.name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_").ifBlank { "Untitled_Event" }
+            val eventOriginalsDir = File(context.filesDir, "Jummo_Photos/Events/$cleanName/Original_Photos").apply { mkdirs() }
+            val eventThumbsDir = File(context.filesDir, "Jummo_Photos/Events/$cleanName/Thumbnails").apply { mkdirs() }
+            File(context.filesDir, "Jummo_Photos/Events/$cleanName/Guest_Exports").apply { mkdirs() }
+            val targetFile = File(eventOriginalsDir, capturedFile.name)
+            if (!targetFile.exists()) {
+                runCatching { capturedFile.copyTo(targetFile, overwrite = true) }
+            }
+            val thumbFile = File(eventThumbsDir, "THUMB_${capturedFile.name}")
+            if (!thumbFile.exists()) {
+                runCatching { capturedFile.copyTo(thumbFile, overwrite = true) }
+            }
+
             val result = repository.enqueuePhotoUpload(
                 event = event,
                 fileName = capturedFile.name,
-                localUri = Uri.fromFile(capturedFile).toString(),
+                localUri = Uri.fromFile(if (targetFile.exists()) targetFile else capturedFile).toString(),
                 sourceType = "MobileCamera",
                 uploadMode = uploadMode,
                 fileSizeBytes = actualBytes,

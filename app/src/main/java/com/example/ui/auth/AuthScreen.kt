@@ -256,107 +256,17 @@ fun AuthScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(JummoObsidian)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFAF9FF),
+                        Color(0xFFEDE9FE).copy(alpha = 0.6f),
+                        Color(0xFFFAF9FF)
+                    )
+                )
+            )
             .testTag("jummo_auth_screen")
     ) {
-        // 1. Top Hero Cinematic DSLR & Bokeh Backdrop
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(310.dp)
-                .align(Alignment.TopCenter)
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.img_hero_studio),
-                contentDescription = "Professional DSLR Camera & Studio Bokeh",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-            // Cinematic Purple & Midnight Black Gradient Blending Overlay
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                JummoObsidian.copy(alpha = 0.25f),
-                                JummoDeepPurple.copy(alpha = 0.55f),
-                                JummoObsidian.copy(alpha = 0.92f),
-                                JummoObsidian
-                            )
-                        )
-                    )
-            )
-            // Subtle Diagonal Violet Light Beam Accent matching reference
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                drawLine(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            JummoVioletBright.copy(alpha = 0.65f),
-                            JummoVioletPrimary.copy(alpha = 0.25f),
-                            Color.Transparent
-                        )
-                    ),
-                    start = Offset(0f, size.height * 0.52f),
-                    end = Offset(size.width * 0.42f, size.height * 0.14f),
-                    strokeWidth = 3.dp.toPx(),
-                    cap = StrokeCap.Round
-                )
-            }
-        }
-
-        // Bottom Silk Purple & Gold Wave Glow Artwork matching reference
-        Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(110.dp)
-                .align(Alignment.BottomCenter)
-        ) {
-            val w = size.width
-            val h = size.height
-            val wavePath = Path().apply {
-                moveTo(0f, h * 0.55f)
-                cubicTo(
-                    w * 0.28f, h * 0.18f,
-                    w * 0.58f, h * 0.92f,
-                    w, h * 0.30f
-                )
-                lineTo(w, h)
-                lineTo(0f, h)
-                close()
-            }
-            drawPath(
-                path = wavePath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        JummoVioletPrimary.copy(alpha = 0.32f),
-                        JummoDeepPurple.copy(alpha = 0.65f),
-                        JummoObsidian
-                    )
-                )
-            )
-            val crestPath = Path().apply {
-                moveTo(0f, h * 0.55f)
-                cubicTo(
-                    w * 0.28f, h * 0.18f,
-                    w * 0.58f, h * 0.92f,
-                    w, h * 0.30f
-                )
-            }
-            drawPath(
-                path = crestPath,
-                brush = Brush.horizontalGradient(
-                    colors = listOf(
-                        JummoVioletBright.copy(alpha = 0.35f),
-                        JummoVioletBright.copy(alpha = 0.85f),
-                        JummoGoldBright.copy(alpha = 0.9f),
-                        JummoVioletBright.copy(alpha = 0.45f)
-                    )
-                ),
-                style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-            )
-        }
-
         // Scrollable Foreground Content Container
         Column(
             modifier = Modifier
@@ -365,7 +275,7 @@ fun AuthScreen(
                 .widthIn(max = 500.dp)
                 .align(Alignment.TopCenter)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp, vertical = 8.dp)
+                .padding(horizontal = 18.dp, vertical = 12.dp)
                 .testTag("login_scroll_container"),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
@@ -377,12 +287,10 @@ fun AuthScreen(
                     .fillMaxWidth()
                     .padding(top = 10.dp)
             ) {
-                // Luxury Outlined Golden Camera Emblem with Glowing Purple Optical Lens
-                JummoHeroGoldenCameraLogo(size = 68.dp)
+                JummoHeroGoldenCameraLogo(size = 64.dp)
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // App Name: "Jummo Photos AI" (White + Champagne Gold "AI")
                 Text(
                     text = buildAnnotatedString {
                         withStyle(
@@ -395,7 +303,7 @@ fun AuthScreen(
                         }
                         withStyle(
                             SpanStyle(
-                                color = JummoGoldBright,
+                                color = JummoVioletPrimary,
                                 fontWeight = FontWeight.ExtraBold
                             )
                         ) {
@@ -412,56 +320,27 @@ fun AuthScreen(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Tagline Pill flanked by Golden Horizontal Lines: ── ( Smart Event Photography Suite ) ──
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth()
+                Surface(
+                    color = JummoCardPurple,
+                    border = BorderStroke(1.dp, JummoBorderSubtle),
+                    shape = RoundedCornerShape(50)
                 ) {
-                    Box(
+                    Text(
+                        text = "Smart Event Photography Suite",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = JummoVioletPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
-                            .width(24.dp)
-                            .height(1.2.dp)
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(Color.Transparent, JummoGoldBright)
-                                )
-                            )
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Surface(
-                        color = JummoObsidian.copy(alpha = 0.78f),
-                        border = BorderStroke(1.dp, JummoGoldBright.copy(alpha = 0.75f)),
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Text(
-                            text = "Smart Event Photography Suite",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = JummoGoldSoft,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .padding(horizontal = 14.dp, vertical = 4.dp)
-                                .testTag("login_tagline")
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .width(24.dp)
-                            .height(1.2.dp)
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(JummoGoldBright, Color.Transparent)
-                                )
-                            )
+                            .padding(horizontal = 14.dp, vertical = 5.dp)
+                            .testTag("login_tagline")
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // 4. EVENT CATEGORIES: Five compact categories in one horizontal row
+                // EVENT CATEGORIES: Five compact categories in one horizontal row
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -501,43 +380,24 @@ fun AuthScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 5. FEATURE CARD: One compact premium purple glass-style card with four feature rows
+            // FEATURE CARD: Clean lavender surface (#EDE9FE) with subtle border (#C7B3FF)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("login_feature_card"),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = JummoCardPurple.copy(alpha = 0.90f)
+                    containerColor = JummoCardPurple
                 ),
-                border = BorderStroke(
-                    width = 1.2.dp,
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            JummoBorderGlow,
-                            JummoVioletPrimary.copy(alpha = 0.65f),
-                            JummoBorderGlow.copy(alpha = 0.85f)
-                        )
-                    )
-                )
+                border = BorderStroke(1.dp, JummoBorderSubtle)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    JummoElevatedPurple.copy(alpha = 0.55f),
-                                    JummoCardPurple.copy(alpha = 0.92f),
-                                    JummoDeepPurple.copy(alpha = 0.95f)
-                                )
-                            )
-                        )
-                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
                 ) {
-                    // ROW 1: Camera & DSLR Import
                     LuxuryLoginFeatureRow(
                         icon = Icons.Default.CameraAlt,
                         title = "Camera & DSLR Import",
@@ -546,7 +406,6 @@ fun AuthScreen(
 
                     LoginFeatureDivider()
 
-                    // ROW 2: Smart Upload Queue
                     LuxuryLoginFeatureRow(
                         icon = Icons.Default.CloudUpload,
                         title = "Smart Upload Queue",
@@ -555,7 +414,6 @@ fun AuthScreen(
 
                     LoginFeatureDivider()
 
-                    // ROW 3: Event QR & Guest Portal
                     LuxuryLoginFeatureRow(
                         icon = Icons.Default.QrCode2,
                         title = "Event QR & Guest Portal",
@@ -564,7 +422,6 @@ fun AuthScreen(
 
                     LoginFeatureDivider()
 
-                    // ROW 4: AI Face Search
                     LuxuryLoginFeatureRow(
                         icon = Icons.Default.CenterFocusStrong,
                         title = "AI Face Search",
@@ -573,16 +430,16 @@ fun AuthScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 6. GOOGLE LOGIN & 7. SECURITY FOOTER
+            // GOOGLE LOGIN & SECURITY FOOTER
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (errorMessage != null) {
                     Surface(
-                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.18f),
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.14f),
                         border = BorderStroke(0.75.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.6f)),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
@@ -593,14 +450,14 @@ fun AuthScreen(
                         Text(
                             text = errorMessage ?: "",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFFCA5A5),
+                            color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             textAlign = TextAlign.Center
                         )
                     }
                 }
 
-                // Prominent Champagne-Gold Gradient Button: "Sign in with Google"
+                // Primary Purple Button (#5B21B6 -> #8B5CF6) with #FFFFFF Button Text
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -630,17 +487,16 @@ fun AuthScreen(
                         .testTag("google_sign_in_button"),
                     shape = RoundedCornerShape(16.dp),
                     color = Color.Transparent,
-                    border = BorderStroke(1.dp, JummoGoldSoft.copy(alpha = 0.9f))
+                    border = BorderStroke(1.dp, JummoBorderGlow)
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
-                                Brush.verticalGradient(
+                                Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color(0xFFFFE28A),
-                                        JummoGoldBright,
-                                        JummoGold
+                                        JummoVioletPrimary,
+                                        JummoVioletBright
                                     )
                                 )
                             )
@@ -654,14 +510,14 @@ fun AuthScreen(
                             ) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(20.dp),
-                                    color = JummoObsidian,
+                                    color = Color.White,
                                     strokeWidth = 2.2.dp
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    text = "Signing in with Google…",
+                                    text = "Signing in…",
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = JummoObsidian,
+                                    color = Color.White,
                                     fontWeight = FontWeight.ExtraBold,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -677,7 +533,7 @@ fun AuthScreen(
                                 Text(
                                     text = "Sign in with Google",
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = JummoObsidian,
+                                    color = Color.White,
                                     fontWeight = FontWeight.ExtraBold,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -689,7 +545,7 @@ fun AuthScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 7. Security Footer: Golden Shield Icon + "Secured by Firebase Authentication"
+                // Security Footer
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
@@ -700,7 +556,7 @@ fun AuthScreen(
                     Icon(
                         imageVector = Icons.Default.VerifiedUser,
                         contentDescription = null,
-                        tint = JummoGoldBright,
+                        tint = JummoVioletPrimary,
                         modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -715,9 +571,9 @@ fun AuthScreen(
                 }
 
                 Text(
-                    text = "Official Website & APK Release Portal ↗",
+                    text = "Official Website ↗",
                     style = MaterialTheme.typography.labelSmall,
-                    color = JummoGoldBright,
+                    color = JummoVioletPrimary,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
@@ -731,7 +587,7 @@ fun AuthScreen(
 }
 
 /**
- * Outlined Golden Camera Emblem with Glowing Purple Optical Lens matching the top hero of the Login reference image.
+ * Purple Premium Camera Emblem for the Login Hero.
  */
 @Composable
 private fun JummoHeroGoldenCameraLogo(
@@ -742,12 +598,10 @@ private fun JummoHeroGoldenCameraLogo(
         val w = this.size.width
         val h = this.size.height
 
-        // Subtle outer purple + gold optical aura
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    JummoVioletBright.copy(alpha = 0.35f),
-                    JummoGoldBright.copy(alpha = 0.18f),
+                    JummoVioletBright.copy(alpha = 0.28f),
                     Color.Transparent
                 ),
                 radius = w * 0.55f
@@ -756,16 +610,13 @@ private fun JummoHeroGoldenCameraLogo(
             center = Offset(w * 0.5f, h * 0.55f)
         )
 
-        val goldBrush = Brush.linearGradient(
+        val purpleBrush = Brush.linearGradient(
             colors = listOf(
-                Color(0xFFFFE596),
-                JummoGoldBright,
-                Color(0xFFC98A1B),
-                JummoGoldBright
+                JummoVioletPrimary,
+                JummoVioletBright
             )
         )
 
-        // Top Viewfinder Hump Outline
         val humpPath = Path().apply {
             moveTo(w * 0.35f, h * 0.28f)
             lineTo(w * 0.41f, h * 0.16f)
@@ -774,53 +625,43 @@ private fun JummoHeroGoldenCameraLogo(
         }
         drawPath(
             path = humpPath,
-            brush = goldBrush,
+            brush = purpleBrush,
             style = Stroke(width = w * 0.045f, cap = StrokeCap.Round)
         )
 
-        // Small Top-Center Viewfinder Window Bar
         drawRoundRect(
-            brush = goldBrush,
+            brush = purpleBrush,
             topLeft = Offset(w * 0.44f, h * 0.21f),
             size = Size(w * 0.12f, h * 0.032f),
             cornerRadius = CornerRadius(4f, 4f)
         )
 
-        // Camera Body Fill (Dark Obsidian-Purple Glass)
         val bodyTop = Offset(w * 0.12f, h * 0.28f)
         val bodySize = Size(w * 0.76f, h * 0.54f)
         drawRoundRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    Color(0xFF231338).copy(alpha = 0.88f),
-                    Color(0xFF0E0718).copy(alpha = 0.94f)
-                )
-            ),
+            color = JummoCardPurple,
             topLeft = bodyTop,
             size = bodySize,
             cornerRadius = CornerRadius(w * 0.12f, w * 0.12f)
         )
 
-        // Camera Body Golden Metallic Border
         drawRoundRect(
-            brush = goldBrush,
+            brush = purpleBrush,
             topLeft = bodyTop,
             size = bodySize,
             cornerRadius = CornerRadius(w * 0.12f, w * 0.12f),
             style = Stroke(width = w * 0.048f)
         )
 
-        // Small Golden Flash Dot on Top Right of Body
         drawCircle(
-            color = Color(0xFFFFE596),
+            color = JummoVioletBright,
             radius = w * 0.028f,
             center = Offset(w * 0.76f, h * 0.38f)
         )
 
-        // Center Lens Outer Golden Bezel
         val lensCenter = Offset(w * 0.5f, h * 0.56f)
         drawCircle(
-            brush = goldBrush,
+            brush = purpleBrush,
             radius = w * 0.20f,
             center = lensCenter
         )
@@ -830,14 +671,12 @@ private fun JummoHeroGoldenCameraLogo(
             center = lensCenter
         )
 
-        // Glowing Purple Optical Glass Center
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Color(0xFFE9B8FF),
+                    JummoGoldSoft,
                     JummoVioletBright,
-                    Color(0xFF4B0D7A),
-                    Color(0xFF1A062E)
+                    JummoVioletPrimary
                 ),
                 center = Offset(lensCenter.x - w * 0.03f, lensCenter.y - h * 0.03f),
                 radius = w * 0.16f
@@ -846,16 +685,10 @@ private fun JummoHeroGoldenCameraLogo(
             center = lensCenter
         )
 
-        // Optical Specular Reflection Dots
         drawCircle(
-            color = Color.White.copy(alpha = 0.80f),
+            color = Color.White.copy(alpha = 0.85f),
             radius = w * 0.032f,
             center = Offset(lensCenter.x - w * 0.045f, lensCenter.y - h * 0.045f)
-        )
-        drawCircle(
-            color = JummoVioletBright.copy(alpha = 0.55f),
-            radius = w * 0.018f,
-            center = Offset(lensCenter.x + w * 0.045f, lensCenter.y + h * 0.045f)
         )
     }
 }
@@ -874,14 +707,14 @@ private fun LoginCategoryItem(
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = JummoGoldBright,
+            tint = JummoVioletPrimary,
             modifier = Modifier.size(18.dp)
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White,
-            fontWeight = FontWeight.Medium,
+            color = JummoTextPrimary,
+            fontWeight = FontWeight.SemiBold,
             fontSize = 11.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -896,7 +729,7 @@ private fun CategoryVerticalSeparator() {
         modifier = Modifier
             .height(26.dp)
             .width(0.8.dp),
-        color = JummoBorderSubtle.copy(alpha = 0.65f)
+        color = JummoBorderSubtle
     )
 }
 
@@ -912,40 +745,29 @@ private fun LuxuryLoginFeatureRow(
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Rounded-Square Purple Glass Icon Container with Golden Icon
         Box(
             modifier = Modifier
-                .size(46.dp)
-                .clip(RoundedCornerShape(13.dp))
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
                 .background(
                     Brush.linearGradient(
                         colors = listOf(
-                            JummoVioletPrimary.copy(alpha = 0.42f),
-                            JummoElevatedPurple.copy(alpha = 0.90f)
+                            JummoVioletPrimary,
+                            JummoVioletBright
                         )
                     )
-                )
-                .border(
-                    width = 0.9.dp,
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            JummoBorderGlow.copy(alpha = 0.85f),
-                            JummoBorderSubtle
-                        )
-                    ),
-                    shape = RoundedCornerShape(13.dp)
                 ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = JummoGoldBright,
-                modifier = Modifier.size(22.dp)
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
             )
         }
 
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
         Column(
             modifier = Modifier.weight(1f),
@@ -954,7 +776,7 @@ private fun LuxuryLoginFeatureRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
+                color = JummoTextPrimary,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -974,7 +796,7 @@ private fun LoginFeatureDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(vertical = 8.dp),
         thickness = 0.75.dp,
-        color = JummoBorderSubtle.copy(alpha = 0.45f)
+        color = JummoBorderSubtle.copy(alpha = 0.65f)
     )
 }
 

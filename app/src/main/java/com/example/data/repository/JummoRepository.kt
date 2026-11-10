@@ -9,6 +9,7 @@ import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
+import com.example.data.model.StorageDestinations
 import com.example.data.model.WebsiteCustomization
 import com.example.data.model.WebsiteVersionSnapshot
 import com.example.data.remote.OperationType
@@ -212,7 +213,12 @@ class JummoRepository(private val db: FirebaseFirestore) {
         coverUri: String = "",
         guestAccessMode: String = "FaceSearchOnly",
         guestAllowDownload: Boolean = true,
-        qrExpirationDate: String = "Never"
+        qrExpirationDate: String = "Never",
+        description: String = "",
+        storageDestination: String = StorageDestinations.BOTH,
+        guestPin: String = "",
+        phoneFolderPath: String = "",
+        driveFolderId: String = ""
     ): Result<String> = runCatching {
         val uid = requireUserId()
         val eventId = "evt_${UUID.randomUUID().toString().replace("-", "").take(16)}"
@@ -237,7 +243,13 @@ class JummoRepository(private val db: FirebaseFirestore) {
             "uploadedPhotos" to 0L,
             "pendingPhotos" to 0L,
             "failedPhotos" to 0L,
-            "driveSyncStatus" to "NotConnected",
+            "driveSyncStatus" to if (storageDestination == StorageDestinations.PHONE_FOLDER) "NotConnected" else "Synced",
+            "description" to description.trim().take(1000),
+            "storageDestination" to storageDestination,
+            "guestPin" to guestPin.trim().take(30),
+            "phoneFolderPath" to phoneFolderPath.trim().take(500),
+            "driveFolderId" to driveFolderId.trim().take(200),
+            "downloadEnabled" to guestAllowDownload,
             "createdAt" to FieldValue.serverTimestamp(),
             "updatedAt" to FieldValue.serverTimestamp()
         )
@@ -275,6 +287,12 @@ class JummoRepository(private val db: FirebaseFirestore) {
                 "pendingPhotos" to event.pendingPhotos,
                 "failedPhotos" to event.failedPhotos,
                 "driveSyncStatus" to event.driveSyncStatus,
+                "description" to event.description.trim().take(1000),
+                "storageDestination" to event.storageDestination,
+                "guestPin" to event.guestPin.trim().take(30),
+                "phoneFolderPath" to event.phoneFolderPath.trim().take(500),
+                "driveFolderId" to event.driveFolderId.trim().take(200),
+                "downloadEnabled" to event.downloadEnabled,
                 "updatedAt" to FieldValue.serverTimestamp()
             )
             docRef.update(updatePayload).await()

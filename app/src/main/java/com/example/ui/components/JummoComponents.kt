@@ -47,7 +47,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -55,25 +54,25 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.ui.theme.JummoBorderGlow
+import com.example.ui.theme.JummoAccent
+import com.example.ui.theme.JummoBackground
 import com.example.ui.theme.JummoBorderSubtle
+import com.example.ui.theme.JummoButtonText
 import com.example.ui.theme.JummoCardPurple
-import com.example.ui.theme.JummoDeepPurple
-import com.example.ui.theme.JummoElevatedPurple
 import com.example.ui.theme.JummoErrorRed
-import com.example.ui.theme.JummoGold
-import com.example.ui.theme.JummoGoldBright
-import com.example.ui.theme.JummoObsidian
+import com.example.ui.theme.JummoPrimary
+import com.example.ui.theme.JummoSecondary
 import com.example.ui.theme.JummoSuccessGreen
+import com.example.ui.theme.JummoSurface
 import com.example.ui.theme.JummoTextMuted
+import com.example.ui.theme.JummoTextPrimary
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
 import com.example.ui.theme.JummoVioletPrimary
 import com.example.ui.theme.JummoWarningAmber
 
 /**
- * Custom vector-drawn Luxury Camera Lens Logo with Golden Camera Body,
- * Royal Crown on top, and Glowing Purple Optical Lens Center (matching reference).
+ * Clean Purple Premium Camera Emblem for Jummo Photos AI.
  */
 @Composable
 fun JummoLuxuryCameraLogo(
@@ -85,34 +84,32 @@ fun JummoLuxuryCameraLogo(
         val w = this.size.width
         val h = this.size.height
 
-        // Outer ambient purple glow
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    JummoVioletPrimary.copy(alpha = 0.42f),
+                    JummoAccent.copy(alpha = 0.28f),
                     Color.Transparent
                 )
             ),
-            radius = w * 0.56f,
-            center = Offset(w * 0.5f, h * 0.54f)
+            radius = w * 0.54f,
+            center = Offset(w * 0.5f, h * 0.52f)
         )
 
-        // Optional golden crown at top
         if (showCrown) {
             val crownPath = Path().apply {
                 moveTo(w * 0.34f, h * 0.23f)
-                lineTo(w * 0.30f, h * 0.10f)
+                lineTo(w * 0.30f, h * 0.11f)
                 lineTo(w * 0.42f, h * 0.17f)
-                lineTo(w * 0.50f, h * 0.06f)
+                lineTo(w * 0.50f, h * 0.07f)
                 lineTo(w * 0.58f, h * 0.17f)
-                lineTo(w * 0.70f, h * 0.10f)
+                lineTo(w * 0.70f, h * 0.11f)
                 lineTo(w * 0.66f, h * 0.23f)
                 close()
             }
             drawPath(
                 path = crownPath,
                 brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFFFFE58F), JummoGoldBright, JummoGold)
+                    colors = listOf(JummoAccent, JummoPrimary)
                 )
             )
         }
@@ -123,21 +120,19 @@ fun JummoLuxuryCameraLogo(
         // Camera top viewfinder hump
         drawRoundRect(
             brush = Brush.horizontalGradient(
-                colors = listOf(JummoGold, JummoGoldBright, JummoGold)
+                colors = listOf(JummoPrimary, JummoAccent, JummoPrimary)
             ),
             topLeft = Offset(w * 0.33f, bodyTop - h * 0.06f),
             size = Size(w * 0.34f, h * 0.10f),
             cornerRadius = CornerRadius(w * 0.06f, w * 0.06f)
         )
 
-        // Golden camera body
+        // Camera body (#5B21B6 -> #8B5CF6)
         drawRoundRect(
             brush = Brush.linearGradient(
                 colors = listOf(
-                    Color(0xFFFFE082),
-                    JummoGoldBright,
-                    Color(0xFFB8860B),
-                    JummoGoldBright
+                    JummoAccent,
+                    JummoPrimary
                 )
             ),
             topLeft = Offset(w * 0.10f, bodyTop),
@@ -145,10 +140,10 @@ fun JummoLuxuryCameraLogo(
             cornerRadius = CornerRadius(w * 0.18f, w * 0.18f)
         )
 
-        // Dark purple inner body inset
+        // Soft lavender inner body inset (#EDE9FE)
         val insetPad = w * 0.055f
         drawRoundRect(
-            color = JummoObsidian,
+            color = JummoSurface,
             topLeft = Offset(w * 0.10f + insetPad, bodyTop + insetPad),
             size = Size(w * 0.80f - insetPad * 2, bodyHeight - insetPad * 2),
             cornerRadius = CornerRadius(w * 0.13f, w * 0.13f)
@@ -157,41 +152,38 @@ fun JummoLuxuryCameraLogo(
         val lensCenter = Offset(w * 0.50f, bodyTop + bodyHeight * 0.52f)
         val outerLensRadius = w * 0.26f
 
-        // Golden lens bezel ring
+        // Outer lens ring
         drawCircle(
-            brush = Brush.sweepGradient(
-                colors = listOf(JummoGoldBright, Color(0xFFFFF3C4), JummoGold, JummoGoldBright)
-            ),
+            color = JummoPrimary,
             radius = outerLensRadius,
             center = lensCenter
         )
 
-        // Deep purple optical glass center
+        // Optical glass center
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Color(0xFFE0AAFF),
-                    JummoVioletPrimary,
-                    Color(0xFF3C096C),
-                    JummoObsidian
+                    JummoSecondary,
+                    JummoAccent,
+                    JummoPrimary
                 ),
                 center = Offset(lensCenter.x - outerLensRadius * 0.2f, lensCenter.y - outerLensRadius * 0.2f),
                 radius = outerLensRadius * 0.9f
             ),
-            radius = outerLensRadius * 0.80f,
+            radius = outerLensRadius * 0.78f,
             center = lensCenter
         )
 
-        // Lens reflection highlight dot
+        // Lens reflection dot
         drawCircle(
-            color = Color.White.copy(alpha = 0.75f),
+            color = JummoButtonText.copy(alpha = 0.85f),
             radius = outerLensRadius * 0.18f,
             center = Offset(lensCenter.x - outerLensRadius * 0.25f, lensCenter.y - outerLensRadius * 0.25f)
         )
 
-        // Small golden flash dot on top-right of camera body
+        // Top-right indicator dot
         drawCircle(
-            color = JummoGoldBright,
+            color = JummoAccent,
             radius = w * 0.035f,
             center = Offset(w * 0.76f, bodyTop + bodyHeight * 0.22f)
         )
@@ -199,9 +191,7 @@ fun JummoLuxuryCameraLogo(
 }
 
 /**
- * Reference-matched Bottom Navigation Bar with:
- * - Home, Events, Uploads, Profile in rounded purple active pills
- * - Elevated circular golden Camera button in the center with glowing ring
+ * Clean Bottom Navigation Bar with 5 tabs: Home, Events, Camera, Uploads, Profile.
  */
 @Composable
 fun JummoLuxuryBottomBar(
@@ -209,8 +199,8 @@ fun JummoLuxuryBottomBar(
     onSelectTab: (Int) -> Unit
 ) {
     Surface(
-        color = JummoObsidian.copy(alpha = 0.96f),
-        border = BorderStroke(0.75.dp, JummoBorderSubtle.copy(alpha = 0.8f)),
+        color = JummoBackground,
+        border = BorderStroke(1.dp, JummoBorderSubtle),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -239,44 +229,34 @@ fun JummoLuxuryBottomBar(
                 onClick = { onSelectTab(1) }
             )
 
-            // Center Golden Circular Camera Button (exact match to reference)
+            // Center Circular Camera Button (#5B21B6 Primary + #8B5CF6 Accent)
             Box(
                 modifier = Modifier
-                    .size(54.dp)
+                    .size(52.dp)
                     .clip(CircleShape)
                     .background(
-                        Brush.radialGradient(
+                        Brush.verticalGradient(
                             colors = listOf(
-                                JummoGoldBright,
-                                JummoGold,
-                                Color(0xFF8A5A00)
+                                JummoAccent,
+                                JummoPrimary
                             )
                         )
                     )
                     .border(
                         width = if (currentTab == 2) 2.5.dp else 1.5.dp,
-                        color = if (currentTab == 2) Color.White else JummoGoldBright,
+                        color = if (currentTab == 2) JummoPrimary else JummoSecondary,
                         shape = CircleShape
                     )
                     .clickable { onSelectTab(2) }
                     .testTag("nav_tab_camera"),
                 contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(JummoObsidian.copy(alpha = 0.82f))
-                        .border(1.dp, JummoGoldBright.copy(alpha = 0.8f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.CameraAlt,
-                        contentDescription = "Camera",
-                        tint = JummoGoldBright,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Filled.CameraAlt,
+                    contentDescription = "Camera",
+                    tint = JummoButtonText,
+                    modifier = Modifier.size(22.dp)
+                )
             }
 
             LuxuryNavTabPill(
@@ -311,7 +291,7 @@ private fun LuxuryNavTabPill(
 ) {
     val bgBrush = if (selected) {
         Brush.verticalGradient(
-            colors = listOf(JummoVioletPrimary, Color(0xFF5B189A))
+            colors = listOf(JummoPrimary, JummoAccent)
         )
     } else {
         Brush.verticalGradient(
@@ -325,7 +305,7 @@ private fun LuxuryNavTabPill(
             .background(bgBrush)
             .then(
                 if (selected) {
-                    Modifier.border(0.75.dp, JummoVioletBright.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
+                    Modifier.border(0.75.dp, JummoSecondary, RoundedCornerShape(14.dp))
                 } else {
                     Modifier
                 }
@@ -339,14 +319,14 @@ private fun LuxuryNavTabPill(
         Icon(
             imageVector = if (selected) selectedIcon else unselectedIcon,
             contentDescription = label,
-            tint = if (selected) Color.White else JummoTextSecondary,
+            tint = if (selected) JummoButtonText else JummoTextSecondary,
             modifier = Modifier.size(19.dp)
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = if (selected) Color.White else JummoTextSecondary,
+            color = if (selected) JummoButtonText else JummoTextSecondary,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
             maxLines = 1
         )
@@ -354,7 +334,7 @@ private fun LuxuryNavTabPill(
 }
 
 /**
- * Compact luxury statistic card matching the Home Dashboard 3-top + 2-bottom grid in the reference.
+ * Compact statistic card using #EDE9FE surface and #24133F primary text.
  */
 @Composable
 fun MetricStatCard(
@@ -368,20 +348,12 @@ fun MetricStatCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = JummoCardPurple.copy(alpha = 0.92f)),
-        border = BorderStroke(0.75.dp, JummoBorderSubtle)
+        colors = CardDefaults.cardColors(containerColor = JummoSurface),
+        border = BorderStroke(0.85.dp, JummoBorderSubtle)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            accentColor.copy(alpha = 0.12f),
-                            Color.Transparent
-                        )
-                    )
-                )
                 .padding(horizontal = 10.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -390,8 +362,8 @@ fun MetricStatCard(
                 modifier = Modifier
                     .size(30.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(accentColor.copy(alpha = 0.18f))
-                    .border(0.5.dp, accentColor.copy(alpha = 0.45f), RoundedCornerShape(8.dp)),
+                    .background(accentColor.copy(alpha = 0.14f))
+                    .border(0.5.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -412,7 +384,7 @@ fun MetricStatCard(
                 Text(
                     text = value,
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
+                    color = JummoTextPrimary,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -432,7 +404,7 @@ fun MetricStatCard(
 }
 
 /**
- * Single-line non-wrapping status badge pill matching the green "Active" / "Connected" badges in reference.
+ * Single-line status badge pill.
  */
 @Composable
 fun StatusBadgePill(
@@ -442,8 +414,8 @@ fun StatusBadgePill(
 ) {
     Surface(
         modifier = modifier,
-        color = color.copy(alpha = 0.16f),
-        border = BorderStroke(0.75.dp, color.copy(alpha = 0.55f)),
+        color = color.copy(alpha = 0.14f),
+        border = BorderStroke(0.75.dp, color.copy(alpha = 0.5f)),
         shape = RoundedCornerShape(50)
     ) {
         Row(
@@ -485,7 +457,7 @@ fun SectionHeaderRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
+                color = JummoTextPrimary,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -517,8 +489,8 @@ fun EmptyStateCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = JummoCardPurple.copy(alpha = 0.88f)),
-        border = BorderStroke(0.75.dp, JummoBorderSubtle)
+        colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
+        border = BorderStroke(0.85.dp, JummoBorderSubtle)
     ) {
         Column(
             modifier = Modifier
@@ -532,7 +504,7 @@ fun EmptyStateCard(
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(JummoVioletPrimary, JummoElevatedPurple)
+                            colors = listOf(JummoPrimary, JummoAccent)
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -540,7 +512,7 @@ fun EmptyStateCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = JummoGoldBright,
+                    tint = JummoButtonText,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -548,17 +520,19 @@ fun EmptyStateCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-                color = Color.White,
+                color = JummoTextPrimary,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = JummoTextSecondary,
-                textAlign = TextAlign.Center
-            )
+            if (message.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = JummoTextSecondary,
+                    textAlign = TextAlign.Center
+                )
+            }
             if (actionButton != null) {
                 Spacer(modifier = Modifier.height(10.dp))
                 actionButton()
@@ -587,7 +561,7 @@ fun SettingsSectionHeader(
                 modifier = Modifier
                     .size(30.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(accentColor.copy(alpha = 0.16f))
+                    .background(accentColor.copy(alpha = 0.14f))
                     .border(0.5.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
@@ -602,7 +576,7 @@ fun SettingsSectionHeader(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-                color = Color.White,
+                color = JummoTextPrimary,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -619,7 +593,7 @@ fun SettingsSectionHeader(
 fun SettingsInfoRow(
     label: String,
     value: String,
-    valueColor: Color = Color.White,
+    valueColor: Color = JummoTextPrimary,
     showDivider: Boolean = false
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -651,7 +625,7 @@ fun SettingsInfoRow(
         if (showDivider) {
             HorizontalDivider(
                 thickness = 0.5.dp,
-                color = JummoDeepPurple.copy(alpha = 0.8f)
+                color = JummoBorderSubtle.copy(alpha = 0.7f)
             )
         }
     }
@@ -659,10 +633,10 @@ fun SettingsInfoRow(
 
 fun statusColorForUpload(status: String): Color = when (status) {
     "Uploaded" -> JummoSuccessGreen
-    "Uploading" -> JummoVioletBright
+    "Uploading" -> JummoAccent
     "Pending" -> JummoWarningAmber
     "Failed" -> JummoErrorRed
-    else -> JummoGoldBright
+    else -> JummoPrimary
 }
 
 @Composable
@@ -674,7 +648,7 @@ fun JummoGoldPrimaryButton(
     enabled: Boolean = true
 ) {
     Surface(
-        color = if (enabled) JummoGoldBright else JummoGoldBright.copy(alpha = 0.45f),
+        color = if (enabled) JummoPrimary else JummoPrimary.copy(alpha = 0.45f),
         shape = RoundedCornerShape(12.dp),
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
@@ -689,7 +663,7 @@ fun JummoGoldPrimaryButton(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = JummoObsidian,
+                    tint = JummoButtonText,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -697,7 +671,7 @@ fun JummoGoldPrimaryButton(
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelMedium,
-                color = JummoObsidian,
+                color = JummoButtonText,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -715,8 +689,8 @@ fun JummoPurpleSecondaryButton(
     enabled: Boolean = true
 ) {
     Surface(
-        color = JummoElevatedPurple,
-        border = BorderStroke(0.75.dp, JummoGoldBright.copy(alpha = 0.55f)),
+        color = JummoAccent,
+        border = BorderStroke(0.75.dp, JummoSecondary),
         shape = RoundedCornerShape(12.dp),
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
@@ -731,7 +705,7 @@ fun JummoPurpleSecondaryButton(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = JummoGoldBright,
+                    tint = JummoButtonText,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -739,7 +713,7 @@ fun JummoPurpleSecondaryButton(
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.White,
+                color = JummoButtonText,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -747,4 +721,3 @@ fun JummoPurpleSecondaryButton(
         }
     }
 }
-

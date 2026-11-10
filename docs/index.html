@@ -728,6 +728,136 @@
     </div>
   </footer>
 
+  <!-- GUEST EVENT PORTAL OVERLAY (Activates when ?event=ID is present) -->
+  <section id="guest-portal-section" class="guest-portal-container" style="display: none;" aria-label="Guest Photography Event Portal">
+    <div class="guest-portal-header">
+      <div class="container guest-nav-inner">
+        <div class="guest-brand">
+          <span class="studio-badge" id="guest-studio-name">✦ Jummo Pro Studio</span>
+          <span class="photographer-badge" id="guest-photographer-name">Owner / Developer: Meraj Sir</span>
+        </div>
+        <div class="guest-header-actions">
+          <a href="./" class="btn btn-outline btn-small" id="guest-exit-btn">View Applet Suite</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="container guest-content-wrap">
+      <!-- Event Hero Card -->
+      <div class="guest-hero-card" id="guest-hero-card">
+        <div class="guest-hero-media">
+          <img id="guest-cover-img" src="./assets/screen-suite-8.png" alt="Event Cover Photo" class="guest-cover-photo" />
+          <div class="guest-cover-gradient"></div>
+          <span class="guest-category-badge" id="guest-category-badge">Wedding</span>
+        </div>
+        <div class="guest-hero-info">
+          <div class="guest-meta-row">
+            <span class="guest-date-pill" id="guest-event-date">📅 2026-12-15</span>
+            <span class="guest-location-pill" id="guest-event-location">📍 Main Studio Venue</span>
+            <span class="guest-photo-count-pill" id="guest-event-photo-count">📸 12 Photos Available</span>
+          </div>
+          <h1 class="guest-event-title" id="guest-event-title">Wedding Shoot</h1>
+          <p class="guest-event-desc" id="guest-event-desc">Welcome to our official guest photography portal. View original photos, run AI Face Search to find yourself instantly, or download high-resolution memories.</p>
+        </div>
+      </div>
+
+      <!-- PIN Security Gate (Shown when event is PIN Protected) -->
+      <div class="guest-pin-gate-card" id="guest-pin-gate-card" style="display: none;">
+        <div class="pin-card-inner">
+          <div class="pin-icon-wrap">🔒</div>
+          <h2 class="pin-title">Organizer Approved Access Required</h2>
+          <p class="pin-desc">This photography gallery is secured with a Guest Security PIN. Enter the PIN provided on your event card or invitation to unlock access.</p>
+          <div class="pin-input-group">
+            <input type="password" id="guest-pin-input" placeholder="Enter Guest Security PIN (e.g. 7290)" maxlength="10" autocomplete="off" />
+            <button type="button" class="btn btn-gold" id="guest-pin-verify-btn">Unlock Gallery</button>
+          </div>
+          <div class="pin-error-msg" id="guest-pin-error" style="display: none;"></div>
+        </div>
+      </div>
+
+      <!-- Unlocked Portal Main Content Area -->
+      <div id="guest-unlocked-area">
+        <!-- Actions Toolbar -->
+        <div class="guest-actions-bar">
+          <div class="guest-action-left">
+            <button type="button" class="btn btn-violet" id="guest-face-search-btn">
+              <span>👤</span> Find My Photos (AI Face Search)
+            </button>
+            <button type="button" class="btn btn-outline" id="guest-select-all-btn">
+              Select All (<span id="guest-selected-count">0</span>)
+            </button>
+          </div>
+          <div class="guest-action-right">
+            <button type="button" class="btn btn-gold" id="guest-download-selected-btn" disabled>
+              ⬇ Download Selected
+            </button>
+            <button type="button" class="btn btn-gold" id="guest-download-all-btn">
+              📦 Download All (ZIP)
+            </button>
+            <button type="button" class="btn btn-whatsapp" id="guest-whatsapp-share-btn">
+              💬 Share on WhatsApp
+            </button>
+          </div>
+        </div>
+
+        <!-- Editorial Gallery Grid -->
+        <div class="guest-gallery-section">
+          <div class="guest-gallery-header">
+            <h3>Event Photos &amp; Highlights</h3>
+            <span class="guest-gallery-status" id="guest-gallery-status">Showing all available original photos</span>
+          </div>
+          <div class="guest-gallery-grid" id="guest-gallery-grid">
+            <!-- Dynamically populated photo cards -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Guest Portal Footer -->
+      <div class="guest-portal-footer">
+        <p>Original high-resolution photos curated by <strong>Jummo Photos AI</strong> &amp; <strong>Meraj Sir</strong>.</p>
+        <div class="guest-footer-links">
+          <a href="#" data-policy-modal="privacy">Guest Privacy Policy</a> •
+          <a href="#" id="guest-delete-face-btn">Request Face Data Purge</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Photo Lightbox Modal -->
+  <div class="lightbox-backdrop" id="guest-lightbox-modal" role="dialog" aria-modal="true" style="display: none;">
+    <div class="lightbox-content">
+      <button type="button" class="lightbox-close-btn" id="guest-lightbox-close">✕</button>
+      <img id="guest-lightbox-img" src="" alt="Enlarged photo" class="lightbox-img" />
+      <div class="lightbox-toolbar">
+        <span id="guest-lightbox-title" class="lightbox-title">Photo 01</span>
+        <button type="button" class="btn btn-gold btn-small" id="guest-lightbox-download-btn">⬇ Download Original</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Face Search Modal -->
+  <div class="modal-backdrop" id="guest-face-modal" role="dialog" aria-modal="true" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="color: var(--gold-bright);">✦ AI Face Search — Find My Photos</h3>
+        <button type="button" id="guest-face-modal-close" class="btn btn-outline" style="padding: 6px 12px;">Close ✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-lavender); font-size: 0.95rem; margin-bottom: 16px;">
+          Take or upload a clear selfie to instantly match your photos from this event. In strict compliance with our Consent-First Privacy Charter, your selfie is processed securely in-memory and never shared with advertisers or third parties.
+        </p>
+        <div style="text-align: center; margin-bottom: 16px;">
+          <input type="file" id="guest-selfie-file" accept="image/*" style="display: none;" />
+          <button type="button" class="btn btn-gold" id="guest-upload-selfie-btn">📸 Select Selfie</button>
+          <div id="guest-selfie-preview-wrap" style="margin-top: 14px; display: none;">
+            <img id="guest-selfie-preview" src="" alt="Selfie preview" style="width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--gold-bright); object-fit: cover;" />
+            <p id="guest-face-match-status" style="margin-top: 8px; color: var(--gold-bright); font-weight: 600; font-size: 0.9rem;">Matching face features…</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Privacy Policy / Terms Modal -->
   <div class="modal-backdrop" id="policy-modal" role="dialog" aria-modal="true" aria-labelledby="policy-modal-title">
     <div class="modal-card">

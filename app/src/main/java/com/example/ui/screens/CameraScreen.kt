@@ -85,8 +85,10 @@ import com.example.ui.theme.JummoCardPurple
 import com.example.ui.theme.JummoDeepPurple
 import com.example.ui.theme.JummoGoldBright
 import com.example.ui.theme.JummoObsidian
+import com.example.ui.theme.JummoTextPrimary
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
+import com.example.ui.theme.JummoVioletPrimary
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -196,7 +198,7 @@ fun CameraScreen(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Switch Event",
-                        tint = Color.White,
+                        tint = JummoTextPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -220,7 +222,7 @@ fun CameraScreen(
                     Icon(
                         imageVector = flashIcon,
                         contentDescription = "Flash Mode",
-                        tint = JummoGoldBright,
+                        tint = JummoVioletPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -229,7 +231,7 @@ fun CameraScreen(
                 Text(
                     text = "HDR",
                     style = MaterialTheme.typography.titleSmall,
-                    color = if (hdrEnabled) Color.White else JummoTextSecondary,
+                    color = if (hdrEnabled) JummoVioletPrimary else JummoTextSecondary,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
@@ -239,14 +241,14 @@ fun CameraScreen(
 
                 // 4K Framed Badge
                 Surface(
-                    color = Color.Transparent,
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.85f)),
+                    color = JummoCardPurple,
+                    border = BorderStroke(1.dp, JummoBorderSubtle),
                     shape = RoundedCornerShape(6.dp)
                 ) {
                     Text(
                         text = "4K",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
+                        color = JummoTextPrimary,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                     )
@@ -260,7 +262,7 @@ fun CameraScreen(
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = "Toggle Framing Grid",
-                        tint = Color.White,
+                        tint = JummoTextPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -269,14 +271,14 @@ fun CameraScreen(
             if (currentEvent == null) {
                 EmptyStateCard(
                     icon = Icons.Default.FolderSpecial,
-                    title = "Select an Event Before Capturing",
-                    message = "Create or select an event so captured photos are stored locally and linked to the event upload queue.",
+                    title = "Select an Event",
+                    message = "Choose or create an event to start shooting.",
                     actionButton = {
                         Button(
                             onClick = onCreateEventClick,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = JummoGoldBright,
-                                contentColor = JummoObsidian
+                                contentColor = Color.White
                             ),
                             shape = RoundedCornerShape(10.dp)
                         ) {
@@ -309,7 +311,7 @@ fun CameraScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(JummoObsidian.copy(alpha = 0.65f))
+                            .background(JummoObsidian.copy(alpha = 0.84f))
                     )
                     Column(
                         modifier = Modifier
@@ -321,19 +323,19 @@ fun CameraScreen(
                         Icon(
                             imageVector = Icons.Default.CameraAlt,
                             contentDescription = null,
-                            tint = JummoGoldBright,
+                            tint = JummoVioletPrimary,
                             modifier = Modifier.size(40.dp)
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "Camera Access",
                             style = MaterialTheme.typography.headlineMedium,
-                            color = Color.White,
+                            color = JummoTextPrimary,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Allow Camera permission for live viewfinder, or tap the shutter below to capture a studio sample.",
+                            text = "Allow camera access for live capture.",
                             style = MaterialTheme.typography.bodySmall,
                             color = JummoTextSecondary,
                             textAlign = TextAlign.Center
@@ -343,7 +345,7 @@ fun CameraScreen(
                             onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = JummoGoldBright,
-                                contentColor = JummoObsidian
+                                contentColor = Color.White
                             ),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.testTag("grant_camera_permission_button")
@@ -363,7 +365,7 @@ fun CameraScreen(
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         val thirdW = size.width / 3f
                         val thirdH = size.height / 3f
-                        val lineColor = Color.White.copy(alpha = 0.22f)
+                        val lineColor = JummoBorderSubtle.copy(alpha = 0.55f)
                         drawLine(lineColor, Offset(thirdW, 0f), Offset(thirdW, size.height), strokeWidth = 1f)
                         drawLine(lineColor, Offset(thirdW * 2f, 0f), Offset(thirdW * 2f, size.height), strokeWidth = 1f)
                         drawLine(lineColor, Offset(0f, thirdH), Offset(size.width, thirdH), strokeWidth = 1f)
@@ -381,8 +383,8 @@ fun CameraScreen(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
                             .clickable { showEventSelectorMenu = true },
-                        color = JummoObsidian.copy(alpha = 0.78f),
-                        border = BorderStroke(0.9.dp, JummoGoldBright.copy(alpha = 0.55f)),
+                        color = JummoCardPurple.copy(alpha = 0.94f),
+                        border = BorderStroke(0.9.dp, JummoBorderSubtle),
                         shape = RoundedCornerShape(50)
                     ) {
                         Row(
@@ -393,13 +395,13 @@ fun CameraScreen(
                             Icon(
                                 imageVector = Icons.Default.FolderOpen,
                                 contentDescription = null,
-                                tint = JummoGoldBright,
+                                tint = JummoVioletPrimary,
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
                                 text = "Event : ${currentEvent.name}",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -407,7 +409,7 @@ fun CameraScreen(
                             Icon(
                                 imageVector = Icons.Default.KeyboardArrowDown,
                                 contentDescription = "Select Event",
-                                tint = Color.White,
+                                tint = JummoTextPrimary,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -423,7 +425,7 @@ fun CameraScreen(
                                 text = {
                                     Text(
                                         text = "${evt.name} (${evt.category})",
-                                        color = if (evt.id == currentEvent.id) JummoGoldBright else Color.White,
+                                        color = if (evt.id == currentEvent.id) JummoVioletPrimary else JummoTextPrimary,
                                         fontWeight = if (evt.id == currentEvent.id) FontWeight.Bold else FontWeight.Normal
                                     )
                                 },
@@ -542,14 +544,14 @@ fun CameraScreen(
                             Icon(
                                 imageVector = Icons.Default.Cameraswitch,
                                 contentDescription = "Switch Lens",
-                                tint = Color.White,
+                                tint = JummoTextPrimary,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
                     }
                 }
 
-                // Mode Selector Strip ("Photo" golden pill | "Video" | "Pro")
+                // Mode Selector Strip ("Photo" pill | "Video" | "Pro")
                 Surface(
                     color = JummoCardPurple.copy(alpha = 0.9f),
                     shape = RoundedCornerShape(50),
@@ -566,13 +568,13 @@ fun CameraScreen(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(50))
                                     .clickable { selectedCameraMode = mode },
-                                color = if (selected) JummoGoldBright else Color.Transparent,
+                                color = if (selected) JummoVioletPrimary else Color.Transparent,
                                 shape = RoundedCornerShape(50)
                             ) {
                                 Text(
                                     text = mode,
                                     style = MaterialTheme.typography.labelLarge,
-                                    color = if (selected) JummoObsidian else JummoTextSecondary,
+                                    color = if (selected) Color.White else JummoTextSecondary,
                                     fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
                                     modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp)
                                 )

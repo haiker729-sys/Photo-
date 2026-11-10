@@ -3,31 +3,30 @@ package com.example.ui.theme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-private val JummoUltraPremiumColorScheme = darkColorScheme(
-    primary = JummoVioletBright,
-    onPrimary = Color.White,
-    primaryContainer = JummoVioletDeep,
-    onPrimaryContainer = JummoVioletSoft,
-    secondary = JummoGoldBright,
-    onSecondary = JummoObsidian,
-    secondaryContainer = JummoGoldDeep,
-    onSecondaryContainer = JummoGoldSoft,
-    tertiary = JummoSuccessGreen,
-    onTertiary = JummoObsidian,
-    background = JummoObsidian,
+private val JummoPurplePremiumColorScheme = lightColorScheme(
+    primary = JummoPrimary,
+    onPrimary = JummoButtonText,
+    primaryContainer = JummoSurface,
+    onPrimaryContainer = JummoTextPrimary,
+    secondary = JummoAccent,
+    onSecondary = JummoButtonText,
+    secondaryContainer = JummoSecondary,
+    onSecondaryContainer = JummoTextPrimary,
+    tertiary = JummoSecondary,
+    onTertiary = JummoTextPrimary,
+    background = JummoBackground,
     onBackground = JummoTextPrimary,
-    surface = JummoDeepPurple,
+    surface = JummoSurface,
     onSurface = JummoTextPrimary,
-    surfaceVariant = JummoCardPurple,
+    surfaceVariant = JummoSurface,
     onSurfaceVariant = JummoTextSecondary,
-    outline = JummoBorderSubtle,
+    outline = JummoSecondary,
     error = JummoErrorRed,
-    onError = Color.White
+    onError = JummoButtonText
 )
 
 val JummoShapes = Shapes(
@@ -43,7 +42,7 @@ fun MyApplicationTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = JummoUltraPremiumColorScheme,
+        colorScheme = JummoPurplePremiumColorScheme,
         typography = Typography,
         shapes = JummoShapes,
         content = content

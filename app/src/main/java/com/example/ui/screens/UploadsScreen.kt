@@ -108,6 +108,7 @@ import com.example.ui.theme.JummoGoldBright
 import com.example.ui.theme.JummoObsidian
 import com.example.ui.theme.JummoSuccessGreen
 import com.example.ui.theme.JummoTextMuted
+import com.example.ui.theme.JummoTextPrimary
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
 import com.example.ui.theme.JummoVioletPrimary
@@ -228,7 +229,7 @@ fun UploadsScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF150826),
+                        JummoObsidian,
                         JummoDeepPurple,
                         JummoObsidian
                     )
@@ -283,7 +284,7 @@ fun UploadsScreen(
                                 Text(
                                     text = "$queueCount in queue • $uploadedCount uploaded • $failedCount failed",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White
+                                    color = JummoTextPrimary
                                 )
                             }
                             IconButton(
@@ -311,7 +312,7 @@ fun UploadsScreen(
                     Text(
                         text = "Uploads",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = Color.White,
+                        color = JummoTextPrimary,
                         fontWeight = FontWeight.ExtraBold
                     )
                     Text(
@@ -373,7 +374,11 @@ fun UploadsScreen(
                                     Text(
                                         text = label,
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = if (selected) Color.White else JummoTextSecondary,
+                                        color = if (selected) {
+                                            if (key == "Queue") Color.White else JummoTextPrimary
+                                        } else {
+                                            JummoTextSecondary
+                                        },
                                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -420,7 +425,7 @@ fun UploadsScreen(
                                     Text(
                                         text = "Automatic Upload",
                                         style = MaterialTheme.typography.titleMedium,
-                                        color = Color.White,
+                                        color = JummoTextPrimary,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Surface(
@@ -457,10 +462,10 @@ fun UploadsScreen(
                                     onUpdateAutoUploadSettings(it, wifiOnly, batteryNotLow)
                                 },
                                 colors = SwitchDefaults.colors(
-                                    checkedThumbColor = JummoObsidian,
+                                    checkedThumbColor = Color.White,
                                     checkedTrackColor = JummoGoldBright,
                                     uncheckedThumbColor = JummoTextSecondary,
-                                    uncheckedTrackColor = JummoDeepPurple
+                                    uncheckedTrackColor = JummoBorderSubtle
                                 ),
                                 modifier = Modifier.testTag("auto_upload_switch")
                             )
@@ -667,7 +672,7 @@ fun UploadsScreen(
                                             Text(
                                                 text = currentEvent?.name ?: "Select or Create Event",
                                                 style = MaterialTheme.typography.labelLarge,
-                                                color = Color.White,
+                                                color = JummoTextPrimary,
                                                 fontWeight = FontWeight.Bold,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
@@ -697,7 +702,7 @@ fun UploadsScreen(
                                                     Text(
                                                         text = evt.name,
                                                         style = MaterialTheme.typography.labelLarge,
-                                                        color = if (isSelected) JummoGoldBright else Color.White,
+                                                        color = if (isSelected) JummoGoldBright else JummoTextPrimary,
                                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                                     )
                                                     Text(
@@ -743,15 +748,15 @@ fun UploadsScreen(
                                 }
                             }
 
-                            // Primary Golden Gradient "Upload Now" Button
+                            // Primary "Upload Now" Button
                             val canUploadNow = currentEvent != null
                             Button(
                                 onClick = onUploadAllPendingNow,
                                 enabled = canUploadNow,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = JummoGoldBright,
-                                    contentColor = JummoObsidian,
-                                    disabledContainerColor = JummoDeepPurple,
+                                    contentColor = Color.White,
+                                    disabledContainerColor = JummoBorderSubtle,
                                     disabledContentColor = JummoTextMuted
                                 ),
                                 shape = RoundedCornerShape(12.dp),
@@ -795,7 +800,7 @@ fun UploadsScreen(
                                         },
                                         colors = FilterChipDefaults.filterChipColors(
                                             selectedContainerColor = JummoGoldBright,
-                                            selectedLabelColor = JummoObsidian
+                                            selectedLabelColor = Color.White
                                         )
                                     )
                                 }
@@ -828,7 +833,7 @@ fun UploadsScreen(
                                 else -> "Upload Queue ($queueCount)"
                             },
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color.White,
+                            color = JummoTextPrimary,
                             fontWeight = FontWeight.Bold
                         )
 
@@ -972,7 +977,7 @@ private fun UploadsStudioHeader(
                 Text(
                     text = "Jummo Photos AI",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
+                    color = JummoTextPrimary,
                     fontWeight = FontWeight.ExtraBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -980,7 +985,7 @@ private fun UploadsStudioHeader(
                 Text(
                     text = "Smart Event Photography Suite",
                     style = MaterialTheme.typography.labelSmall,
-                    color = JummoChampagneGold,
+                    color = JummoTextSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1090,7 +1095,7 @@ private fun ConstraintTogglePill(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (checked) Color.White else JummoTextSecondary,
+                color = if (checked) JummoTextPrimary else JummoTextSecondary,
                 fontWeight = if (checked) FontWeight.Bold else FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -1144,7 +1149,7 @@ private fun CompactImportSourceCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.White,
+                color = JummoTextPrimary,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -1197,7 +1202,7 @@ private fun BatchControlChip(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (enabled) Color.White else JummoTextMuted,
+                color = if (enabled) JummoTextPrimary else JummoTextMuted,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 10.sp
             )
@@ -1306,7 +1311,7 @@ private fun UploadQueueItemCard(
                     Text(
                         text = upload.fileName,
                         style = MaterialTheme.typography.titleSmall,
-                        color = Color.White,
+                        color = JummoTextPrimary,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -1345,7 +1350,7 @@ private fun UploadQueueItemCard(
                     LinearProgressIndicator(
                         progress = { animatedItemProgress },
                         color = statusColor,
-                        trackColor = JummoDeepPurple,
+                        trackColor = JummoBorderSubtle,
                         modifier = Modifier
                             .weight(1f)
                             .height(6.dp)
@@ -1354,7 +1359,7 @@ private fun UploadQueueItemCard(
                     Text(
                         text = "${if (upload.status == "Uploaded") 100L else upload.progress}%",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
+                        color = JummoTextPrimary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -1447,7 +1452,7 @@ private fun UploadQueueItemCard(
                                 text = {
                                     Text(
                                         text = "Resume in Queue",
-                                        color = Color.White,
+                                        color = JummoTextPrimary,
                                         style = MaterialTheme.typography.labelMedium
                                     )
                                 },
@@ -1469,7 +1474,7 @@ private fun UploadQueueItemCard(
                                 text = {
                                     Text(
                                         text = "Pause Upload",
-                                        color = Color.White,
+                                        color = JummoTextPrimary,
                                         style = MaterialTheme.typography.labelMedium
                                     )
                                 },
@@ -1494,7 +1499,7 @@ private fun UploadQueueItemCard(
                             text = {
                                 Text(
                                     text = "Move to ${currentSelectedEvent.name}",
-                                    color = Color.White,
+                                    color = JummoTextPrimary,
                                     style = MaterialTheme.typography.labelMedium
                                 )
                             },

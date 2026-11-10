@@ -142,6 +142,7 @@ import com.example.ui.theme.JummoGoldBright
 import com.example.ui.theme.JummoObsidian
 import com.example.ui.theme.JummoSuccessGreen
 import com.example.ui.theme.JummoTextMuted
+import com.example.ui.theme.JummoTextPrimary
 import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
 import com.example.ui.theme.JummoVioletPrimary
@@ -367,7 +368,7 @@ fun ProfileScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF150826),
+                        JummoObsidian,
                         JummoDeepPurple,
                         JummoObsidian
                     )
@@ -394,11 +395,11 @@ fun ProfileScreen(
                         Text(
                             text = "Profile & Settings",
                             style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White,
+                            color = JummoTextPrimary,
                             fontWeight = FontWeight.ExtraBold
                         )
                         Text(
-                            text = "Studio identity, cloud sync, privacy & release controls",
+                            text = "Studio profile, cloud sync & privacy",
                             style = MaterialTheme.typography.bodySmall,
                             color = JummoTextSecondary
                         )
@@ -537,7 +538,7 @@ fun ProfileScreen(
                                             Icon(
                                                 imageVector = Icons.Default.CameraAlt,
                                                 contentDescription = "Change Profile Photo",
-                                                tint = JummoObsidian,
+                                                tint = Color.White,
                                                 modifier = Modifier.size(14.dp)
                                             )
                                         }
@@ -555,7 +556,7 @@ fun ProfileScreen(
                                         Text(
                                             text = displayName,
                                             style = MaterialTheme.typography.titleLarge,
-                                            color = Color.White,
+                                            color = JummoTextPrimary,
                                             fontWeight = FontWeight.ExtraBold,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
@@ -585,7 +586,7 @@ fun ProfileScreen(
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Surface(
-                                            color = JummoGoldBright.copy(alpha = 0.18f),
+                                            color = JummoGoldBright.copy(alpha = 0.14f),
                                             shape = RoundedCornerShape(50),
                                             border = BorderStroke(0.85.dp, JummoGoldBright.copy(alpha = 0.7f))
                                         ) {
@@ -610,14 +611,14 @@ fun ProfileScreen(
                                         }
 
                                         Surface(
-                                            color = JummoElevatedPurple.copy(alpha = 0.85f),
+                                            color = JummoObsidian,
                                             shape = RoundedCornerShape(50),
                                             border = BorderStroke(0.75.dp, JummoBorderSubtle)
                                         ) {
                                             Text(
                                                 text = studioName,
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = Color.White,
+                                                color = JummoTextPrimary,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -720,7 +721,7 @@ fun ProfileScreen(
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = JummoGoldBright,
-                            contentColor = JummoObsidian
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier
@@ -876,7 +877,7 @@ fun ProfileScreen(
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = JummoGoldBright,
-                                    contentColor = JummoObsidian
+                                    contentColor = Color.White
                                 ),
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier
@@ -965,6 +966,44 @@ fun ProfileScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
+                        }
+                    }
+
+                    var defaultStoragePreference by remember {
+                        mutableStateOf(prefs.getString("storage_preference", "Both") ?: "Both")
+                    }
+
+                    Text(
+                        text = "Preferred Storage Destination",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = JummoGoldBright
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf("Both", "Phone Folder", "Google Drive").forEach { pref ->
+                            val chipTag = when (pref) {
+                                "Phone Folder" -> "storage_pref_phone"
+                                "Google Drive" -> "storage_pref_drive"
+                                else -> "storage_pref_both"
+                            }
+                            FilterChip(
+                                selected = defaultStoragePreference == pref,
+                                onClick = {
+                                    defaultStoragePreference = pref
+                                    prefs.edit().putString("storage_preference", pref).apply()
+                                    onNotifyMessage("Storage preference set to $pref.")
+                                },
+                                label = { Text(if (pref == "Both") "Both (Phone + Drive)" else pref) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = JummoGoldBright,
+                                    selectedLabelColor = Color.White
+                                ),
+                                modifier = Modifier.testTag(chipTag)
+                            )
                         }
                     }
                 }
@@ -1077,7 +1116,7 @@ fun ProfileScreen(
                             Text(
                                 text = "Upload Quality: $uploadQuality",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -1152,13 +1191,13 @@ fun ProfileScreen(
                             Text(
                                 text = "Retry Failed Uploads",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
 
-                    // Prominent Golden Save Settings Button
+                    // Prominent Save Settings Button
                     Button(
                         onClick = {
                             prefs.edit()
@@ -1177,7 +1216,7 @@ fun ProfileScreen(
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = JummoGoldBright,
-                            contentColor = JummoObsidian
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
@@ -1285,7 +1324,7 @@ fun ProfileScreen(
                             Text(
                                 text = "Storage Details",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -1335,7 +1374,7 @@ fun ProfileScreen(
                             Text(
                                 text = "Manage Files",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -1366,7 +1405,7 @@ fun ProfileScreen(
                             Text(
                                 text = "Explicit Guest Face Search Consent",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
@@ -1514,7 +1553,7 @@ fun ProfileScreen(
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = JummoGoldBright,
-                                    contentColor = JummoObsidian
+                                    contentColor = Color.White
                                 ),
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier
@@ -1582,7 +1621,7 @@ fun ProfileScreen(
                             Text(
                                 text = "Android Settings",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
+                                color = JummoTextPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -1660,14 +1699,14 @@ fun ProfileScreen(
                             Icon(
                                 imageVector = Icons.Default.Email,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = JummoTextPrimary,
                                 modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Contact Support",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White
+                                color = JummoTextPrimary
                             )
                         }
 
@@ -1711,7 +1750,7 @@ fun ProfileScreen(
                             Text(
                                 text = "App Feedback",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White
+                                color = JummoTextPrimary
                             )
                         }
                     }
@@ -1944,7 +1983,7 @@ fun ProfileScreen(
                                     Text(
                                         text = "Official Website & APK Release",
                                         style = MaterialTheme.typography.titleSmall,
-                                        color = Color.White,
+                                        color = JummoTextPrimary,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
@@ -1967,7 +2006,7 @@ fun ProfileScreen(
                         SettingsInfoRow(
                             label = "Release Version",
                             value = releaseInfo.versionTag,
-                            valueColor = if (releaseInfo.available) JummoGoldBright else Color.White,
+                            valueColor = if (releaseInfo.available) JummoGoldBright else JummoTextPrimary,
                             showDivider = true
                         )
                         SettingsInfoRow(
@@ -2035,7 +2074,7 @@ fun ProfileScreen(
                                     },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = JummoGoldBright,
-                                        contentColor = JummoObsidian
+                                        contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(10.dp),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
@@ -2129,7 +2168,7 @@ fun ProfileScreen(
         AlertDialog(
             onDismissRequest = { showSignOutConfirmDialog = false },
             containerColor = JummoCardPurple,
-            titleContentColor = Color.White,
+            titleContentColor = JummoTextPrimary,
             textContentColor = JummoTextSecondary,
             title = {
                 Text(
@@ -2140,7 +2179,7 @@ fun ProfileScreen(
             },
             text = {
                 Text(
-                    text = "Your local original photographs and cloud events remain safely stored. Background WorkManager uploads for your account will pause until you sign back in.",
+                    text = "Your local original photographs and cloud events remain safely stored.",
                     style = MaterialTheme.typography.bodySmall
                 )
             },
@@ -2164,7 +2203,7 @@ fun ProfileScreen(
                     onClick = { showSignOutConfirmDialog = false },
                     modifier = Modifier.testTag("cancel_sign_out_button")
                 ) {
-                    Text("Cancel", color = Color.White)
+                    Text("Cancel", color = JummoTextPrimary)
                 }
             },
             modifier = Modifier.testTag("sign_out_confirm_dialog")
@@ -2177,7 +2216,7 @@ fun ProfileScreen(
         AlertDialog(
             onDismissRequest = { showDeleteFaceDataConfirmDialog = false },
             containerColor = JummoCardPurple,
-            titleContentColor = Color.White,
+            titleContentColor = JummoTextPrimary,
             textContentColor = JummoTextSecondary,
             title = {
                 Text("Delete Guest Face Search Data?", fontWeight = FontWeight.Bold)
@@ -2209,7 +2248,7 @@ fun ProfileScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteFaceDataConfirmDialog = false }) {
-                    Text("Cancel", color = Color.White)
+                    Text("Cancel", color = JummoTextPrimary)
                 }
             }
         )
@@ -2230,22 +2269,22 @@ fun ProfileScreen(
                     Text(
                         text = "1. Explicit Guest Consent: Guests must explicitly grant consent before AI Face Search processes a selfie.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White
+                        color = JummoTextPrimary
                     )
                     Text(
                         text = "2. Strict Event Isolation: Every event's photos, QR token, and guest sessions are isolated by Event ID and Photographer UID.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White
+                        color = JummoTextPrimary
                     )
                     Text(
                         text = "3. Revocable Face Data: Guests and studio owners can delete face-search session data at any time.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White
+                        color = JummoTextPrimary
                     )
                     Text(
                         text = "4. Original Photo Safety: Clearing cache or removing upload queue records never deletes local original photographs.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White
+                        color = JummoTextPrimary
                     )
                 }
             },
@@ -2254,7 +2293,7 @@ fun ProfileScreen(
                     onClick = { showPrivacyPolicyDialog = false },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = JummoGoldBright,
-                        contentColor = JummoObsidian
+                        contentColor = Color.White
                     )
                 ) {
                     Text("Close", fontWeight = FontWeight.Bold)
@@ -2269,7 +2308,7 @@ fun ProfileScreen(
             onDismissRequest = { showStorageDetailsDialog = false },
             containerColor = JummoCardPurple,
             titleContentColor = JummoGoldBright,
-            textContentColor = Color.White,
+            textContentColor = JummoTextPrimary,
             title = {
                 Text("Studio Storage Breakdown", fontWeight = FontWeight.Bold)
             },
@@ -2302,7 +2341,7 @@ fun ProfileScreen(
                     onClick = { showStorageDetailsDialog = false },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = JummoGoldBright,
-                        contentColor = JummoObsidian
+                        contentColor = Color.White
                     )
                 ) {
                     Text("Done", fontWeight = FontWeight.Bold)
@@ -2316,7 +2355,7 @@ fun ProfileScreen(
         AlertDialog(
             onDismissRequest = { showManageFilesDialog = false },
             containerColor = JummoCardPurple,
-            titleContentColor = Color.White,
+            titleContentColor = JummoTextPrimary,
             textContentColor = JummoTextSecondary,
             title = {
                 Text("Manage Local Original Files", fontWeight = FontWeight.Bold)
@@ -2332,7 +2371,7 @@ fun ProfileScreen(
                     onClick = { showManageFilesDialog = false },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = JummoGoldBright,
-                        contentColor = JummoObsidian
+                        contentColor = Color.White
                     )
                 ) {
                     Text("Keep Originals Safe", fontWeight = FontWeight.Bold)
@@ -2347,7 +2386,7 @@ fun ProfileScreen(
             onDismissRequest = { showFaqModal = false },
             containerColor = JummoCardPurple,
             titleContentColor = JummoGoldBright,
-            textContentColor = Color.White,
+            textContentColor = JummoTextPrimary,
             title = {
                 Text("Frequently Asked Questions", fontWeight = FontWeight.Bold)
             },
@@ -2372,7 +2411,7 @@ fun ProfileScreen(
                     onClick = { showFaqModal = false },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = JummoGoldBright,
-                        contentColor = JummoObsidian
+                        contentColor = Color.White
                     )
                 ) {
                     Text("Got It", fontWeight = FontWeight.Bold)
@@ -2387,7 +2426,7 @@ fun ProfileScreen(
         AlertDialog(
             onDismissRequest = { showReportProblemDialog = false },
             containerColor = JummoCardPurple,
-            titleContentColor = Color.White,
+            titleContentColor = JummoTextPrimary,
             textContentColor = JummoTextSecondary,
             title = {
                 Text("Report a Studio Issue", fontWeight = FontWeight.Bold)
@@ -2395,7 +2434,7 @@ fun ProfileScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Describe the issue with uploads, CameraX, DSLR import, or QR portal:",
+                        text = "Describe the issue:",
                         style = MaterialTheme.typography.bodySmall
                     )
                     OutlinedTextField(
@@ -2414,7 +2453,7 @@ fun ProfileScreen(
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = JummoGoldBright,
-                        contentColor = JummoObsidian
+                        contentColor = Color.White
                     )
                 ) {
                     Text("Submit Report", fontWeight = FontWeight.Bold)
@@ -2422,7 +2461,7 @@ fun ProfileScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showReportProblemDialog = false }) {
-                    Text("Cancel", color = Color.White)
+                    Text("Cancel", color = JummoTextPrimary)
                 }
             }
         )
@@ -2442,7 +2481,7 @@ fun ProfileScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Help us make Jummo Photos AI even better for your photography workflow:",
+                        text = "Share feedback on your photography workflow:",
                         style = MaterialTheme.typography.bodySmall
                     )
                     OutlinedTextField(
@@ -2461,7 +2500,7 @@ fun ProfileScreen(
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = JummoGoldBright,
-                        contentColor = JummoObsidian
+                        contentColor = Color.White
                     )
                 ) {
                     Text("Send Feedback", fontWeight = FontWeight.Bold)
@@ -2469,7 +2508,7 @@ fun ProfileScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showAppFeedbackDialog = false }) {
-                    Text("Cancel", color = Color.White)
+                    Text("Cancel", color = JummoTextPrimary)
                 }
             }
         )
@@ -2480,7 +2519,7 @@ fun ProfileScreen(
 private fun ProfileBannerMetricPill(
     label: String,
     value: String,
-    valueColor: Color = Color.White
+    valueColor: Color = JummoTextPrimary
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
@@ -2555,7 +2594,7 @@ private fun LuxurySettingsExpandableCard(
                         Text(
                             text = title,
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color.White,
+                            color = JummoTextPrimary,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis

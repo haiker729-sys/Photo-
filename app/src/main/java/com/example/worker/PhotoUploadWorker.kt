@@ -103,20 +103,42 @@ class PhotoUploadWorker(
                 repository.updateUploadStatus(
                     upload = record,
                     newStatus = "Uploading",
-                    newProgress = 30L,
+                    newProgress = 45L,
                     errorMessage = ""
                 )
-                delay(120L)
+                delay(100L)
 
                 if (isStopped) break
 
                 repository.updateUploadStatus(
                     upload = record,
                     newStatus = "Uploading",
-                    newProgress = 72L,
+                    newProgress = 75L,
                     errorMessage = ""
                 )
-                delay(120L)
+                delay(100L)
+
+                if (isStopped) break
+
+                repository.updateUploadStatus(
+                    upload = record,
+                    newStatus = "Verifying",
+                    newProgress = 92L,
+                    errorMessage = ""
+                )
+                delay(80L)
+
+                // Verify destination file & local original preservation
+                val finalCheck = verifyLocalPhotoReadable(applicationContext, record)
+                if (finalCheck != null) {
+                    repository.updateUploadStatus(
+                        upload = record,
+                        newStatus = "Failed",
+                        newProgress = 90L,
+                        errorMessage = "Verification failed: $finalCheck"
+                    )
+                    continue
+                }
 
                 repository.updateUploadStatus(
                     upload = record,

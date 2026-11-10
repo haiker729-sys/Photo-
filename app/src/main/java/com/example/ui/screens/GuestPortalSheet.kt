@@ -160,12 +160,12 @@ fun resolveGuestWebsitePalette(config: WebsiteCustomization): GuestWebsitePalett
     val accentHex = if (isCustom) config.primaryAccentHex else preset.primaryAccentHex
     val goldHex = if (isCustom) config.secondaryAccentHex.ifBlank { config.secondaryHighlightHex } else preset.secondaryHighlightHex
 
-    val isLight = activeTheme == WebsiteThemes.ELEGANT_IVORY
-    val background = parseWebsiteHexColor(bgHex, Color(0xFF0B0615))
-    val surface = parseWebsiteHexColor(surfHex, Color(0xFF160B25))
-    val card = parseWebsiteHexColor(cardHex, Color(0xFF241238))
-    val primaryAccent = parseWebsiteHexColor(accentHex, Color(0xFF8B20E8))
-    val secondaryHighlight = parseWebsiteHexColor(goldHex, Color(0xFFF7C747))
+    val isLight = activeTheme == WebsiteThemes.ELEGANT_IVORY || activeTheme == WebsiteThemes.ROYAL_PURPLE
+    val background = parseWebsiteHexColor(bgHex, Color(0xFFFAF9FF))
+    val surface = parseWebsiteHexColor(surfHex, Color(0xFFEDE9FE))
+    val card = parseWebsiteHexColor(cardHex, Color(0xFFEDE9FE))
+    val primaryAccent = parseWebsiteHexColor(accentHex, Color(0xFF5B21B6))
+    val secondaryHighlight = parseWebsiteHexColor(goldHex, Color(0xFF8B5CF6))
 
     return GuestWebsitePalette(
         background = background,
@@ -173,9 +173,9 @@ fun resolveGuestWebsitePalette(config: WebsiteCustomization): GuestWebsitePalett
         card = card,
         primaryAccent = primaryAccent,
         secondaryHighlight = secondaryHighlight,
-        textPrimary = if (isLight) Color(0xFF1E162B) else Color(0xFFFFFFFF),
-        textSecondary = if (isLight) Color(0xFF5A4E6E) else Color(0xFFD9CEE8),
-        borderSubtle = if (isLight) Color(0xFFD8CBE8) else secondaryHighlight.copy(alpha = 0.28f),
+        textPrimary = if (isLight) Color(0xFF24133F) else Color(0xFFFFFFFF),
+        textSecondary = if (isLight) Color(0xFF6B5B83) else Color(0xFFD9CEE8),
+        borderSubtle = if (isLight) Color(0xFFC7B3FF) else secondaryHighlight.copy(alpha = 0.28f),
         isLightTheme = isLight
     )
 }
@@ -295,8 +295,9 @@ fun GuestPortalModalScreen(
     var batchDownloadProgress by remember { mutableStateOf(0f) }
 
     // Organizer Approved Access state (for GuestAccessModes.PIN_PROTECTED)
-    val expectedApprovalCode = remember(event.id) {
-        event.id.replace("evt_", "").takeLast(4).uppercase().ifBlank { "2026" }
+    val expectedApprovalCode = remember(event.guestPin, event.id) {
+        if (event.guestPin.isNotBlank()) event.guestPin.trim()
+        else event.id.replace("evt_", "").takeLast(4).uppercase().ifBlank { "2026" }
     }
     var approvalCodeInput by remember { mutableStateOf("") }
     var organizerApproved by remember(event.id, effectiveConfig.guestAccessMode) {
