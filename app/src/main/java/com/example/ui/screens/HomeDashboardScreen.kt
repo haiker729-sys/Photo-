@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,17 +23,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.NotificationsNone
@@ -49,7 +53,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +71,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.R
+import com.example.data.model.BannerPresets
+import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
@@ -88,12 +97,15 @@ import com.example.ui.theme.JummoVioletBright
 import com.example.ui.theme.JummoVioletPrimary
 import com.example.ui.theme.JummoWarningAmber
 import com.example.ui.viewmodel.JummoViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeDashboardScreen(
     profile: PhotographerProfile?,
     events: List<PhotoEvent>,
     uploads: List<PhotoUploadRecord>,
+    banners: List<HomeBanner> = emptyList(),
     onCreateNewEventClick: () -> Unit,
     onQuickCameraClick: () -> Unit = {},
     onOpenEventDetails: (PhotoEvent) -> Unit = {},
@@ -144,6 +156,10 @@ fun HomeDashboardScreen(
         JummoViewModel.computeStorageUsage(context, uploads)
     }
 
+    val activeBanners = remember(banners) {
+        banners.filter { it.isActive }.sortedBy { it.displayOrder }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter
@@ -153,12 +169,12 @@ fun HomeDashboardScreen(
                 .fillMaxSize()
                 .widthIn(max = 840.dp)
                 .testTag("home_dashboard_list"),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // 1. Top Luxury Header + Greeting (Screen 2 in Reference)
+            // 1. Compact iPhone-Style Luxury Studio Header
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -166,10 +182,10 @@ fun HomeDashboardScreen(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(9.dp)
                         ) {
                             JummoLuxuryCameraLogo(
-                                size = 40.dp,
+                                size = 36.dp,
                                 showCrown = false
                             )
                             Column {
@@ -193,13 +209,13 @@ fun HomeDashboardScreen(
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(7.dp)
                         ) {
                             // Admin Dashboard Quick Access Button
                             IconButton(
                                 onClick = onOpenAdminDashboard,
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(34.dp)
                                     .clip(CircleShape)
                                     .background(JummoCardPurple)
                                     .border(0.85.dp, JummoGoldBright.copy(alpha = 0.45f), CircleShape)
@@ -209,7 +225,7 @@ fun HomeDashboardScreen(
                                     imageVector = Icons.Default.AdminPanelSettings,
                                     contentDescription = "Open Admin Dashboard",
                                     tint = JummoGoldBright,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(17.dp)
                                 )
                             }
 
@@ -218,7 +234,7 @@ fun HomeDashboardScreen(
                                 IconButton(
                                     onClick = onNavigateToUploadsTab,
                                     modifier = Modifier
-                                        .size(36.dp)
+                                        .size(34.dp)
                                         .clip(CircleShape)
                                         .background(JummoCardPurple)
                                         .border(0.85.dp, JummoBorderSubtle, CircleShape)
@@ -228,15 +244,15 @@ fun HomeDashboardScreen(
                                         imageVector = Icons.Default.NotificationsNone,
                                         contentDescription = "Upload Queue Notifications",
                                         tint = Color.White,
-                                        modifier = Modifier.size(19.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                                 if (pendingPhotos > 0L || failedUploads > 0L) {
                                     Box(
                                         modifier = Modifier
-                                            .size(15.dp)
+                                            .size(14.dp)
                                             .clip(CircleShape)
-                                            .background(if (failedUploads > 0L) JummoErrorRed else JummoErrorRed)
+                                            .background(JummoErrorRed)
                                             .align(Alignment.TopEnd),
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -253,7 +269,7 @@ fun HomeDashboardScreen(
                             // Profile Avatar Badge
                             Box(
                                 modifier = Modifier
-                                    .size(38.dp)
+                                    .size(36.dp)
                                     .clip(CircleShape)
                                     .background(
                                         Brush.linearGradient(
@@ -275,7 +291,7 @@ fun HomeDashboardScreen(
                         }
                     }
 
-                    // Greeting Block matching reference
+                    // Photographer Welcome & Studio Subtitle + Auto Sync Indicator
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -284,11 +300,11 @@ fun HomeDashboardScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
                                 Text(
                                     text = "Welcome, $displayName",
-                                    style = MaterialTheme.typography.headlineMedium,
+                                    style = MaterialTheme.typography.titleLarge,
                                     color = JummoTextPrimary,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1,
@@ -296,12 +312,12 @@ fun HomeDashboardScreen(
                                 )
                                 Text(
                                     text = "👋",
-                                    style = MaterialTheme.typography.titleMedium
+                                    style = MaterialTheme.typography.titleSmall
                                 )
                             }
                             Text(
                                 text = studioSubtitle,
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.labelMedium,
                                 color = JummoTextSecondary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -315,174 +331,98 @@ fun HomeDashboardScreen(
                 }
             }
 
-            // 2. Hero Wedding Photography Banner + Side-by-Side Action Buttons Below (Screen 2 in Reference)
+            // 2. Premium Image-Only Banner Slider (STRICTLY IMAGE-ONLY — Zero Text/Captions/Logos/Buttons Over Image)
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
-                        border = BorderStroke(1.dp, JummoGoldBright.copy(alpha = 0.4f))
+                HomeImageOnlyBannerCarousel(
+                    activeBanners = activeBanners
+                )
+            }
+
+            // 3. Compact Side-by-Side Quick Actions: Create Event & Open Camera
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = onCreateNewEventClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = JummoGoldBright,
+                            contentColor = JummoObsidian
+                        ),
+                        shape = RoundedCornerShape(13.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .testTag("home_create_event_button")
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(138.dp)
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.img_wedding_cover),
-                                contentDescription = "Event Photography Powered by AI Banner",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            colors = listOf(
-                                                JummoObsidian.copy(alpha = 0.92f),
-                                                JummoCardPurple.copy(alpha = 0.72f),
-                                                Color.Transparent
-                                            )
-                                        )
-                                    )
-                            )
-
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Surface(
-                                    color = JummoObsidian.copy(alpha = 0.72f),
-                                    shape = RoundedCornerShape(50),
-                                    border = BorderStroke(0.75.dp, JummoGoldBright.copy(alpha = 0.55f))
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoAwesome,
-                                            contentDescription = null,
-                                            tint = JummoGoldBright,
-                                            modifier = Modifier.size(13.dp)
-                                        )
-                                        Text(
-                                            text = "PRO STUDIO EDITION",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = JummoGoldBright,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-
-                                Column {
-                                    Text(
-                                        text = "Event Photography",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "Powered by AI",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = JummoGoldBright,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(17.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Create Event",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
 
-                    // Side-by-Side Primary Action Buttons: Golden "+ Create Event" & Electric Violet "Camera"
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    Button(
+                        onClick = onQuickCameraClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = JummoVioletPrimary,
+                            contentColor = Color.White
+                        ),
+                        border = BorderStroke(1.dp, JummoBorderGlow),
+                        shape = RoundedCornerShape(13.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .testTag("home_quick_camera_button")
                     ) {
-                        Button(
-                            onClick = onCreateNewEventClick,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = JummoGoldBright,
-                                contentColor = JummoObsidian
-                            ),
-                            shape = RoundedCornerShape(14.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp)
-                                .testTag("home_create_event_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Create Event",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-
-                        Button(
-                            onClick = onQuickCameraClick,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = JummoVioletPrimary,
-                                contentColor = Color.White
-                            ),
-                            border = BorderStroke(1.dp, JummoBorderGlow),
-                            shape = RoundedCornerShape(14.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp)
-                                .testTag("home_quick_camera_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CameraAlt,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(17.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Camera",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Open Camera",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
 
-            // 3. Compact 3 + 2 Statistics Grid (Events, Photos, Uploaded / Pending, Failed)
+            // 4. Compact Dashboard Statistics (Total Events, Total Photos, Uploaded, Pending, Failed)
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
                     ) {
                         MetricStatCard(
-                            title = "Events",
+                            title = "Total Events",
                             value = totalEvents.toString(),
                             icon = Icons.Default.Event,
                             accentColor = JummoVioletBright,
                             modifier = Modifier.weight(1f)
                         )
                         MetricStatCard(
-                            title = "Photos",
+                            title = "Total Photos",
                             value = totalPhotos.toString(),
                             icon = Icons.Default.PhotoLibrary,
-                            accentColor = JummoVioletBright,
+                            accentColor = JummoGoldBright,
                             modifier = Modifier.weight(1f)
                         )
                         MetricStatCard(
@@ -495,30 +435,29 @@ fun HomeDashboardScreen(
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
                     ) {
                         MetricStatCard(
                             title = "Pending",
                             value = pendingPhotos.toString(),
                             icon = Icons.Default.Schedule,
-                            accentColor = JummoErrorRed,
+                            accentColor = JummoWarningAmber,
                             modifier = Modifier.weight(1f)
                         )
                         MetricStatCard(
                             title = "Failed",
                             value = failedUploads.toString(),
                             icon = Icons.Default.ErrorOutline,
-                            accentColor = JummoWarningAmber,
+                            accentColor = JummoErrorRed,
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
             }
 
-            // 4. Compact Google Drive Status Card & Local Storage Strip
+            // 5. Compact Google Drive Real Status Card & Local Storage Strip
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Google Drive Connected Card with Progress Bar (matching Screen 2 in Reference)
+                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -553,58 +492,82 @@ fun HomeDashboardScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = if (driveConnected) Icons.Default.CloudDone else Icons.Default.CloudSync,
+                                        imageVector = if (driveConnected) Icons.Default.CloudDone else Icons.Default.CloudOff,
                                         contentDescription = "Google Drive Status",
                                         tint = if (driveConnected) JummoSuccessGreen else JummoGoldBright,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(17.dp)
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Google Drive",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1
+                                        )
+                                        Text(
+                                            text = if (driveConnected) "• Connected" else "• Not Connected",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (driveConnected) JummoSuccessGreen else JummoTextMuted,
+                                            fontWeight = FontWeight.SemiBold,
+                                            maxLines = 1
+                                        )
+                                    }
                                     Text(
-                                        text = "Google Drive",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1
-                                    )
-                                    Text(
-                                        text = if (driveConnected) "Connected" else "Tap to Connect",
+                                        text = "${storageMetrics.formatBytes(storageMetrics.combinedManagedBytes)} used • /${profile?.driveFolderName ?: "Jummo_Events_Cloud"}",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = if (driveConnected) JummoSuccessGreen else JummoTextMuted,
-                                        fontWeight = FontWeight.SemiBold,
-                                        maxLines = 1
+                                        color = JummoTextSecondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    val syncRatio = if (totalPhotos > 0L) {
+                                        (uploadedPhotos.toFloat() / totalPhotos.toFloat()).coerceIn(0.05f, 1f)
+                                    } else {
+                                        0f
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    LinearProgressIndicator(
+                                        progress = { syncRatio },
+                                        color = if (driveConnected) JummoSuccessGreen else JummoGoldBright,
+                                        trackColor = JummoDeepPurple,
+                                        modifier = Modifier
+                                            .width(136.dp)
+                                            .height(5.dp)
+                                            .clip(RoundedCornerShape(50))
                                     )
                                 }
                             }
 
-                            Column(
-                                horizontalAlignment = Alignment.End,
-                                verticalArrangement = Arrangement.spacedBy(5.dp),
-                                modifier = Modifier.width(136.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Surface(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(9.dp))
+                                    .clickable { onOpenDriveSettings() }
+                                    .testTag("drive_action_button"),
+                                color = if (driveConnected) {
+                                    JummoElevatedPurple
+                                } else {
+                                    JummoGoldBright
+                                },
+                                border = BorderStroke(
+                                    0.75.dp,
+                                    if (driveConnected) JummoBorderSubtle else JummoGoldBright
+                                ),
+                                shape = RoundedCornerShape(9.dp)
                             ) {
                                 Text(
-                                    text = "${storageMetrics.formatBytes(storageMetrics.combinedManagedBytes)} / ${profile?.driveFolderName ?: "Cloud"}",
+                                    text = if (driveConnected) "Manage" else "Connect",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = JummoTextSecondary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                val syncRatio = if (totalPhotos > 0L) {
-                                    (uploadedPhotos.toFloat() / totalPhotos.toFloat()).coerceIn(0.08f, 1f)
-                                } else if (driveConnected) {
-                                    0.38f
-                                } else {
-                                    0.06f
-                                }
-                                LinearProgressIndicator(
-                                    progress = { syncRatio },
-                                    color = if (driveConnected) JummoSuccessGreen else JummoGoldBright,
-                                    trackColor = JummoDeepPurple,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(6.dp)
-                                        .clip(RoundedCornerShape(50))
+                                    color = if (driveConnected) Color.White else JummoObsidian,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                 )
                             }
                         }
@@ -615,14 +578,14 @@ fun HomeDashboardScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("storage_usage_card"),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(13.dp),
                         color = JummoCardPurple.copy(alpha = 0.92f),
                         border = BorderStroke(0.75.dp, JummoBorderSubtle)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 9.dp),
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -634,29 +597,27 @@ fun HomeDashboardScreen(
                                     imageVector = Icons.Default.Storage,
                                     contentDescription = "Local Storage",
                                     tint = JummoGoldBright,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(15.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(7.dp))
                                 Text(
-                                    text = "Local Originals (${storageMetrics.localPhotoFileCount} files kept safe)",
-                                    style = MaterialTheme.typography.labelMedium,
+                                    text = "${storageMetrics.localPhotoFileCount} Local Originals • ${storageMetrics.formatBytes(storageMetrics.combinedManagedBytes)}",
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = JummoTextSecondary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
-                            Text(
-                                text = storageMetrics.formatBytes(storageMetrics.combinedManagedBytes),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = JummoGoldBright,
-                                fontWeight = FontWeight.Bold
+                            StatusBadgePill(
+                                text = "Originals Preserved",
+                                color = JummoSuccessGreen
                             )
                         }
                     }
                 }
             }
 
-            // 5. Recent Events Section (matching Screen 2 bottom section)
+            // 6. Recent Events Section
             item {
                 SectionHeaderRow(
                     title = "Recent Events",
@@ -726,6 +687,168 @@ fun HomeDashboardScreen(
     }
 }
 
+/**
+ * STRICT IMAGE-ONLY BANNER CAROUSEL:
+ * Renders ONLY the uploaded/configured banner photograph inside the rounded luxury frame.
+ * Absolutely NO text, NO captions, NO titles, NO logos, NO buttons, NO promotional overlays
+ * are drawn on top of the banner image.
+ */
+@Composable
+fun HomeImageOnlyBannerCarousel(
+    activeBanners: List<HomeBanner>,
+    modifier: Modifier = Modifier
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val slideDurationSeconds = remember(activeBanners) {
+        (activeBanners.firstOrNull()?.slideDurationSeconds ?: 4L).coerceIn(1L, 30L)
+    }
+    val pagerState = rememberPagerState(
+        initialPage = 0,
+        pageCount = { activeBanners.size.coerceAtLeast(1) }
+    )
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("home_banner_carousel_section"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(154.dp)
+                .testTag("home_banner_card"),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
+            border = BorderStroke(1.dp, JummoGoldBright.copy(alpha = 0.42f))
+        ) {
+            if (activeBanners.isEmpty()) {
+                // Neutral studio photography placeholder — strictly image-only with zero text overlays
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("home_banner_empty_placeholder")
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.img_hero_studio),
+                        contentDescription = "Studio Banner Placeholder",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            } else {
+                LaunchedEffect(activeBanners.size, slideDurationSeconds) {
+                    if (activeBanners.size > 1) {
+                        while (true) {
+                            delay(slideDurationSeconds * 1000L)
+                            val nextPage = (pagerState.currentPage + 1) % activeBanners.size
+                            pagerState.animateScrollToPage(nextPage)
+                        }
+                    }
+                }
+
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("home_banner_pager")
+                ) { page ->
+                    val banner = activeBanners[page]
+                    val slideTag = if (banner.id.isNotBlank()) {
+                        "home_banner_slide_${banner.id}"
+                    } else {
+                        "home_banner_slide_$page"
+                    }
+                    BannerImageSurface(
+                        imageUri = banner.imageUri,
+                        contentDescription = "Home Banner ${page + 1}",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .testTag(slideTag)
+                    )
+                }
+            }
+        }
+
+        // Subtle compact pagination dots outside/below the image frame
+        if (activeBanners.size > 1) {
+            Row(
+                modifier = Modifier.testTag("home_banner_indicators"),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                activeBanners.forEachIndexed { index, banner ->
+                    val isSelected = pagerState.currentPage == index
+                    val dotWidth by animateDpAsState(
+                        targetValue = if (isSelected) 16.dp else 6.dp,
+                        animationSpec = tween(durationMillis = 200),
+                        label = "banner_dot_width"
+                    )
+                    val dotColor by animateColorAsState(
+                        targetValue = if (isSelected) {
+                            JummoGoldBright
+                        } else {
+                            JummoVioletBright.copy(alpha = 0.45f)
+                        },
+                        animationSpec = tween(durationMillis = 200),
+                        label = "banner_dot_color"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .height(5.dp)
+                            .width(dotWidth)
+                            .clip(RoundedCornerShape(50))
+                            .background(dotColor)
+                            .clickable {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            }
+                            .testTag("home_banner_dot_${banner.id.ifBlank { index.toString() }}")
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Pure photographic surface for a HomeBanner — renders ONLY the photograph with ContentScale.Crop
+ * and zero text or UI overlays.
+ */
+@Composable
+fun BannerImageSurface(
+    imageUri: String,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null
+) {
+    val fallbackPainter = when (imageUri) {
+        BannerPresets.PRESET_FESTIVAL -> painterResource(id = R.drawable.img_festival_cover)
+        BannerPresets.PRESET_STUDIO -> painterResource(id = R.drawable.img_hero_studio)
+        BannerPresets.PRESET_LOGIN_HERO -> painterResource(id = R.drawable.img_hero_studio)
+        else -> painterResource(id = R.drawable.img_wedding_cover)
+    }
+
+    if (imageUri.startsWith("preset://") || imageUri.isBlank()) {
+        Image(
+            painter = fallbackPainter,
+            contentDescription = contentDescription,
+            modifier = modifier,
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        AsyncImage(
+            model = imageUri,
+            contentDescription = contentDescription,
+            placeholder = fallbackPainter,
+            error = fallbackPainter,
+            modifier = modifier,
+            contentScale = ContentScale.Crop
+        )
+    }
+}
+
 @Composable
 private fun RecentEventSummaryCard(
     event: PhotoEvent,
@@ -757,7 +880,7 @@ private fun RecentEventSummaryCard(
             // Left Square Thumbnail Photograph
             Box(
                 modifier = Modifier
-                    .size(72.dp)
+                    .size(68.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(JummoDeepPurple)
                     .border(0.75.dp, JummoGoldBright.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
@@ -836,7 +959,8 @@ private fun RecentEventSummaryCard(
                         Surface(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { onOpenQr() },
+                                .clickable { onOpenQr() }
+                                .testTag("recent_event_qr_${event.id}"),
                             color = JummoElevatedPurple,
                             border = BorderStroke(0.75.dp, JummoBorderSubtle),
                             shape = RoundedCornerShape(8.dp)
@@ -864,7 +988,8 @@ private fun RecentEventSummaryCard(
                         Surface(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { onShootCamera() },
+                                .clickable { onShootCamera() }
+                                .testTag("recent_event_camera_${event.id}"),
                             color = JummoGoldBright.copy(alpha = 0.16f),
                             border = BorderStroke(0.75.dp, JummoGoldBright.copy(alpha = 0.5f)),
                             shape = RoundedCornerShape(8.dp)

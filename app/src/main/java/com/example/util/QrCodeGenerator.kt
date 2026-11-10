@@ -64,6 +64,18 @@ object QrCodeGenerator {
     }
 
     /**
+     * Builds the verified live GitHub Pages Guest Website URL for an event.
+     */
+    fun buildVerifiedPagesGuestUrl(eventId: String): String {
+        val cleanId = eventId.trim().ifBlank { "evt_live" }
+        return "https://haiker729-sys.github.io/Photo-/?event=$cleanId"
+    }
+
+    fun buildVerifiedPagesGuestUrl(event: PhotoEvent): String {
+        return buildVerifiedPagesGuestUrl(event.id)
+    }
+
+    /**
      * Formats an event or expiration date into luxury display format (e.g., "01 Mar 2027" or "15 Dec 2026").
      */
     fun formatDisplayDate(rawDate: String, defaultFallback: String = "01 Mar 2027"): String {
@@ -137,7 +149,8 @@ object QrCodeGenerator {
      */
     fun validateGuestPortalAccess(
         event: PhotoEvent,
-        nowMillis: Long = System.currentTimeMillis()
+        nowMillis: Long = System.currentTimeMillis(),
+        websiteSuspended: Boolean = false
     ): GuestAccessValidationResult {
         val portalUrl = buildGuestPortalUrl(event)
         val mode = event.guestAccessMode.ifBlank { GuestAccessModes.FACE_SEARCH_ONLY }
@@ -148,6 +161,20 @@ object QrCodeGenerator {
                 statusCode = "INVALID_EVENT",
                 title = "Invalid Event QR",
                 message = "This QR code is not linked to a valid event ID.",
+                guestPortalUrl = portalUrl,
+                accessMode = mode,
+                allowsImmediateGallery = false,
+                requiresFaceSearchConsent = true,
+                requiresOrganizerApproval = false
+            )
+        }
+
+        if (websiteSuspended) {
+            return GuestAccessValidationResult(
+                isAllowed = false,
+                statusCode = "WEBSITE_SUSPENDED",
+                title = "Event Website Temporarily Suspended",
+                message = "This event's public guest website has been temporarily suspended by studio administration.",
                 guestPortalUrl = portalUrl,
                 accessMode = mode,
                 allowsImmediateGallery = false,
@@ -207,6 +234,18 @@ object QrCodeGenerator {
                 message = "Guests can browse all event photos or run AI Face Search with consent.",
                 guestPortalUrl = portalUrl,
                 accessMode = GuestAccessModes.VIEW_ALL_PERMITTED,
+                allowsImmediateGallery = true,
+                requiresFaceSearchConsent = false,
+                requiresOrganizerApproval = false
+            )
+
+            GuestAccessModes.GALLERY_ONLY -> GuestAccessValidationResult(
+                isAllowed = true,
+                statusCode = "ACCESS_GRANTED_GALLERY_ONLY",
+                title = "Gallery Only Mode",
+                message = "Guests can browse and download event photos directly.",
+                guestPortalUrl = portalUrl,
+                accessMode = GuestAccessModes.GALLERY_ONLY,
                 allowsImmediateGallery = true,
                 requiresFaceSearchConsent = false,
                 requiresOrganizerApproval = false
@@ -496,6 +535,30 @@ object QrCodeGenerator {
         )
 
         return bitmap
+    }
+
+    fun generateQrMatrixBitmap(
+        qrPayload: String,
+        sizePx: Int = 720,
+        includeCenterLogo: Boolean = true
+    ): Bitmap {
+        return createScannableQrSquareBitmap(
+            qrPayload = qrPayload,
+            sizePx = sizePx,
+            includeCenterLogo = includeCenterLogo
+        )
+    }
+
+    fun generateQrMatrixBitmap(
+        event: PhotoEvent,
+        sizePx: Int = 720,
+        includeCenterLogo: Boolean = true
+    ): Bitmap {
+        return createScannableQrSquareBitmap(
+            qrPayload = buildGuestPortalUrl(event),
+            sizePx = sizePx,
+            includeCenterLogo = includeCenterLogo
+        )
     }
 
     /**
@@ -870,6 +933,48 @@ object QrCodeGenerator {
         } else {
             localFile.absolutePath
         }
+    }
+
+    fun saveHighResQrPngToGallery(
+        context: Context,
+        eventName: String,
+        eventCategory: String,
+        eventDate: String,
+        qrPayload: String,
+        resolutionPx: Int = 1200
+    ): Result<String> = runCatching {
+        val safeUrl = if (qrPayload.isBlank()) "$BASE_GUEST_PORTAL_URL" + "evt_live" else qrPayload
+        val bitmap = createBrandedEventQrBitmap(
+            eventName = eventName,
+            eventCategory = eventCategory,
+            eventDate = eventDate,
+            qrPayload = safeUrl,
+            sizePx = resolutionPx.coerceIn(512, 2400)
+        )
+        val cleanName = eventName.replace(Regex("[^a-zA-Z0-9]+"), "_").trim('_').ifBlank { "Event" }.take(30)
+        val fileName = "Jummo_QR_${cleanName}_${System.currentTimeMillis()}.png"
+
+        val localQrDir = File(context.filesDir, "qr_exports").apply { mkdirs() }
+        val localFile = File(localQrDir, fileName)
+        FileOutputStream(localFile).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        }
+        localFile.absolutePath
+    }
+
+    fun saveHighResQrPngToGallery(
+        context: Context,
+        event: PhotoEvent,
+        resolutionPx: Int = 1200
+    ): Result<String> {
+        return saveHighResQrPngToGallery(
+            context = context,
+            eventName = event.name,
+            eventCategory = event.category,
+            eventDate = event.eventDate,
+            qrPayload = buildGuestPortalUrl(event),
+            resolutionPx = resolutionPx
+        )
     }
 
     /**

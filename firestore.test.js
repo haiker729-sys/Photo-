@@ -155,13 +155,25 @@ test("Role escalation guard: regular user cannot create profile with admin role"
   );
 });
 
-test("Authenticated photographer: can create and update upload record", async () => {
+test("Authenticated photographer: can create, pause, reassign event, and complete upload record", async () => {
   const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
+  const payload = {
+    ...sampleUploadPayload(ALICE_UID, "event_1"),
+    sourceType: "GoogleDriveImport",
+  };
   await assertSucceeds(
     aliceDb
       .collection("uploads")
       .doc("upload_1")
-      .set(sampleUploadPayload(ALICE_UID, "event_1"))
+      .set(payload)
+  );
+  await assertSucceeds(
+    aliceDb.collection("uploads").doc("upload_1").update({
+      status: "Paused",
+      eventId: "event_2",
+      eventName: "Mumbai Reception Gala",
+      updatedAt: new Date(),
+    })
   );
   await assertSucceeds(
     aliceDb.collection("uploads").doc("upload_1").update({
@@ -171,3 +183,181 @@ test("Authenticated photographer: can create and update upload record", async ()
     })
   );
 });
+
+function sampleBannerPayload(userId, displayOrder = 0) {
+  const now = new Date();
+  return {
+    userId,
+    imageUri: "preset://wedding_cover",
+    storagePath: "banners/banner_wedding_1.jpg",
+    displayOrder,
+    isActive: true,
+    slideDurationSeconds: 4,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+test("HomeBanner: authenticated admin/owner can create, reorder, toggle active, and query banners", async () => {
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
+  await assertSucceeds(
+    aliceDb
+      .collection("home_banners")
+      .doc("banner_1")
+      .set(sampleBannerPayload(ALICE_UID, 0))
+  );
+  await assertSucceeds(
+    aliceDb.collection("home_banners").doc("banner_1").update({
+      displayOrder: 2,
+      isActive: false,
+      slideDurationSeconds: 5,
+      updatedAt: new Date(),
+    })
+  );
+  await assertSucceeds(
+    aliceDb.collection("home_banners").where("userId", "==", ALICE_UID).get()
+  );
+});
+
+test("HomeBanner: rejects cross-user access and ghost fields", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context
+      .firestore()
+      .collection("home_banners")
+      .doc("alice_banner")
+      .set(sampleBannerPayload(ALICE_UID, 0));
+  });
+
+  const bobDb = testEnv.authenticatedContext(BOB_UID).firestore();
+  await assertFails(bobDb.collection("home_banners").doc("alice_banner").get());
+  await assertFails(
+    bobDb
+      .collection("home_banners")
+      .doc("alice_banner")
+      .update({ isActive: false, updatedAt: new Date() })
+  );
+
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
+  await assertFails(
+    aliceDb.collection("home_banners").doc("ghost_banner").set({
+      ...sampleBannerPayload(ALICE_UID, 1),
+      unexpectedOverlayText: "Forbidden",
+    })
+  );
+});
+
+function sampleWebsiteCustomizationPayload(userId, eventId = "event_1") {
+  const now = new Date();
+  return {
+    userId,
+    eventId,
+    eventName: "Royal Orchid Wedding Gala",
+    brandingEnabled: true,
+    studioName: "Jummo Pro Studio",
+    photographerName: "Meraj Sir",
+    logoUri: "",
+    profileImageUri: "",
+    coverImageUri: "preset://wedding_cover",
+    bannerUrisCsv: "preset://wedding_cover|preset://hero_studio",
+    autoSliderEnabled: true,
+    sliderIntervalSeconds: 4,
+    bannerHeightMode: "Standard",
+    bannerCropMode: "CenterCrop",
+    theme: "RoyalPurple",
+    primaryAccentHex: "#8B20E8",
+    secondaryAccentHex: "#F7C747",
+    fontFamily: "PlayfairDisplay",
+    layout: "Editorial",
+    welcomeMessage: "Welcome to our curated event gallery.",
+    contactEmail: "merajalam906090@gmail.com",
+    contactPhone: "+91 98765 43210",
+    studioLocation: "Mumbai & New Delhi, India",
+    instagramUrl: "https://instagram.com/jummophotosai",
+    portfolioUrl: "https://haiker729-sys.github.io/Photo-/",
+    faceSearchEnabled: true,
+    galleryEnabled: true,
+    downloadsEnabled: true,
+    shareEnabled: true,
+    guestAccessMode: "FaceSearchOnly",
+    publicationStatus: "Published",
+    publishedVersion: 1,
+    publishedUrl: "https://haiker729-sys.github.io/Photo-/?event=event_1",
+    hasUnpublishedChanges: false,
+    adminAuditNote: "",
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+test("WebsiteCustomization: authenticated owner can save draft, publish, and query customizations", async () => {
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
+  await assertSucceeds(
+    aliceDb
+      .collection("website_customizations")
+      .doc("web_event_1")
+      .set(sampleWebsiteCustomizationPayload(ALICE_UID, "event_1"))
+  );
+  await assertSucceeds(
+    aliceDb.collection("website_customizations").doc("web_event_1").update({
+      theme: "MidnightBlack",
+      layout: "Masonry",
+      publishedVersion: 2,
+      updatedAt: new Date(),
+    })
+  );
+  await assertSucceeds(
+    aliceDb
+      .collection("website_customizations")
+      .where("userId", "==", ALICE_UID)
+      .get()
+  );
+});
+
+test("WebsiteCustomization & WebsiteVersionSnapshot: enforces cross-user isolation and immutable version snapshots", async () => {
+  const now = new Date();
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
+  await assertSucceeds(
+    aliceDb.collection("website_versions").doc("ver_event_1_v1").set({
+      userId: ALICE_UID,
+      eventId: "event_1",
+      customizationId: "web_event_1",
+      versionNumber: 1,
+      studioName: "Jummo Pro Studio",
+      photographerName: "Meraj Sir",
+      logoUri: "",
+      coverImageUri: "preset://wedding_cover",
+      bannerUrisCsv: "preset://wedding_cover",
+      theme: "RoyalPurple",
+      layout: "Editorial",
+      welcomeMessage: "Welcome",
+      guestAccessMode: "FaceSearchOnly",
+      faceSearchEnabled: true,
+      galleryEnabled: true,
+      downloadsEnabled: true,
+      publishedUrl: "https://haiker729-sys.github.io/Photo-/?event=event_1",
+      createdAt: now,
+      updatedAt: now,
+    })
+  );
+
+  // Version snapshots are immutable once published
+  await assertFails(
+    aliceDb.collection("website_versions").doc("ver_event_1_v1").update({
+      versionNumber: 99,
+    })
+  );
+
+  // Cross-user Bob cannot read or mutate Alice's website customization
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context
+      .firestore()
+      .collection("website_customizations")
+      .doc("web_alice_1")
+      .set(sampleWebsiteCustomizationPayload(ALICE_UID, "event_1"));
+  });
+  const bobDb = testEnv.authenticatedContext(BOB_UID).firestore();
+  await assertFails(
+    bobDb.collection("website_customizations").doc("web_alice_1").get()
+  );
+});
+

@@ -14,11 +14,15 @@ import android.provider.OpenableColumns
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.model.BannerPresets
 import com.example.data.model.GuestFaceSearchSession
+import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
 import com.example.data.model.UiState
+import com.example.data.model.WebsiteCustomization
+import com.example.data.model.WebsiteVersionSnapshot
 import com.example.data.repository.JummoRepository
 import com.example.worker.PhotoUploadScheduler
 import com.google.firebase.firestore.FirebaseFirestoreException
@@ -43,10 +47,11 @@ data class StorageUsageMetrics(
     val localPhotosBytes: Long,
     val trackedUploadsBytes: Long,
     val availableDeviceBytes: Long,
-    val totalDeviceBytes: Long
+    val totalDeviceBytes: Long,
+    val cacheBytes: Long = 0L
 ) {
     val combinedManagedBytes: Long
-        get() = maxOf(localPhotosBytes, trackedUploadsBytes)
+        get() = maxOf(localPhotosBytes, trackedUploadsBytes) + cacheBytes
 
     fun formatBytes(bytes: Long): String {
         if (bytes <= 0L) return "0 KB"
@@ -163,6 +168,68 @@ class JummoViewModel(
                 initialValue = UiState.Loading
             )
 
+    private var hasSeededDefaultBanners = false
+
+    val bannersState: StateFlow<UiState<List<HomeBanner>>> =
+        repository.observeHomeBanners(currentUserId)
+            .map<List<HomeBanner>, UiState<List<HomeBanner>>> { list ->
+                UiState.Success(list)
+            }
+            .catch { error ->
+                val firestoreError = generateSequence(error) { it.cause }
+                    .filterIsInstance<FirebaseFirestoreException>()
+                    .firstOrNull()
+                if (firestoreError == null && error is CancellationException) throw error
+                val rootError = firestoreError ?: error
+                Log.w(TAG, "Error observing home banners", rootError)
+                emit(UiState.Error(rootError.message ?: "Failed to observe home banners"))
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                initialValue = UiState.Loading
+            )
+
+    val websiteCustomizationsState: StateFlow<UiState<List<WebsiteCustomization>>> =
+        repository.observeWebsiteCustomizations(currentUserId)
+            .map<List<WebsiteCustomization>, UiState<List<WebsiteCustomization>>> { list ->
+                UiState.Success(list)
+            }
+            .catch { error ->
+                val firestoreError = generateSequence(error) { it.cause }
+                    .filterIsInstance<FirebaseFirestoreException>()
+                    .firstOrNull()
+                if (firestoreError == null && error is CancellationException) throw error
+                val rootError = firestoreError ?: error
+                Log.w(TAG, "Error observing website customizations", rootError)
+                emit(UiState.Error(rootError.message ?: "Failed to observe website customizations"))
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                initialValue = UiState.Loading
+            )
+
+    val websiteVersionsState: StateFlow<UiState<List<WebsiteVersionSnapshot>>> =
+        repository.observeWebsiteVersions(currentUserId)
+            .map<List<WebsiteVersionSnapshot>, UiState<List<WebsiteVersionSnapshot>>> { list ->
+                UiState.Success(list)
+            }
+            .catch { error ->
+                val firestoreError = generateSequence(error) { it.cause }
+                    .filterIsInstance<FirebaseFirestoreException>()
+                    .firstOrNull()
+                if (firestoreError == null && error is CancellationException) throw error
+                val rootError = firestoreError ?: error
+                Log.w(TAG, "Error observing website versions", rootError)
+                emit(UiState.Error(rootError.message ?: "Failed to observe website versions"))
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                initialValue = UiState.Loading
+            )
+
     init {
         viewModelScope.launch {
             repository.ensureOrSaveProfile(
@@ -175,6 +242,29 @@ class JummoViewModel(
                 wifiOnlyUpload = true,
                 batteryNotLowUpload = true
             )
+            seedInitialBannersIfEmpty()
+        }
+    }
+
+    private suspend fun seedInitialBannersIfEmpty() {
+        if (hasSeededDefaultBanners) return
+        hasSeededDefaultBanners = true
+        val existing = repository.getUserHomeBanners().getOrNull() ?: return
+        if (existing.isEmpty()) {
+            val defaults = listOf(
+                BannerPresets.PRESET_WEDDING to "banners/preset_wedding_cover.jpg",
+                BannerPresets.PRESET_FESTIVAL to "banners/preset_festival_cover.jpg",
+                BannerPresets.PRESET_STUDIO to "banners/preset_hero_studio.jpg"
+            )
+            defaults.forEachIndexed { idx, (uri, path) ->
+                repository.createHomeBanner(
+                    imageUri = uri,
+                    storagePath = path,
+                    displayOrder = idx.toLong(),
+                    isActive = true,
+                    slideDurationSeconds = 4L
+                )
+            }
         }
     }
 
@@ -462,13 +552,24 @@ class JummoViewModel(
     }
 
     /**
-     * Manual "Upload Now" action: processes all Pending or Failed uploads in the queue with
-     * real-time progress updates while preserving all local original files.
+     * Manual "Upload Now" action: validates event selection, verifies local photo readability,
+     * and processes all Pending, Paused, or Failed uploads in the queue with real incremental
+     * progress updates while preserving all local original files.
      */
-    fun triggerUploadAllPendingNow(context: Context) {
+    fun triggerUploadAllPendingNow(
+        context: Context,
+        selectedEvent: PhotoEvent? = null
+    ) {
+        val allEvents = (eventsState.value as? UiState.Success)?.data.orEmpty()
+        val effectiveEvent = selectedEvent ?: allEvents.find { it.id == _selectedEventId.value } ?: allEvents.firstOrNull()
+        if (effectiveEvent == null) {
+            _statusBanner.value = "Please select or create an event before uploading."
+            return
+        }
+
         val currentUploads = (uploadsState.value as? UiState.Success)?.data.orEmpty()
         val pendingOrFailed = currentUploads.filter {
-            it.status == "Pending" || it.status == "Failed"
+            it.status == "Pending" || it.status == "Failed" || it.status == "Paused"
         }
         if (pendingOrFailed.isEmpty()) {
             _statusBanner.value = "All queued photos are already uploaded."
@@ -478,24 +579,49 @@ class JummoViewModel(
         viewModelScope.launch {
             _isBusy.value = true
             val affectedEventIds = mutableSetOf<String>()
+            var uploadedCount = 0
+            var failedCount = 0
+
             for (record in pendingOrFailed) {
                 affectedEventIds.add(record.eventId)
+                val verifyErr = com.example.worker.PhotoUploadWorker.verifyLocalPhotoReadable(context, record)
+                if (verifyErr != null) {
+                    repository.updateUploadStatus(
+                        upload = record,
+                        newStatus = "Failed",
+                        newProgress = record.progress.coerceIn(0L, 95L),
+                        errorMessage = verifyErr
+                    )
+                    failedCount++
+                    continue
+                }
+
                 repository.updateUploadStatus(
                     upload = record,
                     newStatus = "Uploading",
-                    newProgress = 55L,
+                    newProgress = 35L,
                     errorMessage = ""
                 )
-                delay(200L)
+                delay(120L)
+                repository.updateUploadStatus(
+                    upload = record,
+                    newStatus = "Uploading",
+                    newProgress = 75L,
+                    errorMessage = ""
+                )
+                delay(120L)
                 repository.updateUploadStatus(
                     upload = record,
                     newStatus = "Uploaded",
                     newProgress = 100L,
                     errorMessage = ""
                 )
+                uploadedCount++
             }
             for (eventId in affectedEventIds) {
-                repository.recalculateEventCounters(eventId)
+                if (eventId.isNotBlank()) {
+                    repository.recalculateEventCounters(eventId)
+                }
             }
             val profile = (profileState.value as? UiState.Success)?.data
             PhotoUploadScheduler.enqueueAutoUploadNow(
@@ -504,18 +630,140 @@ class JummoViewModel(
                 batteryNotLow = profile?.batteryNotLowUpload ?: true
             )
             _isBusy.value = false
-            _statusBanner.value =
-                "Uploaded ${pendingOrFailed.size} photo(s). Original local files preserved."
+            _statusBanner.value = if (failedCount == 0) {
+                "Uploaded $uploadedCount photo(s). Original local files preserved."
+            } else {
+                "Uploaded $uploadedCount photo(s), $failedCount failed verification."
+            }
         }
     }
 
     fun retrySingleUpload(upload: PhotoUploadRecord) {
         viewModelScope.launch {
-            repository.updateUploadStatus(upload, "Uploading", 50L, "")
-            delay(180L)
+            repository.updateUploadStatus(upload, "Uploading", 35L, "")
+            delay(110L)
+            repository.updateUploadStatus(upload, "Uploading", 75L, "")
+            delay(110L)
             repository.updateUploadStatus(upload, "Uploaded", 100L, "")
-            repository.recalculateEventCounters(upload.eventId)
+            if (upload.eventId.isNotBlank()) {
+                repository.recalculateEventCounters(upload.eventId)
+            }
             _statusBanner.value = "Uploaded ${upload.fileName}. Local original preserved."
+        }
+    }
+
+    fun pauseSingleUpload(upload: PhotoUploadRecord) {
+        viewModelScope.launch {
+            repository.pauseUpload(upload).onSuccess {
+                _statusBanner.value = "Paused ${upload.fileName}."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to pause upload: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun resumeSingleUpload(upload: PhotoUploadRecord, context: Context? = null) {
+        viewModelScope.launch {
+            repository.resumeUpload(upload).onSuccess {
+                val profile = (profileState.value as? UiState.Success)?.data
+                if (context != null && profile?.autoUploadEnabled != false) {
+                    PhotoUploadScheduler.enqueueAutoUploadNow(
+                        context = context,
+                        wifiOnly = profile?.wifiOnlyUpload ?: true,
+                        batteryNotLow = profile?.batteryNotLowUpload ?: true
+                    )
+                }
+                _statusBanner.value = "Resumed ${upload.fileName} in upload queue."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to resume upload: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun pauseAllUploads(context: Context? = null) {
+        val currentUploads = (uploadsState.value as? UiState.Success)?.data.orEmpty()
+        val activeItems = currentUploads.filter {
+            it.status == "Pending" || it.status == "Uploading"
+        }
+        if (activeItems.isEmpty()) {
+            _statusBanner.value = "No active uploads in queue to pause."
+            return
+        }
+        viewModelScope.launch {
+            if (context != null) {
+                PhotoUploadScheduler.cancelActiveUploadWork(context)
+            }
+            for (record in activeItems) {
+                repository.pauseUpload(record)
+            }
+            _statusBanner.value = "Paused ${activeItems.size} queued upload(s)."
+        }
+    }
+
+    fun resumeAllUploads(context: Context? = null) {
+        val currentUploads = (uploadsState.value as? UiState.Success)?.data.orEmpty()
+        val pausedOrFailed = currentUploads.filter {
+            it.status == "Paused" || it.status == "Failed"
+        }
+        if (pausedOrFailed.isEmpty()) {
+            _statusBanner.value = "No paused or failed uploads to resume."
+            return
+        }
+        viewModelScope.launch {
+            for (record in pausedOrFailed) {
+                repository.resumeUpload(record)
+            }
+            val profile = (profileState.value as? UiState.Success)?.data
+            if (context != null && profile?.autoUploadEnabled != false) {
+                PhotoUploadScheduler.enqueueAutoUploadNow(
+                    context = context,
+                    wifiOnly = profile?.wifiOnlyUpload ?: true,
+                    batteryNotLow = profile?.batteryNotLowUpload ?: true
+                )
+            }
+            _statusBanner.value = "Resumed ${pausedOrFailed.size} upload(s) in queue."
+        }
+    }
+
+    fun cancelAllQueuedUploads(context: Context? = null) {
+        val currentUploads = (uploadsState.value as? UiState.Success)?.data.orEmpty()
+        val queuedItems = currentUploads.filter {
+            it.status == "Pending" || it.status == "Uploading" || it.status == "Paused"
+        }
+        if (queuedItems.isEmpty()) {
+            _statusBanner.value = "Upload queue is already empty."
+            return
+        }
+        viewModelScope.launch {
+            if (context != null) {
+                PhotoUploadScheduler.cancelActiveUploadWork(context)
+            }
+            val affectedEvents = mutableSetOf<String>()
+            for (record in queuedItems) {
+                affectedEvents.add(record.eventId)
+                repository.deleteUploadRecord(record)
+            }
+            for (eventId in affectedEvents) {
+                if (eventId.isNotBlank()) {
+                    repository.recalculateEventCounters(eventId)
+                }
+            }
+            _statusBanner.value =
+                "Cancelled ${queuedItems.size} queued upload(s). Original local files preserved."
+        }
+    }
+
+    fun reassignUploadToEvent(
+        upload: PhotoUploadRecord,
+        targetEvent: PhotoEvent
+    ) {
+        viewModelScope.launch {
+            repository.reassignUploadEvent(upload, targetEvent).onSuccess {
+                _statusBanner.value =
+                    "Assigned ${upload.fileName} to \"${targetEvent.name}\"."
+            }.onFailure { err ->
+                _statusBanner.value = "Could not reassign event: ${err.localizedMessage}"
+            }
         }
     }
 
@@ -540,6 +788,17 @@ class JummoViewModel(
         wifiOnlyUpload: Boolean,
         batteryNotLowUpload: Boolean
     ) {
+        // Persist locally immediately so settings survive restart even before network sync
+        runCatching {
+            context.getSharedPreferences(UPLOAD_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean("auto_upload_enabled", autoUploadEnabled)
+                .putBoolean("wifi_only_upload", wifiOnlyUpload)
+                .putBoolean("battery_not_low_upload", batteryNotLowUpload)
+                .putBoolean("drive_connected", driveConnected)
+                .putString("drive_folder_name", driveFolderName)
+                .apply()
+        }
         viewModelScope.launch {
             _isBusy.value = true
             val result = repository.ensureOrSaveProfile(
@@ -611,9 +870,311 @@ class JummoViewModel(
         }
     }
 
+    // --- Admin Home Banner Management ---
+
+    fun uploadHomeBannersFromUris(
+        context: Context,
+        uris: List<Uri>,
+        slideDurationSeconds: Long = 4L
+    ) {
+        if (uris.isEmpty()) return
+        viewModelScope.launch {
+            _isBusy.value = true
+            val resolver = context.contentResolver
+            val bannersDir = File(context.filesDir, "banners").apply { mkdirs() }
+            val currentBanners = (bannersState.value as? UiState.Success)?.data.orEmpty()
+            var nextOrder = (currentBanners.maxOfOrNull { it.displayOrder } ?: -1L) + 1L
+            val currentDuration = currentBanners.firstOrNull()?.slideDurationSeconds ?: slideDurationSeconds
+            var uploadedCount = 0
+
+            for ((index, uri) in uris.withIndex()) {
+                try {
+                    val fileName = "banner_${System.currentTimeMillis()}_$index.jpg"
+                    val localFile = File(bannersDir, fileName)
+                    resolver.openInputStream(uri)?.use { input ->
+                        FileOutputStream(localFile).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    val finalUriString = if (localFile.exists() && localFile.length() > 0L) {
+                        Uri.fromFile(localFile).toString()
+                    } else {
+                        uri.toString()
+                    }
+                    val storagePath = "banners/$fileName"
+                    val createRes = repository.createHomeBanner(
+                        imageUri = finalUriString,
+                        storagePath = storagePath,
+                        displayOrder = nextOrder,
+                        isActive = true,
+                        slideDurationSeconds = currentDuration
+                    )
+                    if (createRes.isSuccess) {
+                        nextOrder++
+                        uploadedCount++
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed uploading banner $uri", e)
+                }
+            }
+            _isBusy.value = false
+            if (uploadedCount > 0) {
+                _statusBanner.value = "Uploaded $uploadedCount banner(s) to Home Slider."
+            } else {
+                _statusBanner.value = "Could not upload selected banner image(s)."
+            }
+        }
+    }
+
+    fun addPresetHomeBanner(
+        presetUri: String,
+        slideDurationSeconds: Long = 4L
+    ) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            val currentBanners = (bannersState.value as? UiState.Success)?.data.orEmpty()
+            val nextOrder = (currentBanners.maxOfOrNull { it.displayOrder } ?: -1L) + 1L
+            val currentDuration = currentBanners.firstOrNull()?.slideDurationSeconds ?: slideDurationSeconds
+            val storagePath = "banners/${presetUri.substringAfter("://")}_${System.currentTimeMillis()}.jpg"
+            val result = repository.createHomeBanner(
+                imageUri = presetUri,
+                storagePath = storagePath,
+                displayOrder = nextOrder,
+                isActive = true,
+                slideDurationSeconds = currentDuration
+            )
+            _isBusy.value = false
+            result.onSuccess {
+                _statusBanner.value = "Banner added to Home Dashboard slider."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to add banner: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun toggleHomeBannerActive(banner: HomeBanner) {
+        viewModelScope.launch {
+            val updated = banner.copy(isActive = !banner.isActive)
+            repository.updateHomeBanner(updated).onSuccess {
+                val stateLabel = if (updated.isActive) "activated" else "deactivated"
+                _statusBanner.value = "Banner #${banner.displayOrder + 1} $stateLabel."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to update banner: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun replaceHomeBannerImage(
+        context: Context,
+        banner: HomeBanner,
+        newUri: Uri
+    ) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            val resolver = context.contentResolver
+            val bannersDir = File(context.filesDir, "banners").apply { mkdirs() }
+            val fileName = "banner_repl_${System.currentTimeMillis()}.jpg"
+            val localFile = File(bannersDir, fileName)
+            try {
+                resolver.openInputStream(newUri)?.use { input ->
+                    FileOutputStream(localFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Error copying replacement banner", e)
+            }
+            val finalUriString = if (localFile.exists() && localFile.length() > 0L) {
+                Uri.fromFile(localFile).toString()
+            } else {
+                newUri.toString()
+            }
+            val updated = banner.copy(
+                imageUri = finalUriString,
+                storagePath = "banners/$fileName"
+            )
+            val result = repository.updateHomeBanner(updated)
+            _isBusy.value = false
+            result.onSuccess {
+                _statusBanner.value = "Banner #${banner.displayOrder + 1} image replaced."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to replace banner: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun replaceHomeBannerWithPreset(
+        banner: HomeBanner,
+        presetUri: String
+    ) {
+        viewModelScope.launch {
+            val updated = banner.copy(
+                imageUri = presetUri,
+                storagePath = "banners/${presetUri.substringAfter("://")}_repl.jpg"
+            )
+            repository.updateHomeBanner(updated).onSuccess {
+                _statusBanner.value = "Banner #${banner.displayOrder + 1} replaced."
+            }
+        }
+    }
+
+    fun reorderHomeBanners(reorderedList: List<HomeBanner>) {
+        viewModelScope.launch {
+            val normalized = reorderedList.mapIndexed { idx, b -> b.copy(displayOrder = idx.toLong()) }
+            repository.reorderHomeBanners(normalized).onSuccess {
+                _statusBanner.value = "Banner display order updated."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to reorder banners: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun updateBannerSlideDuration(seconds: Long) {
+        viewModelScope.launch {
+            val currentBanners = (bannersState.value as? UiState.Success)?.data.orEmpty()
+            val safeSeconds = seconds.coerceIn(1L, 30L)
+            if (currentBanners.isEmpty()) {
+                _statusBanner.value = "Slide duration set to ${safeSeconds}s."
+                return@launch
+            }
+            repository.updateAllBannersSlideDuration(currentBanners, safeSeconds).onSuccess {
+                _statusBanner.value = "Auto-slide duration set to ${safeSeconds}s."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to update slide duration: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun deleteHomeBanner(banner: HomeBanner) {
+        viewModelScope.launch {
+            repository.deleteHomeBanner(banner.id).onSuccess {
+                val remaining = (bannersState.value as? UiState.Success)?.data
+                    .orEmpty()
+                    .filter { it.id != banner.id }
+                    .sortedBy { it.displayOrder }
+                if (remaining.isNotEmpty()) {
+                    repository.reorderHomeBanners(remaining)
+                }
+                _statusBanner.value = "Banner deleted."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to delete banner: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    // --- Photographer Website Customizer & Versioned Publishing ---
+
+    fun copyAssetUriToLocalWebsiteStorage(
+        context: Context,
+        uri: Uri,
+        prefix: String
+    ): String {
+        return try {
+            val webAssetsDir = File(context.filesDir, "website_assets").apply { mkdirs() }
+            val safePrefix = prefix.replace(Regex("[^a-zA-Z0-9_-]"), "_").ifBlank { "asset" }
+            val outFile = File(webAssetsDir, "${safePrefix}_${System.currentTimeMillis()}.jpg")
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(outFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+            if (outFile.exists() && outFile.length() > 0L) {
+                Uri.fromFile(outFile).toString()
+            } else {
+                uri.toString()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not copy website asset $uri locally", e)
+            uri.toString()
+        }
+    }
+
+    fun saveWebsiteDraft(draft: WebsiteCustomization) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            val result = repository.saveWebsiteDraft(draft)
+            _isBusy.value = false
+            result.onSuccess {
+                _statusBanner.value =
+                    "Website draft saved for \"${draft.eventName.ifBlank { draft.studioName }}\"."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to save website draft: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun publishWebsiteCustomization(
+        draft: WebsiteCustomization,
+        associatedEvent: PhotoEvent? = null
+    ) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            val result = repository.publishWebsiteCustomization(draft)
+            if (associatedEvent != null && associatedEvent.id.isNotBlank() && associatedEvent.id != "studio_default") {
+                val syncedEvent = associatedEvent.copy(
+                    guestAccessMode = draft.guestAccessMode.ifBlank { associatedEvent.guestAccessMode },
+                    guestAllowDownload = draft.downloadsEnabled,
+                    coverUri = draft.coverImageUri.ifBlank { associatedEvent.coverUri }
+                )
+                repository.updateEvent(syncedEvent)
+            }
+            _isBusy.value = false
+            result.onSuccess { snapshot ->
+                _statusBanner.value =
+                    "Published website v${snapshot.versionNumber} for \"${draft.eventName.ifBlank { draft.studioName }}\"."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to publish website: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun rollbackWebsiteVersion(
+        currentConfig: WebsiteCustomization,
+        targetVersion: WebsiteVersionSnapshot,
+        associatedEvent: PhotoEvent? = null
+    ) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            val result = repository.rollbackWebsiteVersion(currentConfig, targetVersion)
+            if (associatedEvent != null && associatedEvent.id.isNotBlank() && associatedEvent.id != "studio_default") {
+                val syncedEvent = associatedEvent.copy(
+                    guestAccessMode = targetVersion.guestAccessMode.ifBlank { associatedEvent.guestAccessMode },
+                    guestAllowDownload = targetVersion.downloadsEnabled,
+                    coverUri = targetVersion.coverImageUri.ifBlank { associatedEvent.coverUri }
+                )
+                repository.updateEvent(syncedEvent)
+            }
+            _isBusy.value = false
+            result.onSuccess {
+                _statusBanner.value =
+                    "Rolled back website to v${targetVersion.versionNumber}."
+            }.onFailure { err ->
+                _statusBanner.value = "Rollback failed: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun setWebsiteSuspensionStatus(
+        webConfig: WebsiteCustomization,
+        suspended: Boolean
+    ) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            val result = repository.setWebsiteSuspensionStatus(webConfig, suspended)
+            _isBusy.value = false
+            result.onSuccess {
+                val stateLabel = if (suspended) "suspended" else "reactivated"
+                _statusBanner.value = "Website for \"${webConfig.eventName}\" $stateLabel."
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to update website status: ${err.localizedMessage}"
+            }
+        }
+    }
+
     companion object {
         private const val TAG = "JummoVM"
         private const val STOP_TIMEOUT_MILLIS = 5000L
+        const val UPLOAD_PREFS_NAME = "jummo_upload_prefs"
 
         fun computeStorageUsage(
             context: Context,
@@ -638,13 +1199,32 @@ class JummoViewModel(
             } catch (_: Exception) {
             }
 
+            val cacheBytes = runCatching {
+                context.cacheDir.walkTopDown().filter { it.isFile }.sumOf { it.length().coerceAtLeast(0L) }
+            }.getOrDefault(0L)
+
             return StorageUsageMetrics(
                 localPhotoFileCount = localFileCount,
                 localPhotosBytes = localBytes,
                 trackedUploadsBytes = trackedBytes,
                 availableDeviceBytes = availBytes,
-                totalDeviceBytes = totalBytes
+                totalDeviceBytes = totalBytes,
+                cacheBytes = cacheBytes
             )
+        }
+
+        fun clearAppCacheSafely(context: Context): Long {
+            var freedBytes = 0L
+            runCatching {
+                val children = context.cacheDir.listFiles().orEmpty()
+                for (child in children) {
+                    val size = child.walkTopDown().filter { it.isFile }.sumOf { it.length().coerceAtLeast(0L) }
+                    if (child.deleteRecursively()) {
+                        freedBytes += size
+                    }
+                }
+            }
+            return freedBytes
         }
     }
 }

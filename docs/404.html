@@ -1,21 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jummo Photos AI — Official Website</title>
-  <meta http-equiv="refresh" content="0; url=/Photo-/" />
-  <script>
-    if (window.location.pathname.indexOf('/Photo-/') === -1) {
-      window.location.replace('/Photo-/');
-    }
-  </script>
-</head>
-<body style="background:#090610;color:#F8F5FF;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px;">
-  <div>
-    <h1 style="color:#F6C445;">Jummo Photos AI</h1>
-    <p>Redirecting to the Official Website…</p>
-    <p><a href="/Photo-/" style="color:#F6C445;">Open Official Website (/Photo-/)</a></p>
-  </div>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jummo Photos AI — Guest Event Portal Router</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at top, #241238 0%, #0B0615 70%);
+        color: #ffffff;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        text-align: center;
+        padding: 24px;
+      }
+      .card {
+        background: rgba(36, 18, 56, 0.92);
+        border: 1px solid rgba(247, 199, 71, 0.45);
+        border-radius: 18px;
+        padding: 28px 24px;
+        max-width: 440px;
+        width: 100%;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 8px 0;
+        color: #F7C747;
+      }
+      p {
+        font-size: 14px;
+        color: #D4C4E8;
+        margin: 0 0 18px 0;
+        line-height: 1.5;
+      }
+      a.btn {
+        display: inline-block;
+        background: linear-gradient(90deg, #F7C747, #F59E0B);
+        color: #0B0615;
+        font-weight: 700;
+        text-decoration: none;
+        padding: 10px 20px;
+        border-radius: 999px;
+        font-size: 14px;
+      }
+    </style>
+    <script>
+      (function () {
+        var path = window.location.pathname || '';
+        var match = path.match(/\/guest\/([a-zA-Z0-9_\-]+)/i);
+        var base = path.indexOf('/Photo-') === 0 ? '/Photo-/' : '/';
+        if (match && match[1]) {
+          window.location.replace(base + '?event=' + encodeURIComponent(match[1]));
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Jummo Photos AI — Event Portal</h1>
+      <p>Routing to your customized photographer event website and AI Face Search portal…</p>
+      <a class="btn" href="/Photo-/">Open Jummo Photos AI Portal</a>
+    </div>
+  </body>
 </html>

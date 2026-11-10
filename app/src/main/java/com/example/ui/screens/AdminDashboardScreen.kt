@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -44,6 +45,7 @@ import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -76,10 +78,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.Language
 import com.example.data.model.GuestFaceSearchSession
+import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
+import com.example.data.model.WebsiteCustomization
 import com.example.ui.components.MetricStatCard
 import com.example.ui.components.SettingsInfoRow
 import com.example.ui.components.StatusBadgePill
@@ -106,8 +111,8 @@ private data class AdminModuleItem(
 
 /**
  * Screen 8 from the visual reference:
- * Jummo Photos AI — Responsive Luxury Admin Dashboard with 14 management modules,
- * 2x2 KPI metrics, dual-tone storage bar, and 7-day upload analytics line chart.
+ * Jummo Photos AI — Responsive Luxury Admin Dashboard with Home Banner Management,
+ * 15 management modules, 2x2 KPI metrics, dual-tone storage bar, and 7-day upload analytics line chart.
  */
 @Composable
 fun AdminDashboardScreen(
@@ -115,6 +120,18 @@ fun AdminDashboardScreen(
     events: List<PhotoEvent>,
     uploads: List<PhotoUploadRecord>,
     guestSessions: List<GuestFaceSearchSession>,
+    banners: List<HomeBanner> = emptyList(),
+    websiteCustomizations: List<WebsiteCustomization> = emptyList(),
+    onUploadMultipleBanners: (List<Uri>) -> Unit = {},
+    onAddPresetBanner: (String) -> Unit = {},
+    onToggleBannerActive: (HomeBanner) -> Unit = {},
+    onReplaceBannerFromUri: (HomeBanner, Uri) -> Unit = { _, _ -> },
+    onReplaceBannerWithPreset: (HomeBanner, String) -> Unit = { _, _ -> },
+    onReorderBanners: (List<HomeBanner>) -> Unit = {},
+    onUpdateSlideDuration: (Long) -> Unit = {},
+    onDeleteBanner: (HomeBanner) -> Unit = {},
+    onToggleWebsiteSuspended: (WebsiteCustomization, Boolean) -> Unit = { _, _ -> },
+    onOpenWebsiteCustomizer: (PhotoEvent?) -> Unit = {},
     onNavigateToTab: (Int) -> Unit,
     onClose: () -> Unit
 ) {
@@ -137,6 +154,7 @@ fun AdminDashboardScreen(
     val pendingCount = uploads.count { it.status == "Pending" || it.status == "Uploading" }
     val failedCount = uploads.count { it.status == "Failed" }
     val activeQrCount = events.count { it.qrEnabled }
+    val activeBannerCount = banners.count { it.isActive }
 
     val storageUsedPercent = remember(storageMetrics) {
         if (storageMetrics.totalDeviceBytes > 0L) {
@@ -153,6 +171,8 @@ fun AdminDashboardScreen(
         totalEvents,
         totalPhotos,
         activeQrCount,
+        activeBannerCount,
+        banners.size,
         guestSessions.size,
         profile?.driveConnected,
         uploadedCount,
@@ -161,6 +181,22 @@ fun AdminDashboardScreen(
         storageMetrics
     ) {
         listOf(
+            AdminModuleItem(
+                id = "banners",
+                title = "Banner Management",
+                subtitle = "$activeBannerCount active / ${banners.size} total image-only slider banners",
+                icon = Icons.Default.ViewCarousel,
+                accentColor = JummoGoldBright,
+                statusSummary = "Image-only Home Dashboard carousel • Drag & drop order"
+            ),
+            AdminModuleItem(
+                id = "websites",
+                title = "Website Management",
+                subtitle = "${websiteCustomizations.count { it.publicationStatus == "Published" }} published / ${websiteCustomizations.size} customized portals",
+                icon = Icons.Default.Language,
+                accentColor = JummoGoldBright,
+                statusSummary = "Royal Purple • Editorial layout • Per-event & studio portals"
+            ),
             AdminModuleItem(
                 id = "users",
                 title = "User Management",
@@ -419,7 +455,144 @@ fun AdminDashboardScreen(
                     }
                 }
 
-                // 2. Storage Used Dual-Tone Card (matches reference)
+                // 2. Dedicated Admin Banner Management Section (Upload, Reorder, Toggle Active, Replace, Delete, Slide Duration)
+                item {
+                    AdminBannerManagementSection(
+                        banners = banners,
+                        onUploadMultipleBanners = onUploadMultipleBanners,
+                        onAddPresetBanner = onAddPresetBanner,
+                        onToggleBannerActive = onToggleBannerActive,
+                        onReplaceBannerFromUri = onReplaceBannerFromUri,
+                        onReplaceBannerWithPreset = onReplaceBannerWithPreset,
+                        onReorderBanners = onReorderBanners,
+                        onUpdateSlideDuration = onUpdateSlideDuration,
+                        onDeleteBanner = onDeleteBanner
+                    )
+                }
+
+                // 2b. Dedicated Admin Website Management Section (Status, Suspend/Reactivate, Audit Log & Builder Launch)
+                item {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
+                        border = BorderStroke(0.75.dp, JummoGoldBright.copy(alpha = 0.45f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("admin_website_management_card")
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Language,
+                                        contentDescription = null,
+                                        tint = JummoGoldBright,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Column {
+                                        Text(
+                                            text = "Website Management & Audit",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "${websiteCustomizations.size} configured website(s) • Non-destructive admin governance",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = JummoTextSecondary
+                                        )
+                                    }
+                                }
+
+                                Button(
+                                    onClick = { onOpenWebsiteCustomizer(events.firstOrNull()) },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = JummoGoldBright,
+                                        contentColor = JummoObsidian
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                    modifier = Modifier.testTag("admin_open_website_customizer_button")
+                                ) {
+                                    Text(
+                                        text = "Open Builder",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            if (websiteCustomizations.isEmpty()) {
+                                Text(
+                                    text = "All active event websites are operating on the default Royal Purple Editorial configuration.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = JummoTextSecondary
+                                )
+                            } else {
+                                websiteCustomizations.forEach { webConfig ->
+                                    val isSuspended = webConfig.publicationStatus == "Suspended"
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(JummoObsidian.copy(alpha = 0.72f))
+                                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "${webConfig.eventName} (${webConfig.studioName})",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.SemiBold,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                text = "${webConfig.publicationStatus} v${webConfig.publishedVersion} • ${webConfig.theme} • ${webConfig.layout}" +
+                                                    if (webConfig.adminAuditNote.isNotBlank()) " • Audit: ${webConfig.adminAuditNote}" else "",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = JummoTextSecondary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+
+                                        Button(
+                                            onClick = {
+                                                onToggleWebsiteSuspended(webConfig, !isSuspended)
+                                            },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = if (isSuspended) JummoSuccessGreen else JummoElevatedPurple,
+                                                contentColor = if (isSuspended) JummoObsidian else Color.White
+                                            ),
+                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                            modifier = Modifier.testTag("admin_suspend_website_${webConfig.eventId}")
+                                        ) {
+                                            Text(
+                                                text = if (isSuspended) "Reactivate" else "Suspend",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3. Storage Used Dual-Tone Card (matches reference)
                 item {
                     Card(
                         shape = RoundedCornerShape(16.dp),

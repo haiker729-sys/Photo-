@@ -80,10 +80,19 @@
       id: 'admin',
       number: 'Screen 08',
       title: 'Multi-Role Admin Dashboard',
-      badge: 'KPIs • 7-Day Line Chart • 14 Modules',
+      badge: 'KPIs • Banner Slider • Website Audit',
       image: './assets/screen-suite-8.png',
       description:
-        'Role-based command center (Super Admin, Event Admin, Support Admin, Finance/Storage Admin) with 2x2 KPI cards, dual-tone storage bar, 7-day upload chart, and 14 interactive management modules.'
+        'Role-based command center with 2x2 KPI cards, image-only Home Banner slider management, Website Management & Suspension Audit, dual-tone storage bar, 7-day upload chart, and 15 interactive modules.'
+    },
+    {
+      id: 'website_customizer',
+      number: 'Screen 09',
+      title: 'Photographer Website Customizer',
+      badge: 'Royal Purple • Editorial Layout • Live Preview',
+      image: './assets/screen-suite-8.png',
+      description:
+        'Full Website Builder enabling photographers to customize studio branding, clean image-only hero banners, Royal Purple & luxury themes, Editorial / Classic Grid / Masonry galleries, AI Face Search permissions, Save Draft, Publish & Version Rollback.'
     }
   ];
 

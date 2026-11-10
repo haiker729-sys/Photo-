@@ -150,6 +150,7 @@ fun EventsScreen(
     onImportPhotosForEvent: (PhotoEvent, List<Uri>) -> Unit = { _, _ -> },
     onRetryUpload: (PhotoUploadRecord) -> Unit = {},
     onRemoveUploadFromQueue: (PhotoUploadRecord) -> Unit = {},
+    onOpenWebsiteCustomizer: (PhotoEvent) -> Unit = {},
     onShowMessage: (String) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -446,7 +447,8 @@ fun EventsScreen(
                             },
                             onToggleArchive = { onToggleArchive(event) },
                             onDeleteRequest = { deletingEvent = event },
-                            onOpenQrModal = { activeQrEvent = event }
+                            onOpenQrModal = { activeQrEvent = event },
+                            onOpenWebsiteCustomizer = { onOpenWebsiteCustomizer(event) }
                         )
                     }
                 }
@@ -553,7 +555,8 @@ private fun EventManagementCard(
     onEdit: () -> Unit,
     onToggleArchive: () -> Unit,
     onDeleteRequest: () -> Unit,
-    onOpenQrModal: () -> Unit
+    onOpenQrModal: () -> Unit,
+    onOpenWebsiteCustomizer: () -> Unit = {}
 ) {
     val defaultPainter = when (event.coverType) {
         "festival", "School", "Corporate" -> painterResource(id = R.drawable.img_festival_cover)
@@ -688,6 +691,16 @@ private fun EventManagementCard(
                         containerColor = JummoElevatedPurple,
                         onClick = onOpenQrModal,
                         modifier = Modifier.testTag("qr_button_${event.id}")
+                    )
+
+                    // 2b. Customize Event Website
+                    EventSquareActionButton(
+                        icon = Icons.Default.Share,
+                        contentDescription = "Customize Website",
+                        tint = JummoGoldBright,
+                        containerColor = JummoElevatedPurple,
+                        onClick = onOpenWebsiteCustomizer,
+                        modifier = Modifier.testTag("website_customizer_button_${event.id}")
                     )
 
                     // 3. Edit Event

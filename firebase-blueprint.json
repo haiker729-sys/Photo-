@@ -343,6 +343,57 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "HomeBanner": {
+      "title": "HomeBanner",
+      "description": "Image-only Home Dashboard promotional banner managed from the Admin Panel.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner/Admin photographer UID."
+        },
+        "imageUri": {
+          "type": "string",
+          "description": "Local file URI, content URI, or preset studio image key for the banner photograph."
+        },
+        "storagePath": {
+          "type": "string",
+          "description": "Persistent storage path for the banner image file."
+        },
+        "displayOrder": {
+          "type": "integer",
+          "description": "Zero-based display order index in the Home Dashboard banner slider."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether this banner is active and shown in the Home Dashboard carousel."
+        },
+        "slideDurationSeconds": {
+          "type": "integer",
+          "description": "Automatic slide interval in seconds (1-30)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when banner was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when banner was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "imageUri",
+        "storagePath",
+        "displayOrder",
+        "isActive",
+        "slideDurationSeconds",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -361,6 +412,10 @@
     "/guest_consents/{consentId}": {
       "schema": { "$ref": "#/entities/GuestFaceSearchSession" },
       "description": "Stores consent-based guest face search records isolated per event."
+    },
+    "/home_banners/{bannerId}": {
+      "schema": { "$ref": "#/entities/HomeBanner" },
+      "description": "Stores image-only Home Dashboard banners managed by Admin."
     }
   }
 }

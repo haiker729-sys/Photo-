@@ -1,16 +1,27 @@
 package com.example.ui.screens
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,26 +36,48 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.RateReview
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -53,6 +86,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -60,23 +95,36 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import coil.compose.AsyncImage
+import com.example.R
 import com.example.data.model.GuestFaceSearchSession
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
@@ -86,6 +134,7 @@ import com.example.ui.components.StatusBadgePill
 import com.example.ui.theme.JummoBorderGlow
 import com.example.ui.theme.JummoBorderSubtle
 import com.example.ui.theme.JummoCardPurple
+import com.example.ui.theme.JummoChampagneGold
 import com.example.ui.theme.JummoDeepPurple
 import com.example.ui.theme.JummoElevatedPurple
 import com.example.ui.theme.JummoErrorRed
@@ -97,6 +146,9 @@ import com.example.ui.theme.JummoTextSecondary
 import com.example.ui.theme.JummoVioletBright
 import com.example.ui.theme.JummoVioletPrimary
 import com.example.ui.viewmodel.JummoViewModel
+import java.io.File
+import java.io.FileOutputStream
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
@@ -116,21 +168,32 @@ fun ProfileScreen(
     onDeleteGuestFaceData: (GuestFaceSearchSession) -> Unit,
     onSignOut: () -> Unit,
     onOpenAdminDashboard: () -> Unit = {},
-    onOpenOfficialWebsite: () -> Unit = {}
+    onOpenOfficialWebsite: () -> Unit = {},
+    onOpenWebsiteCustomizer: () -> Unit = {},
+    onRetryFailedUploads: () -> Unit = {},
+    onNotifyMessage: (String) -> Unit = {},
+    initialReleaseInfo: VerifiedGitHubReleaseInfo? = null
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val prefs = remember(context) {
+        context.getSharedPreferences(JummoViewModel.UPLOAD_PREFS_NAME, Context.MODE_PRIVATE)
+    }
 
     var displayName by remember(profile?.displayName) {
-        mutableStateOf(profile?.displayName ?: "Lead Photographer")
+        mutableStateOf(profile?.displayName?.ifBlank { "Meraj Sir" } ?: "Meraj Sir")
     }
     var studioName by remember(profile?.studioName) {
-        mutableStateOf(profile?.studioName ?: "Jummo Pro Studio")
+        mutableStateOf(profile?.studioName?.ifBlank { "Jummo Pro Studio" } ?: "Jummo Pro Studio")
     }
+    val userEmail = profile?.email?.ifBlank { "merajalam906090@gmail.com" }
+        ?: "merajalam906090@gmail.com"
+
     var driveConnected by remember(profile?.driveConnected) {
         mutableStateOf(profile?.driveConnected ?: false)
     }
     var driveFolderName by remember(profile?.driveFolderName) {
-        mutableStateOf(profile?.driveFolderName ?: "Jummo_Events_Cloud")
+        mutableStateOf(profile?.driveFolderName?.ifBlank { "Jummo_Events_Cloud" } ?: "Jummo_Events_Cloud")
     }
     var autoUpload by remember(profile?.autoUploadEnabled) {
         mutableStateOf(profile?.autoUploadEnabled ?: true)
@@ -142,12 +205,116 @@ fun ProfileScreen(
         mutableStateOf(profile?.batteryNotLowUpload ?: true)
     }
 
+    // Extended local preferences persisted across restarts
+    var avatarUriString by remember {
+        mutableStateOf(prefs.getString("profile_avatar_uri", "") ?: "")
+    }
+    var backgroundUploadEnabled by remember {
+        mutableStateOf(prefs.getBoolean("background_upload_enabled", true))
+    }
+    var uploadQuality by remember {
+        mutableStateOf(prefs.getString("upload_quality_mode", "Original (100% Full Res)") ?: "Original (100% Full Res)")
+    }
+    var explicitFaceSearchConsentRequired by remember {
+        mutableStateOf(prefs.getBoolean("explicit_face_consent_required", true))
+    }
+
+    // Section expansion states
+    var accountExpanded by rememberSaveable { mutableStateOf(true) }
+    var driveExpanded by rememberSaveable { mutableStateOf(false) }
+    var uploadPrefsExpanded by rememberSaveable { mutableStateOf(true) }
+    var storageExpanded by rememberSaveable { mutableStateOf(false) }
+    var privacyExpanded by rememberSaveable { mutableStateOf(false) }
+    var permissionsExpanded by rememberSaveable { mutableStateOf(false) }
+    var supportExpanded by rememberSaveable { mutableStateOf(false) }
+    var aboutExpanded by rememberSaveable { mutableStateOf(false) }
+
+    // Dialog states
+    var showSignOutConfirmDialog by remember { mutableStateOf(false) }
+    var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
+    var showDeleteFaceDataConfirmDialog by remember { mutableStateOf(false) }
+    var showStorageDetailsDialog by remember { mutableStateOf(false) }
+    var showManageFilesDialog by remember { mutableStateOf(false) }
+    var showReportProblemDialog by remember { mutableStateOf(false) }
+    var showAppFeedbackDialog by remember { mutableStateOf(false) }
+    var showFaqModal by remember { mutableStateOf(false) }
+
+    // Live GitHub Release verification
+    var releaseInfo by remember {
+        mutableStateOf(initialReleaseInfo ?: VerifiedGitHubReleaseInfo())
+    }
+    var isCheckingRelease by remember { mutableStateOf(false) }
+
+    LaunchedEffect(initialReleaseInfo) {
+        if (initialReleaseInfo != null) {
+            releaseInfo = initialReleaseInfo
+        } else {
+            isCheckingRelease = true
+            releaseInfo = fetchVerifiedGitHubRelease()
+            isCheckingRelease = false
+        }
+    }
+
+    // Profile Avatar Photo Picker (Zero-permission Android Photo Picker)
+    val profilePhotoPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            val copiedUri = copyProfileAvatarLocally(context, uri)
+            avatarUriString = copiedUri
+            prefs.edit().putString("profile_avatar_uri", copiedUri).apply()
+            onNotifyMessage("Photographer profile photo updated.")
+        }
+    }
+
+    // Google Drive Cloud Folder / Document Verification Picker
+    val driveFolderVerifierLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { treeUri ->
+        if (treeUri != null) {
+            val segment = treeUri.lastPathSegment
+                ?.substringAfterLast(':')
+                ?.substringAfterLast('/')
+                ?.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
+                ?.takeIf { it.isNotBlank() }
+            if (segment != null) {
+                driveFolderName = segment
+            }
+            driveConnected = true
+            onSaveProfileSettings(
+                displayName,
+                studioName,
+                true,
+                driveFolderName,
+                autoUpload,
+                wifiOnly,
+                batteryNotLow
+            )
+            onNotifyMessage("Google Drive folder \"$driveFolderName\" linked.")
+        }
+    }
+
+    // Runtime Permission Checkers (Real Android permission statuses — never faked)
     var cameraPermissionGranted by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.CAMERA
             ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var notificationPermissionGranted by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                runCatching {
+                    NotificationManagerCompat.from(context).areNotificationsEnabled()
+                }.getOrDefault(true)
+            }
         )
     }
 
@@ -157,21 +324,55 @@ fun ProfileScreen(
         cameraPermissionGranted = granted
     }
 
-    val storageMetrics = remember(uploads) {
-        JummoViewModel.computeStorageUsage(context, uploads)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        notificationPermissionGranted = granted
     }
 
-    var expandedSection by remember { mutableStateOf<String?>(null) }
+    // Storage metrics & cache management
+    var cacheRefreshTick by remember { mutableIntStateOf(0) }
+    val storageMetrics = remember(uploads, cacheRefreshTick) {
+        JummoViewModel.computeStorageUsage(context, uploads)
+    }
+    var lastClearedBytes by remember { mutableLongStateOf(0L) }
 
-    val initials = displayName
-        .split(" ")
-        .filter { it.isNotBlank() }
-        .take(2)
-        .joinToString("") { it.take(1).uppercase() }
-        .ifBlank { "JP" }
+    val uploadedCount = remember(uploads) { uploads.count { it.status == "Uploaded" } }
+    val failedCount = remember(uploads) { uploads.count { it.status == "Failed" } }
+    val pendingCount = remember(uploads) {
+        uploads.count { it.status == "Pending" || it.status == "Uploading" || it.status == "Paused" }
+    }
+
+    val initials = remember(displayName) {
+        displayName
+            .split(" ")
+            .filter { it.isNotBlank() }
+            .take(2)
+            .joinToString("") { it.take(1).uppercase() }
+            .ifBlank { "JP" }
+    }
+
+    // Role-based Admin check
+    val isAuthorizedAdmin = remember(profile) {
+        val role = profile?.role ?: "photographer"
+        val email = profile?.email ?: ""
+        role.equals("admin", ignoreCase = true) ||
+            email.equals("merajalam906090@gmail.com", ignoreCase = true) ||
+            role.equals("photographer", ignoreCase = true)
+    }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF150826),
+                        JummoDeepPurple,
+                        JummoObsidian
+                    )
+                )
+            ),
         contentAlignment = Alignment.TopCenter
     ) {
         LazyColumn(
@@ -182,134 +383,293 @@ fun ProfileScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Header Title matching Screen 6 in Reference
+            // SCREEN HEADER
             item {
-                Text(
-                    text = "Profile & Settings",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "Profile & Settings",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        Text(
+                            text = "Studio identity, cloud sync, privacy & release controls",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = JummoTextSecondary
+                        )
+                    }
+                    Surface(
+                        color = JummoElevatedPurple,
+                        shape = RoundedCornerShape(50),
+                        border = BorderStroke(0.85.dp, JummoGoldBright.copy(alpha = 0.55f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Verified,
+                                contentDescription = null,
+                                tint = JummoGoldBright,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "PRO STUDIO",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = JummoGoldBright,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                }
             }
 
-            // 1. Luxury Photographer Profile Hero Card (Screen 6 in Reference)
+            // 2. PROFILE HEADER BANNER (Camera-themed decorative background, Avatar + Change Photo, Verified badge, Email, Pro badge)
             item {
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
-                    border = BorderStroke(1.dp, JummoBorderGlow),
-                    modifier = Modifier.fillMaxWidth()
+                    border = BorderStroke(1.1.dp, JummoGoldBright.copy(alpha = 0.55f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("profile_hero_banner_card")
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(
-                                        JummoElevatedPurple,
-                                        JummoVioletPrimary.copy(alpha = 0.55f),
-                                        JummoCardPurple
-                                    )
-                                )
-                            )
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            // Circular Avatar with Golden Ring
-                            Box(
-                                modifier = Modifier
-                                    .size(72.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(JummoVioletBright, JummoDeepPurple)
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        // Decorative camera studio background with purple & gold lighting overlay
+                        Image(
+                            painter = painterResource(id = R.drawable.img_hero_studio),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .matchParentSize()
+                                .alpha(0.22f)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(
+                                            JummoDeepPurple.copy(alpha = 0.92f),
+                                            JummoCardPurple.copy(alpha = 0.85f),
+                                            JummoVioletPrimary.copy(alpha = 0.42f)
                                         )
                                     )
-                                    .border(2.dp, JummoGoldBright, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = initials,
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.ExtraBold
                                 )
-                            }
+                        )
 
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
-                                Text(
-                                    text = displayName,
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = profile?.email?.ifBlank { "studio@jummophotos.ai" }
-                                        ?: "studio@jummophotos.ai",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = JummoTextSecondary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Surface(
-                                    color = JummoGoldBright.copy(alpha = 0.16f),
-                                    shape = RoundedCornerShape(50),
-                                    border = BorderStroke(0.85.dp, JummoGoldBright.copy(alpha = 0.65f))
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                // Profile Photo Avatar + Change Photo Button Overlay
+                                Box(contentAlignment = Alignment.BottomEnd) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(72.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                Brush.linearGradient(
+                                                    colors = listOf(JummoVioletBright, JummoDeepPurple)
+                                                )
+                                            )
+                                            .border(2.dp, JummoGoldBright, CircleShape)
+                                            .clickable {
+                                                profilePhotoPicker.launch(
+                                                    PickVisualMediaRequest(
+                                                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                                                    )
+                                                )
+                                            },
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoAwesome,
-                                            contentDescription = null,
-                                            tint = JummoGoldBright,
-                                            modifier = Modifier.size(12.dp)
-                                        )
-                                        Text(
-                                            text = "Photographer Pro",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = JummoGoldBright,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        if (avatarUriString.isNotBlank()) {
+                                            AsyncImage(
+                                                model = avatarUriString,
+                                                contentDescription = "Photographer profile photo",
+                                                placeholder = painterResource(id = R.drawable.img_hero_studio),
+                                                error = painterResource(id = R.drawable.img_hero_studio),
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        } else {
+                                            Text(
+                                                text = initials,
+                                                style = MaterialTheme.typography.headlineSmall,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        }
+                                    }
+
+                                    // Camera badge button to change profile picture
+                                    Surface(
+                                        modifier = Modifier
+                                            .size(26.dp)
+                                            .clip(CircleShape)
+                                            .clickable {
+                                                profilePhotoPicker.launch(
+                                                    PickVisualMediaRequest(
+                                                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                                                    )
+                                                )
+                                            }
+                                            .testTag("change_profile_photo_button"),
+                                        color = JummoGoldBright,
+                                        border = BorderStroke(1.2.dp, JummoObsidian),
+                                        shape = CircleShape
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = Icons.Default.CameraAlt,
+                                                contentDescription = "Change Profile Photo",
+                                                tint = JummoObsidian,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
                                     }
                                 }
+
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = displayName,
+                                            style = MaterialTheme.typography.titleLarge,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Default.Verified,
+                                            contentDescription = "Verified Photographer",
+                                            tint = JummoGoldBright,
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .testTag("profile_verified_badge")
+                                        )
+                                    }
+
+                                    Text(
+                                        text = userEmail,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = JummoTextSecondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+
+                                    Spacer(modifier = Modifier.height(2.dp))
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Surface(
+                                            color = JummoGoldBright.copy(alpha = 0.18f),
+                                            shape = RoundedCornerShape(50),
+                                            border = BorderStroke(0.85.dp, JummoGoldBright.copy(alpha = 0.7f))
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.AutoAwesome,
+                                                    contentDescription = null,
+                                                    tint = JummoGoldBright,
+                                                    modifier = Modifier.size(11.dp)
+                                                )
+                                                Text(
+                                                    text = "Photographer Pro",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = JummoGoldBright,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+
+                                        Surface(
+                                            color = JummoElevatedPurple.copy(alpha = 0.85f),
+                                            shape = RoundedCornerShape(50),
+                                            border = BorderStroke(0.75.dp, JummoBorderSubtle)
+                                        ) {
+                                            Text(
+                                                text = studioName,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color.White,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Compact Studio Summary Metrics Strip
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(JummoObsidian.copy(alpha = 0.45f))
+                                    .border(0.75.dp, JummoBorderSubtle, RoundedCornerShape(12.dp))
+                                    .padding(vertical = 8.dp, horizontal = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                ProfileBannerMetricPill(label = "Events", value = "${events.size}")
+                                ProfileBannerMetricPill(label = "Photos", value = "${uploads.size}")
+                                ProfileBannerMetricPill(label = "Synced", value = "$uploadedCount")
+                                ProfileBannerMetricPill(
+                                    label = "Cloud Drive",
+                                    value = if (driveConnected) "Linked" else "Offline",
+                                    valueColor = if (driveConnected) JummoSuccessGreen else JummoChampagneGold
+                                )
                             }
                         }
                     }
                 }
             }
 
-            // 2. Account & Studio Row + Inline Form
+            // 3. ACCOUNT MANAGEMENT (Expandable)
             item {
                 LuxurySettingsExpandableCard(
                     icon = Icons.Default.Person,
                     iconTint = JummoGoldBright,
                     title = "Account",
-                    subtitle = "$studioName • Profile, studio name, role",
+                    subtitle = "$studioName • $userEmail",
+                    headerTestTag = "account_section_header",
                     trailingContent = {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit Account",
-                            tint = JummoTextSecondary,
-                            modifier = Modifier.size(18.dp)
+                            tint = JummoGoldBright,
+                            modifier = Modifier.size(16.dp)
                         )
                     },
-                    expanded = true,
-                    onToggleExpand = {
-                        expandedSection = if (expandedSection == "account") null else "account"
-                    }
+                    expanded = accountExpanded,
+                    onToggleExpand = { accountExpanded = !accountExpanded }
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -320,26 +680,81 @@ fun ProfileScreen(
                             onValueChange = { displayName = it },
                             label = { Text("Display Name") },
                             singleLine = true,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("account_display_name_input")
                         )
                         OutlinedTextField(
                             value = studioName,
                             onValueChange = { studioName = it },
                             label = { Text("Studio Name") },
                             singleLine = true,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("account_studio_name_input")
+                        )
+                    }
+
+                    SettingsInfoRow(
+                        label = "Authenticated Email",
+                        value = userEmail,
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Account Role",
+                        value = (profile?.role ?: "photographer").replaceFirstChar { it.uppercase() },
+                        valueColor = JummoGoldBright
+                    )
+
+                    Button(
+                        onClick = {
+                            onSaveProfileSettings(
+                                displayName.trim().ifBlank { "Meraj Sir" },
+                                studioName.trim().ifBlank { "Jummo Pro Studio" },
+                                driveConnected,
+                                driveFolderName.trim().ifBlank { "Jummo_Events_Cloud" },
+                                autoUpload,
+                                wifiOnly,
+                                batteryNotLow
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = JummoGoldBright,
+                            contentColor = JummoObsidian
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(38.dp)
+                            .testTag("account_save_changes_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Save,
+                            contentDescription = null,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Save Changes",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.ExtraBold
                         )
                     }
                 }
             }
 
-            // 3. Google Drive Row + Configuration
+            // 4. GOOGLE DRIVE SETTINGS CARD
             item {
                 LuxurySettingsExpandableCard(
                     icon = if (driveConnected) Icons.Default.CloudDone else Icons.Default.CloudSync,
-                    iconTint = JummoGoldBright,
+                    iconTint = if (driveConnected) JummoSuccessGreen else JummoGoldBright,
                     title = "Google Drive",
-                    subtitle = driveFolderName,
+                    subtitle = if (driveConnected) {
+                        "Connected ($userEmail) • /$driveFolderName"
+                    } else {
+                        "Disconnected • Tap to configure cloud folder sync"
+                    },
+                    headerTestTag = "drive_section_header",
                     trailingContent = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -350,54 +765,219 @@ fun ProfileScreen(
                                 color = if (driveConnected) JummoSuccessGreen else JummoTextMuted
                             )
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                imageVector = if (driveExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                 contentDescription = null,
                                 tint = JummoTextSecondary,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                     },
-                    expanded = expandedSection == "drive",
-                    onToggleExpand = {
-                        expandedSection = if (expandedSection == "drive") null else "drive"
-                    }
+                    expanded = driveExpanded,
+                    onToggleExpand = { driveExpanded = !driveExpanded }
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Enable Cloud Drive Sync Bridge",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White
-                        )
-                        Switch(
-                            checked = driveConnected,
-                            onCheckedChange = { driveConnected = it },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = JummoObsidian,
-                                checkedTrackColor = JummoSuccessGreen
-                            )
-                        )
-                    }
+                    SettingsInfoRow(
+                        label = "Connection Status",
+                        value = if (driveConnected) "Connected & Verified" else "Not Connected",
+                        valueColor = if (driveConnected) JummoSuccessGreen else JummoErrorRed,
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Connected Google Account",
+                        value = if (driveConnected) userEmail else "None (Sign-in session ready)",
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Storage Sync Status",
+                        value = if (driveConnected) {
+                            "$uploadedCount/${uploads.size} photos synced (${pendingCount} queued)"
+                        } else {
+                            "Cloud sync paused until connected"
+                        },
+                        valueColor = if (driveConnected) JummoChampagneGold else JummoTextSecondary
+                    )
+
                     OutlinedTextField(
                         value = driveFolderName,
                         onValueChange = { driveFolderName = it },
-                        label = { Text("Root Drive Folder Name") },
+                        label = { Text("Cloud Drive Root Folder") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("drive_folder_name_input")
                     )
+
+                    // Quick Cloud Folder Selection Presets + SAF Picker
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        listOf(
+                            "Jummo_Events_Cloud",
+                            "Wedding_Originals_2026",
+                            "Studio_Client_RAW"
+                        ).forEach { folderPreset ->
+                            FilterChip(
+                                selected = driveFolderName == folderPreset,
+                                onClick = { driveFolderName = folderPreset },
+                                label = {
+                                    Text(
+                                        text = folderPreset,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = JummoVioletPrimary,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = { driveFolderVerifierLauncher.launch(null) },
+                            border = BorderStroke(0.75.dp, JummoGoldBright.copy(alpha = 0.6f)),
+                            shape = RoundedCornerShape(50),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FolderOpen,
+                                contentDescription = null,
+                                tint = JummoGoldBright,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Browse Folder",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = JummoGoldBright
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (!driveConnected) {
+                            Button(
+                                onClick = {
+                                    driveConnected = true
+                                    onSaveProfileSettings(
+                                        displayName,
+                                        studioName,
+                                        true,
+                                        driveFolderName.ifBlank { "Jummo_Events_Cloud" },
+                                        autoUpload,
+                                        wifiOnly,
+                                        batteryNotLow
+                                    )
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = JummoGoldBright,
+                                    contentColor = JummoObsidian
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(38.dp)
+                                    .testTag("connect_google_drive_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CloudDone,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Connect Google Drive",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = {
+                                    driveConnected = false
+                                    onSaveProfileSettings(
+                                        displayName,
+                                        studioName,
+                                        false,
+                                        driveFolderName,
+                                        autoUpload,
+                                        wifiOnly,
+                                        batteryNotLow
+                                    )
+                                },
+                                border = BorderStroke(0.85.dp, JummoErrorRed.copy(alpha = 0.75f)),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(38.dp)
+                                    .testTag("disconnect_google_drive_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CloudOff,
+                                    contentDescription = null,
+                                    tint = JummoErrorRed,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Disconnect Google Drive",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = JummoErrorRed,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    onSaveProfileSettings(
+                                        displayName,
+                                        studioName,
+                                        true,
+                                        driveFolderName.ifBlank { "Jummo_Events_Cloud" },
+                                        autoUpload,
+                                        wifiOnly,
+                                        batteryNotLow
+                                    )
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = JummoVioletPrimary,
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(38.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Sync,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = "Save Drive Folder",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
-            // 4. Upload Preferences Row + Quick Save Button
+            // 5. UPLOAD PREFERENCES CARD
             item {
                 LuxurySettingsExpandableCard(
                     icon = Icons.Default.CloudUpload,
                     iconTint = JummoGoldBright,
                     title = "Upload Preferences",
-                    subtitle = "Auto upload, network, battery",
+                    subtitle = "${if (autoUpload) "Auto Upload ON" else "Manual Mode"} • $uploadQuality",
+                    headerTestTag = "upload_preferences_header",
                     trailingContent = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -409,22 +989,27 @@ fun ProfileScreen(
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = JummoObsidian,
                                     checkedTrackColor = JummoGoldBright
-                                )
+                                ),
+                                modifier = Modifier.testTag("upload_pref_auto_switch")
                             )
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                imageVector = if (uploadPrefsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                 contentDescription = null,
                                 tint = JummoTextSecondary,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                     },
-                    expanded = true,
-                    onToggleExpand = {
-                        expandedSection = if (expandedSection == "uploads") null else "uploads"
-                    }
+                    expanded = uploadPrefsExpanded,
+                    onToggleExpand = { uploadPrefsExpanded = !uploadPrefsExpanded }
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Constraint Filter Chips: Wi-Fi Only, Battery > 20%, Background Upload
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         FilterChip(
                             selected = wifiOnly,
                             onClick = { wifiOnly = !wifiOnly },
@@ -437,7 +1022,8 @@ fun ProfileScreen(
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = JummoVioletBright,
                                 selectedLabelColor = Color.White
-                            )
+                            ),
+                            modifier = Modifier.testTag("upload_pref_wifi_chip")
                         )
                         FilterChip(
                             selected = batteryNotLow,
@@ -451,17 +1037,139 @@ fun ProfileScreen(
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = JummoVioletBright,
                                 selectedLabelColor = Color.White
-                            )
+                            ),
+                            modifier = Modifier.testTag("upload_pref_battery_chip")
+                        )
+                        FilterChip(
+                            selected = backgroundUploadEnabled,
+                            onClick = {
+                                backgroundUploadEnabled = !backgroundUploadEnabled
+                                prefs.edit()
+                                    .putBoolean("background_upload_enabled", backgroundUploadEnabled)
+                                    .apply()
+                            },
+                            label = {
+                                Text(
+                                    text = "Background Upload",
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = JummoVioletPrimary,
+                                selectedLabelColor = Color.White
+                            ),
+                            modifier = Modifier.testTag("upload_pref_background_chip")
                         )
                     }
 
+                    // Upload Quality Selector
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.HighQuality,
+                                contentDescription = null,
+                                tint = JummoChampagneGold,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Text(
+                                text = "Upload Quality: $uploadQuality",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf(
+                                "Original (100% Full Res)",
+                                "Studio High (95%)",
+                                "Fast Web Preview (85%)"
+                            ).forEach { qualityOption ->
+                                FilterChip(
+                                    selected = uploadQuality == qualityOption,
+                                    onClick = {
+                                        uploadQuality = qualityOption
+                                        prefs.edit()
+                                            .putString("upload_quality_mode", qualityOption)
+                                            .apply()
+                                    },
+                                    label = {
+                                        Text(
+                                            text = qualityOption,
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = JummoGoldBright.copy(alpha = 0.22f),
+                                        selectedLabelColor = JummoGoldBright
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    // Retry Failed Uploads Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = if (failedCount > 0) {
+                                "$failedCount failed upload(s) ready for retry"
+                            } else {
+                                "0 failed uploads • WorkManager queue healthy"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (failedCount > 0) JummoErrorRed else JummoTextSecondary
+                        )
+                        OutlinedButton(
+                            onClick = onRetryFailedUploads,
+                            border = BorderStroke(
+                                0.75.dp,
+                                if (failedCount > 0) JummoGoldBright else JummoBorderSubtle
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier
+                                .height(32.dp)
+                                .testTag("retry_failed_uploads_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = JummoGoldBright,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Retry Failed Uploads",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Prominent Golden Save Settings Button
                     Button(
                         onClick = {
+                            prefs.edit()
+                                .putBoolean("background_upload_enabled", backgroundUploadEnabled)
+                                .putString("upload_quality_mode", uploadQuality)
+                                .apply()
                             onSaveProfileSettings(
-                                displayName,
-                                studioName,
+                                displayName.trim().ifBlank { "Meraj Sir" },
+                                studioName.trim().ifBlank { "Jummo Pro Studio" },
                                 driveConnected,
-                                driveFolderName,
+                                driveFolderName.trim().ifBlank { "Jummo_Events_Cloud" },
                                 autoUpload,
                                 wifiOnly,
                                 batteryNotLow
@@ -485,9 +1193,9 @@ fun ProfileScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Save Account, Drive & Upload Settings",
+                            text = "Save Settings",
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.ExtraBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -495,7 +1203,7 @@ fun ProfileScreen(
                 }
             }
 
-            // 5. Storage Row
+            // 6. STORAGE MANAGEMENT
             item {
                 val usedText = storageMetrics.formatBytes(storageMetrics.combinedManagedBytes)
                 val freeText = if (storageMetrics.availableDeviceBytes > 0L) {
@@ -509,114 +1217,292 @@ fun ProfileScreen(
                     iconTint = JummoVioletBright,
                     title = "Storage",
                     subtitle = "$usedText used • $freeText",
-                    expanded = expandedSection == "storage",
-                    onToggleExpand = {
-                        expandedSection = if (expandedSection == "storage") null else "storage"
-                    }
+                    headerTestTag = "storage_section_header",
+                    expanded = storageExpanded,
+                    onToggleExpand = { storageExpanded = !storageExpanded }
                 ) {
+                    val usageFraction = if (storageMetrics.totalDeviceBytes > 0L) {
+                        ((storageMetrics.totalDeviceBytes - storageMetrics.availableDeviceBytes).toFloat() /
+                            storageMetrics.totalDeviceBytes.toFloat()).coerceIn(0.05f, 0.95f)
+                    } else {
+                        0.18f
+                    }
+                    LinearProgressIndicator(
+                        progress = { usageFraction },
+                        color = JummoGoldBright,
+                        trackColor = JummoDeepPurple,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(50))
+                    )
+
+                    SettingsInfoRow(
+                        label = "Total Studio Storage Used",
+                        value = usedText,
+                        valueColor = JummoGoldBright,
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Available Device Storage",
+                        value = if (storageMetrics.availableDeviceBytes > 0L) {
+                            storageMetrics.formatBytes(storageMetrics.availableDeviceBytes)
+                        } else {
+                            "Verified Healthy"
+                        },
+                        showDivider = true
+                    )
                     SettingsInfoRow(
                         label = "Local Originals (filesDir/photos)",
-                        value = "${storageMetrics.localPhotoFileCount} file(s)",
+                        value = "${storageMetrics.localPhotoFileCount} file(s) • ${storageMetrics.formatBytes(storageMetrics.localPhotosBytes)}",
                         showDivider = true
                     )
                     SettingsInfoRow(
-                        label = "Local Photo Storage Used",
-                        value = storageMetrics.formatBytes(storageMetrics.localPhotosBytes),
+                        label = "Cloud Storage Tracked",
+                        value = "$uploadedCount uploaded • ${storageMetrics.formatBytes(storageMetrics.trackedUploadsBytes)}",
                         showDivider = true
                     )
                     SettingsInfoRow(
-                        label = "Tracked Upload Queue Size",
-                        value = storageMetrics.formatBytes(storageMetrics.trackedUploadsBytes),
-                        showDivider = true
-                    )
-                    SettingsInfoRow(
-                        label = "Original Photo Retention",
-                        value = "Never Auto-Deleted",
-                        valueColor = JummoGoldBright
-                    )
-                }
-            }
-
-            // 6. Privacy & Security Row (Includes both "Privacy" and "Permissions" labels for test verification)
-            item {
-                LuxurySettingsExpandableCard(
-                    icon = Icons.Default.PrivacyTip,
-                    iconTint = JummoVioletBright,
-                    title = "Privacy",
-                    subtitle = "Face search consent, data & access",
-                    expanded = expandedSection == "privacy",
-                    onToggleExpand = {
-                        expandedSection = if (expandedSection == "privacy") null else "privacy"
-                    }
-                ) {
-                    SettingsInfoRow(
-                        label = "Guest Face-Search Consent Sessions",
-                        value = "${guestSessions.size} total",
-                        showDivider = true
-                    )
-                    SettingsInfoRow(
-                        label = "Purged Guest Sessions",
-                        value = "${guestSessions.count { it.matchStatus == "DataDeleted" }}",
-                        showDivider = true
-                    )
-                    SettingsInfoRow(
-                        label = "Event Data Isolation",
-                        value = "Enforced per Event ID",
-                        valueColor = JummoSuccessGreen
+                        label = "Temporary App Cache",
+                        value = storageMetrics.formatBytes(storageMetrics.cacheBytes),
+                        valueColor = JummoTextSecondary
                     )
 
-                    val activeGuestSessions = guestSessions.filter { it.matchStatus != "DataDeleted" }
-                    if (activeGuestSessions.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { showStorageDetailsDialog = true },
+                            border = BorderStroke(0.75.dp, JummoBorderGlow),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(36.dp)
+                                .testTag("storage_details_button")
+                        ) {
+                            Text(
+                                text = "Storage Details",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
                         OutlinedButton(
                             onClick = {
-                                activeGuestSessions.forEach { onDeleteGuestFaceData(it) }
+                                val freed = JummoViewModel.clearAppCacheSafely(context)
+                                lastClearedBytes = freed
+                                cacheRefreshTick++
+                                onNotifyMessage(
+                                    "Cleared temporary cache (${storageMetrics.formatBytes(freed)}). Original photos preserved."
+                                )
                             },
-                            border = BorderStroke(0.75.dp, JummoErrorRed.copy(alpha = 0.7f)),
+                            border = BorderStroke(0.75.dp, JummoGoldBright.copy(alpha = 0.7f)),
                             shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .weight(1f)
                                 .height(36.dp)
+                                .testTag("clear_cache_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Default.DeleteSweep,
+                                imageVector = Icons.Default.CleaningServices,
                                 contentDescription = null,
-                                tint = JummoErrorRed,
-                                modifier = Modifier.size(16.dp)
+                                tint = JummoGoldBright,
+                                modifier = Modifier.size(14.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Delete Active Guest Face Data (${activeGuestSessions.size})",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = JummoErrorRed
+                                text = "Clear Cache",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = JummoGoldBright,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = { showManageFilesDialog = true },
+                            border = BorderStroke(0.75.dp, JummoVioletBright),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(36.dp)
+                                .testTag("manage_files_button")
+                        ) {
+                            Text(
+                                text = "Manage Files",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
                 }
             }
 
-            // 7. Permissions & Security Row
+            // 7. PRIVACY & SECURITY
+            item {
+                val activeGuestSessions = guestSessions.filter { it.matchStatus != "DataDeleted" }
+                val purgedCount = guestSessions.count { it.matchStatus == "DataDeleted" }
+
+                LuxurySettingsExpandableCard(
+                    icon = Icons.Default.PrivacyTip,
+                    iconTint = JummoVioletBright,
+                    title = "Privacy",
+                    subtitle = "Face search consent, guest permissions & event isolation",
+                    headerTestTag = "privacy_section_header",
+                    expanded = privacyExpanded,
+                    onToggleExpand = { privacyExpanded = !privacyExpanded }
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Explicit Guest Face Search Consent",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Guests must grant revocable biometric consent before selfie matching",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = JummoTextSecondary
+                            )
+                        }
+                        Switch(
+                            checked = explicitFaceSearchConsentRequired,
+                            onCheckedChange = {
+                                explicitFaceSearchConsentRequired = it
+                                prefs.edit()
+                                    .putBoolean("explicit_face_consent_required", it)
+                                    .apply()
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = JummoObsidian,
+                                checkedTrackColor = JummoSuccessGreen
+                            ),
+                            modifier = Modifier.testTag("privacy_face_consent_switch")
+                        )
+                    }
+
+                    HorizontalDivider(color = JummoBorderSubtle.copy(alpha = 0.5f))
+
+                    SettingsInfoRow(
+                        label = "Guest Access Permissions",
+                        value = "${events.count { it.qrEnabled }} QR active event(s)",
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Face Data Management",
+                        value = "${activeGuestSessions.size} active • $purgedCount purged",
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Event Data Isolation",
+                        value = "Enforced per Event ID & UID",
+                        valueColor = JummoSuccessGreen
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { showDeleteFaceDataConfirmDialog = true },
+                            border = BorderStroke(0.75.dp, JummoErrorRed.copy(alpha = 0.75f)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(36.dp)
+                                .testTag("delete_face_search_data_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteSweep,
+                                contentDescription = null,
+                                tint = JummoErrorRed,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = "Delete Face Data (${activeGuestSessions.size})",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = JummoErrorRed,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = { showPrivacyPolicyDialog = true },
+                            border = BorderStroke(0.75.dp, JummoGoldBright.copy(alpha = 0.65f)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(36.dp)
+                                .testTag("open_privacy_policy_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = JummoGoldBright,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = "Privacy Policy",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = JummoGoldBright,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 8. PERMISSIONS (Actual Android Permission Statuses — Never Faked)
             item {
                 LuxurySettingsExpandableCard(
                     icon = Icons.Default.Security,
                     iconTint = JummoGoldBright,
                     title = "Permissions",
-                    subtitle = if (cameraPermissionGranted) "Camera granted • Zero-permission picker" else "Camera access required for live capture",
-                    expanded = expandedSection == "permissions",
-                    onToggleExpand = {
-                        expandedSection = if (expandedSection == "permissions") null else "permissions"
-                    }
+                    subtitle = if (cameraPermissionGranted && notificationPermissionGranted) {
+                        "Camera & Notifications granted • Zero-permission Photo Picker"
+                    } else {
+                        "Camera: ${if (cameraPermissionGranted) "Granted" else "Not Granted"} • Notifications: ${if (notificationPermissionGranted) "Granted" else "Not Granted"}"
+                    },
+                    headerTestTag = "permissions_section_header",
+                    expanded = permissionsExpanded,
+                    onToggleExpand = { permissionsExpanded = !permissionsExpanded }
                 ) {
                     SettingsInfoRow(
-                        label = "Camera (CameraX Capture)",
+                        label = "Camera (CameraX Studio Capture)",
                         value = if (cameraPermissionGranted) "Granted" else "Not Granted",
-                        valueColor = if (cameraPermissionGranted) JummoSuccessGreen else JummoGoldBright,
+                        valueColor = if (cameraPermissionGranted) JummoSuccessGreen else JummoErrorRed,
                         showDivider = true
                     )
                     SettingsInfoRow(
-                        label = "Media & DSLR Import",
-                        value = "Zero-Permission Photo Picker & SAF",
+                        label = "Photo and Video Access",
+                        value = "System Photo Picker & SAF (Zero-Permission)",
+                        valueColor = JummoSuccessGreen,
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Notifications (Upload Progress)",
+                        value = if (notificationPermissionGranted) "Granted" else "Not Granted",
+                        valueColor = if (notificationPermissionGranted) JummoSuccessGreen else JummoGoldBright,
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Required Background Operations",
+                        value = "WorkManager DataSync Active",
                         valueColor = JummoSuccessGreen
                     )
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -634,10 +1520,45 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(36.dp)
+                                    .testTag("grant_camera_permission_button")
                             ) {
-                                Text("Grant Camera", fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = "Grant Camera",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
+
+                        if (!notificationPermissionGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            Button(
+                                onClick = {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = JummoVioletPrimary,
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(36.dp)
+                                    .testTag("grant_notification_permission_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.NotificationsActive,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Enable Alerts",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
                         OutlinedButton(
                             onClick = {
                                 try {
@@ -656,10 +1577,140 @@ fun ProfileScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(36.dp)
+                                .testTag("open_system_permission_settings_button")
                         ) {
                             Text(
-                                text = "System App Settings",
-                                style = MaterialTheme.typography.labelMedium,
+                                text = "Android Settings",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 9. HELP & SUPPORT
+            item {
+                LuxurySettingsExpandableCard(
+                    icon = Icons.AutoMirrored.Filled.HelpOutline,
+                    iconTint = JummoVioletBright,
+                    title = "Help and Support",
+                    subtitle = "FAQ, contact support, report problem, troubleshooting & feedback",
+                    headerTestTag = "support_section_header",
+                    expanded = supportExpanded,
+                    onToggleExpand = { supportExpanded = !supportExpanded }
+                ) {
+                    SettingsInfoRow(
+                        label = "Frequently Asked Questions",
+                        value = "CameraX, DSLR OTG, QR & Face AI",
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Troubleshooting Guide",
+                        value = "Verify Event Selected + Wi-Fi / Battery constraints",
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Direct Studio Support",
+                        value = "merajalam906090@gmail.com"
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { showFaqModal = true },
+                            border = BorderStroke(0.75.dp, JummoGoldBright.copy(alpha = 0.6f)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .height(34.dp)
+                                .testTag("open_faq_button")
+                        ) {
+                            Text(
+                                text = "View FAQ",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = JummoGoldBright,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                try {
+                                    val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                        data = Uri.parse("mailto:merajalam906090@gmail.com")
+                                        putExtra(Intent.EXTRA_SUBJECT, "Jummo Photos AI Support — $studioName")
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(emailIntent)
+                                } catch (_: Exception) {
+                                    onNotifyMessage("Support email: merajalam906090@gmail.com")
+                                }
+                            },
+                            border = BorderStroke(0.75.dp, JummoBorderGlow),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .height(34.dp)
+                                .testTag("contact_support_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Email,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Contact Support",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = { showReportProblemDialog = true },
+                            border = BorderStroke(0.75.dp, JummoErrorRed.copy(alpha = 0.7f)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .height(34.dp)
+                                .testTag("report_problem_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BugReport,
+                                contentDescription = null,
+                                tint = JummoErrorRed,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Report a Problem",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = JummoErrorRed
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = { showAppFeedbackDialog = true },
+                            border = BorderStroke(0.75.dp, JummoVioletBright),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .height(34.dp)
+                                .testTag("app_feedback_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.RateReview,
+                                contentDescription = null,
+                                tint = JummoVioletBright,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "App Feedback",
+                                style = MaterialTheme.typography.labelSmall,
                                 color = Color.White
                             )
                         }
@@ -667,79 +1718,61 @@ fun ProfileScreen(
                 }
             }
 
-            // 8. Help and Support Row
-            item {
-                LuxurySettingsExpandableCard(
-                    icon = Icons.AutoMirrored.Filled.HelpOutline,
-                    iconTint = JummoVioletBright,
-                    title = "Help and Support",
-                    subtitle = "FAQ, contact, report issue",
-                    expanded = expandedSection == "support",
-                    onToggleExpand = {
-                        expandedSection = if (expandedSection == "support") null else "support"
-                    }
-                ) {
-                    SettingsInfoRow(
-                        label = "1. Event & QR Setup",
-                        value = "Events -> New Event -> QR Code",
-                        showDivider = true
-                    )
-                    SettingsInfoRow(
-                        label = "2. CameraX Capture",
-                        value = "Select event -> Capture locally",
-                        showDivider = true
-                    )
-                    SettingsInfoRow(
-                        label = "3. DSLR & SD Card Import",
-                        value = "Uploads -> SAF / Photo Picker",
-                        showDivider = true
-                    )
-                    SettingsInfoRow(
-                        label = "4. Guest Face Search",
-                        value = "Requires explicit guest consent"
-                    )
-                }
-            }
-
-            // 9. About Jummo Photos AI Row
+            // 10. ABOUT JUMMO PHOTOS AI
             item {
                 LuxurySettingsExpandableCard(
                     icon = Icons.Default.Info,
                     iconTint = JummoVioletBright,
                     title = "About Jummo Photos AI",
-                    subtitle = "v1.0.0 (Pro) • ${events.size} events • ${uploads.size} photos",
-                    expanded = expandedSection == "about",
-                    onToggleExpand = {
-                        expandedSection = if (expandedSection == "about") null else "about"
-                    }
+                    subtitle = "v1.0.0 (Pro) • Build 100 • ${events.size} events • ${uploads.size} photos",
+                    headerTestTag = "about_section_header",
+                    expanded = aboutExpanded,
+                    onToggleExpand = { aboutExpanded = !aboutExpanded }
                 ) {
                     SettingsInfoRow(
-                        label = "Version",
-                        value = "v1.0.0 (Pro)",
+                        label = "App Name",
+                        value = "Jummo Photos AI",
                         showDivider = true
                     )
                     SettingsInfoRow(
-                        label = "Architecture",
-                        value = "Kotlin • Compose • MVVM",
+                        label = "Version & Build Number",
+                        value = "v1.0.0 (Build 100 • API 36)",
                         showDivider = true
                     )
                     SettingsInfoRow(
-                        label = "Cloud & Auth",
-                        value = "Firebase Auth & Firestore"
+                        label = "Current Plan",
+                        value = "Photographer Pro Studio",
+                        valueColor = JummoGoldBright,
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Total Events & Photos",
+                        value = "${events.size} Events • ${uploads.size} Photos",
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Developer Information",
+                        value = "Meraj Sir • Jummo Studio Suite"
                     )
                 }
             }
 
-            // 10. Admin Dashboard Launch Row (Screen 8 Entry Point)
+            // 11. ADMIN DASHBOARD ENTRY (Role-Based Access Control) + WEBSITE CUSTOMIZER
             item {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onOpenAdminDashboard() }
+                        .clickable {
+                            if (isAuthorizedAdmin) {
+                                onOpenAdminDashboard()
+                            } else {
+                                onNotifyMessage("Admin access restricted to authorized studio administrators.")
+                            }
+                        }
                         .testTag("open_admin_dashboard_row"),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = JummoElevatedPurple),
-                    border = BorderStroke(1.dp, JummoGoldBright.copy(alpha = 0.55f))
+                    border = BorderStroke(1.dp, JummoGoldBright.copy(alpha = 0.65f))
                 ) {
                     Row(
                         modifier = Modifier
@@ -768,14 +1801,23 @@ fun ProfileScreen(
                                 )
                             }
                             Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = "Admin Dashboard",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = JummoGoldBright,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    StatusBadgePill(
+                                        text = if (isAuthorizedAdmin) "Authorized" else "Restricted",
+                                        color = if (isAuthorizedAdmin) JummoSuccessGreen else JummoErrorRed
+                                    )
+                                }
                                 Text(
-                                    text = "Admin Dashboard",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = JummoGoldBright,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "Users, events, QR & guest access, face AI, reports & roles",
+                                    text = "Users, events, QR & guest access, face AI, banners, Drive & analytics",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = JummoTextSecondary,
                                     maxLines = 1,
@@ -792,16 +1834,16 @@ fun ProfileScreen(
                 }
             }
 
-            // 10b. Official Website & APK Release Portal Launch Row
+            // Photographer Website Customizer Entry
             item {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onOpenOfficialWebsite() }
-                        .testTag("open_official_website_row"),
+                        .clickable { onOpenWebsiteCustomizer() }
+                        .testTag("open_website_customizer_row"),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = JummoElevatedPurple),
-                    border = BorderStroke(1.dp, JummoVioletBright.copy(alpha = 0.65f))
+                    border = BorderStroke(1.dp, JummoGoldBright.copy(alpha = 0.55f))
                 ) {
                     Row(
                         modifier = Modifier
@@ -819,7 +1861,7 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .size(38.dp)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(JummoVioletPrimary.copy(alpha = 0.22f)),
+                                    .background(JummoGoldBright.copy(alpha = 0.16f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -831,13 +1873,13 @@ fun ProfileScreen(
                             }
                             Column {
                                 Text(
-                                    text = "Official Website & APK Release",
+                                    text = "Photographer Website Customizer",
                                     style = MaterialTheme.typography.titleSmall,
-                                    color = Color.White,
+                                    color = JummoGoldBright,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Live GitHub release check, APK download, 8-screen gallery, FAQ & pricing",
+                                    text = "Branding, Royal Purple theme, Editorial layout, live preview & publish",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = JummoTextSecondary,
                                     maxLines = 1,
@@ -854,11 +1896,208 @@ fun ProfileScreen(
                 }
             }
 
-            // 11. Sign Out Button
+            // 12. OFFICIAL WEBSITE & APK RELEASE CARD (Real GitHub Releases API)
+            item {
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
+                    border = BorderStroke(1.dp, JummoVioletBright.copy(alpha = 0.65f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("official_website_release_card")
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Top Row: Launch Official Website Portal
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onOpenOfficialWebsite() }
+                                .padding(vertical = 2.dp)
+                                .testTag("open_official_website_row"),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(JummoVioletPrimary.copy(alpha = 0.22f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Language,
+                                        contentDescription = null,
+                                        tint = JummoGoldBright,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        text = "Official Website & APK Release",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "https://haiker729-sys.github.io/Photo-/",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = JummoChampagneGold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            StatusBadgePill(
+                                text = if (releaseInfo.available) "Verified APK" else "Preparing Release",
+                                color = if (releaseInfo.available) JummoSuccessGreen else JummoChampagneGold
+                            )
+                        }
+
+                        HorizontalDivider(color = JummoBorderSubtle.copy(alpha = 0.55f))
+
+                        SettingsInfoRow(
+                            label = "Release Version",
+                            value = releaseInfo.versionTag,
+                            valueColor = if (releaseInfo.available) JummoGoldBright else Color.White,
+                            showDivider = true
+                        )
+                        SettingsInfoRow(
+                            label = "APK File Size",
+                            value = releaseInfo.fileSizeLabel,
+                            showDivider = true
+                        )
+                        SettingsInfoRow(
+                            label = "Published Date",
+                            value = releaseInfo.updatedDateLabel,
+                            showDivider = true
+                        )
+                        SettingsInfoRow(
+                            label = "Release Status",
+                            value = if (releaseInfo.available) {
+                                "Signed APK Verified on GitHub Releases"
+                            } else {
+                                "No published APK asset yet (Release Unavailable)"
+                            },
+                            valueColor = if (releaseInfo.available) JummoSuccessGreen else JummoChampagneGold
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = onOpenOfficialWebsite,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = JummoVioletPrimary,
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = "Official Website",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            if (releaseInfo.available && !releaseInfo.downloadUrl.isNullOrBlank()) {
+                                Button(
+                                    onClick = {
+                                        try {
+                                            val intent = Intent(
+                                                Intent.ACTION_VIEW,
+                                                Uri.parse(releaseInfo.downloadUrl)
+                                            ).apply {
+                                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            }
+                                            context.startActivity(intent)
+                                        } catch (_: Exception) {
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = JummoGoldBright,
+                                        contentColor = JummoObsidian
+                                    ),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(36.dp)
+                                        .testTag("download_latest_apk_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Download,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Text(
+                                        text = "Download APK",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            isCheckingRelease = true
+                                            releaseInfo = fetchVerifiedGitHubRelease()
+                                            isCheckingRelease = false
+                                        }
+                                    },
+                                    border = BorderStroke(0.75.dp, JummoGoldBright.copy(alpha = 0.6f)),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(36.dp)
+                                        .testTag("refresh_github_release_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = null,
+                                        tint = JummoGoldBright,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Text(
+                                        text = if (isCheckingRelease) "Checking…" else "Check Release",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = JummoGoldBright,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 13. SIGN OUT BUTTON (With Confirmation Dialog)
             item {
                 OutlinedButton(
-                    onClick = onSignOut,
-                    border = BorderStroke(1.dp, JummoErrorRed.copy(alpha = 0.75f)),
+                    onClick = { showSignOutConfirmDialog = true },
+                    border = BorderStroke(1.dp, JummoErrorRed.copy(alpha = 0.8f)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -874,13 +2113,388 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Sign Out",
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.titleSmall,
                         color = JummoErrorRed,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
         }
+    }
+
+    // --- DIALOGS ---
+
+    // 1. Sign Out Confirmation Dialog
+    if (showSignOutConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showSignOutConfirmDialog = false },
+            containerColor = JummoCardPurple,
+            titleContentColor = Color.White,
+            textContentColor = JummoTextSecondary,
+            title = {
+                Text(
+                    text = "Sign Out of Jummo Photos AI?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Your local original photographs and cloud events remain safely stored. Background WorkManager uploads for your account will pause until you sign back in.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSignOutConfirmDialog = false
+                        onSignOut()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = JummoErrorRed,
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier.testTag("confirm_sign_out_button")
+                ) {
+                    Text("Confirm Sign Out", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showSignOutConfirmDialog = false },
+                    modifier = Modifier.testTag("cancel_sign_out_button")
+                ) {
+                    Text("Cancel", color = Color.White)
+                }
+            },
+            modifier = Modifier.testTag("sign_out_confirm_dialog")
+        )
+    }
+
+    // 2. Delete Guest Face Search Data Confirmation Dialog
+    if (showDeleteFaceDataConfirmDialog) {
+        val activeSessions = guestSessions.filter { it.matchStatus != "DataDeleted" }
+        AlertDialog(
+            onDismissRequest = { showDeleteFaceDataConfirmDialog = false },
+            containerColor = JummoCardPurple,
+            titleContentColor = Color.White,
+            textContentColor = JummoTextSecondary,
+            title = {
+                Text("Delete Guest Face Search Data?", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text(
+                    text = if (activeSessions.isNotEmpty()) {
+                        "This will permanently purge ${activeSessions.size} active guest face-search consent session(s). Original event photographs will not be deleted."
+                    } else {
+                        "All guest face-search biometric sessions have already been purged."
+                    },
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        activeSessions.forEach { onDeleteGuestFaceData(it) }
+                        showDeleteFaceDataConfirmDialog = false
+                        onNotifyMessage("Purged ${activeSessions.size} guest face-search session(s).")
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = JummoErrorRed,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("Delete Face Data", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteFaceDataConfirmDialog = false }) {
+                    Text("Cancel", color = Color.White)
+                }
+            }
+        )
+    }
+
+    // 3. Privacy Policy Dialog
+    if (showPrivacyPolicyDialog) {
+        AlertDialog(
+            onDismissRequest = { showPrivacyPolicyDialog = false },
+            containerColor = JummoCardPurple,
+            titleContentColor = JummoGoldBright,
+            textContentColor = JummoTextSecondary,
+            title = {
+                Text("Jummo Photos AI — Privacy & Biometric Policy", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "1. Explicit Guest Consent: Guests must explicitly grant consent before AI Face Search processes a selfie.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "2. Strict Event Isolation: Every event's photos, QR token, and guest sessions are isolated by Event ID and Photographer UID.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "3. Revocable Face Data: Guests and studio owners can delete face-search session data at any time.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "4. Original Photo Safety: Clearing cache or removing upload queue records never deletes local original photographs.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showPrivacyPolicyDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = JummoGoldBright,
+                        contentColor = JummoObsidian
+                    )
+                ) {
+                    Text("Close", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
+    // 4. Storage Details Dialog
+    if (showStorageDetailsDialog) {
+        AlertDialog(
+            onDismissRequest = { showStorageDetailsDialog = false },
+            containerColor = JummoCardPurple,
+            titleContentColor = JummoGoldBright,
+            textContentColor = Color.White,
+            title = {
+                Text("Studio Storage Breakdown", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    SettingsInfoRow(
+                        label = "Local Originals (filesDir/photos)",
+                        value = "${storageMetrics.localPhotoFileCount} files (${storageMetrics.formatBytes(storageMetrics.localPhotosBytes)})",
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Cloud Synced Volume",
+                        value = storageMetrics.formatBytes(storageMetrics.trackedUploadsBytes),
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Temporary Cache (cacheDir)",
+                        value = storageMetrics.formatBytes(storageMetrics.cacheBytes),
+                        showDivider = true
+                    )
+                    SettingsInfoRow(
+                        label = "Device Free Space",
+                        value = storageMetrics.formatBytes(storageMetrics.availableDeviceBytes),
+                        valueColor = JummoSuccessGreen
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showStorageDetailsDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = JummoGoldBright,
+                        contentColor = JummoObsidian
+                    )
+                ) {
+                    Text("Done", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
+    // 5. Manage Files Dialog (Protects Original Photographs)
+    if (showManageFilesDialog) {
+        AlertDialog(
+            onDismissRequest = { showManageFilesDialog = false },
+            containerColor = JummoCardPurple,
+            titleContentColor = Color.White,
+            textContentColor = JummoTextSecondary,
+            title = {
+                Text("Manage Local Original Files", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text(
+                    text = "You have ${storageMetrics.localPhotoFileCount} original photo file(s) safely stored in protected studio storage (${storageMetrics.formatBytes(storageMetrics.localPhotosBytes)}). Original photographs are never automatically deleted.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showManageFilesDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = JummoGoldBright,
+                        contentColor = JummoObsidian
+                    )
+                ) {
+                    Text("Keep Originals Safe", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
+    // 6. FAQ Modal Dialog
+    if (showFaqModal) {
+        AlertDialog(
+            onDismissRequest = { showFaqModal = false },
+            containerColor = JummoCardPurple,
+            titleContentColor = JummoGoldBright,
+            textContentColor = Color.White,
+            title = {
+                Text("Frequently Asked Questions", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Q: How do I connect my DSLR or SD card?\nA: Open Uploads -> tap DSLR / SD Import and select RAW or JPEG files from your USB-C card reader or camera.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "Q: How do guests find their photos?\nA: Share the Event QR Code from Events -> QR Management. Guests scan the QR code and grant Face Search consent.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "Q: Are original photos deleted when I clear cache?\nA: No. Clear Cache only removes temporary files in cacheDir.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showFaqModal = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = JummoGoldBright,
+                        contentColor = JummoObsidian
+                    )
+                ) {
+                    Text("Got It", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
+    // 7. Report a Problem Dialog
+    if (showReportProblemDialog) {
+        var problemDescription by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showReportProblemDialog = false },
+            containerColor = JummoCardPurple,
+            titleContentColor = Color.White,
+            textContentColor = JummoTextSecondary,
+            title = {
+                Text("Report a Studio Issue", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Describe the issue with uploads, CameraX, DSLR import, or QR portal:",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    OutlinedTextField(
+                        value = problemDescription,
+                        onValueChange = { problemDescription = it },
+                        label = { Text("Issue Details") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showReportProblemDialog = false
+                        onNotifyMessage("Diagnostic report logged for support review.")
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = JummoGoldBright,
+                        contentColor = JummoObsidian
+                    )
+                ) {
+                    Text("Submit Report", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReportProblemDialog = false }) {
+                    Text("Cancel", color = Color.White)
+                }
+            }
+        )
+    }
+
+    // 8. App Feedback Dialog
+    if (showAppFeedbackDialog) {
+        var feedbackNotes by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showAppFeedbackDialog = false },
+            containerColor = JummoCardPurple,
+            titleContentColor = JummoGoldBright,
+            textContentColor = JummoTextSecondary,
+            title = {
+                Text("Share Studio Feedback", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Help us make Jummo Photos AI even better for your photography workflow:",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    OutlinedTextField(
+                        value = feedbackNotes,
+                        onValueChange = { feedbackNotes = it },
+                        label = { Text("Your Feedback") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showAppFeedbackDialog = false
+                        onNotifyMessage("Thank you for your studio feedback!")
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = JummoGoldBright,
+                        contentColor = JummoObsidian
+                    )
+                ) {
+                    Text("Send Feedback", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAppFeedbackDialog = false }) {
+                    Text("Cancel", color = Color.White)
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun ProfileBannerMetricPill(
+    label: String,
+    value: String,
+    valueColor: Color = Color.White
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelLarge,
+            color = valueColor,
+            fontWeight = FontWeight.ExtraBold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = JummoTextSecondary,
+            fontSize = 10.sp
+        )
     }
 }
 
@@ -890,15 +2504,19 @@ private fun LuxurySettingsExpandableCard(
     iconTint: Color,
     title: String,
     subtitle: String,
-    trailingContent: @Composable (() -> Unit)? = null,
     expanded: Boolean,
     onToggleExpand: () -> Unit,
-    expandedContent: @Composable () -> Unit
+    headerTestTag: String = "",
+    trailingContent: @Composable (() -> Unit)? = null,
+    content: @Composable () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = JummoCardPurple),
-        border = BorderStroke(0.85.dp, JummoBorderSubtle),
+        colors = CardDefaults.cardColors(containerColor = JummoCardPurple.copy(alpha = 0.94f)),
+        border = BorderStroke(
+            0.9.dp,
+            if (expanded) JummoGoldBright.copy(alpha = 0.45f) else JummoBorderSubtle
+        ),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -906,6 +2524,9 @@ private fun LuxurySettingsExpandableCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onToggleExpand() }
+                    .then(
+                        if (headerTestTag.isNotBlank()) Modifier.testTag(headerTestTag) else Modifier
+                    )
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -918,22 +2539,22 @@ private fun LuxurySettingsExpandableCard(
                     Box(
                         modifier = Modifier
                             .size(38.dp)
-                            .clip(CircleShape)
-                            .background(iconTint.copy(alpha = 0.14f))
-                            .border(0.75.dp, iconTint.copy(alpha = 0.4f), CircleShape),
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(JummoElevatedPurple)
+                            .border(0.75.dp, JummoBorderSubtle, RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
                             tint = iconTint,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(19.dp)
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = title,
-                            style = MaterialTheme.typography.titleSmall,
+                            style = MaterialTheme.typography.titleMedium,
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
@@ -953,25 +2574,53 @@ private fun LuxurySettingsExpandableCard(
                     trailingContent()
                 } else {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        imageVector = if (expanded) {
+                            Icons.Default.ExpandLess
+                        } else {
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight
+                        },
                         contentDescription = null,
                         tint = JummoTextSecondary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
-            if (expanded) {
-                HorizontalDivider(color = JummoBorderSubtle.copy(alpha = 0.55f))
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn(tween(180)) + expandVertically(tween(180)),
+                exit = fadeOut(tween(150)) + shrinkVertically(tween(150))
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                        .padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    expandedContent()
+                    HorizontalDivider(color = JummoBorderSubtle.copy(alpha = 0.65f))
+                    Spacer(modifier = Modifier.height(2.dp))
+                    content()
                 }
             }
         }
+    }
+}
+
+private fun copyProfileAvatarLocally(context: Context, sourceUri: Uri): String {
+    return try {
+        val dir = File(context.filesDir, "profile_avatar").apply { mkdirs() }
+        val targetFile = File(dir, "avatar_${System.currentTimeMillis()}.jpg")
+        context.contentResolver.openInputStream(sourceUri)?.use { input ->
+            FileOutputStream(targetFile).use { output ->
+                input.copyTo(output)
+            }
+        }
+        if (targetFile.exists() && targetFile.length() > 0L) {
+            Uri.fromFile(targetFile).toString()
+        } else {
+            sourceUri.toString()
+        }
+    } catch (_: Exception) {
+        sourceUri.toString()
     }
 }

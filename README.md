@@ -267,11 +267,25 @@ gradle :app:testDebugUnitTest --tests com.example.JummoAppRobolectricTest --no-d
 
 Copyright © 2026 **Jummo Photos AI (Jummo Pro Studio)**. All rights reserved. Source code and official APK releases are published in [https://github.com/haiker729-sys/Photo-](https://github.com/haiker729-sys/Photo-) for authorized studio and evaluation use.
 
+## 14. Photographer Website Customizer & Guest Portal Architecture
+
+Every photographer can independently customize and publish their event's public-facing guest website directly inside the Android app (**My Events → Customize Website**, **Profile → Photographer Website Customizer**, or **Admin Dashboard → Website Management**):
+
+- **Website Identity & Branding**: Studio/Business Name, Lead Photographer Name (`Meraj Sir`), Studio Logo upload/replace/remove, Cover Image upload, Editorial Typography (`Playfair Display`, `Plus Jakarta Sans`, `Cormorant Garamond`, `Inter`), Contact Details, Social Links, and Custom Guest Welcome Message.
+- **Image-Only Hero Banner Slider**: Upload multiple clean photographs with automatic slider interval (`2s–8s`), banner height (`Compact`, `Standard`, `Cinematic`), and framing modes (`Center Crop`, `Top Portrait Focus`, `Full Frame Fit`) — strictly zero embedded text or logos over the banner photograph.
+- **Luxury Themes & Gallery Layouts**: Default **Royal Purple** theme (`Midnight Black`, `Champagne Gold`, `Elegant Ivory`, `Custom Brand Colors`) and **Editorial** (default), **Classic Grid**, and **Masonry Gallery** layouts.
+- **Guest Access & Feature Controls**: Toggle `AI Face Search`, `Photo Gallery`, `Photo Downloads`, and `Share Event Photos`, and select between `Consent Face Search Only`, `View All + Face Search`, `Organizer Approved Access`, and `Gallery Only`.
+- **Save Draft, Live Viewport Preview, Publish & Version Rollback**: Preview changes across `Mobile`, `Tablet`, and `Desktop` viewports, save drafts without altering the live portal, publish versioned snapshots (`v1`, `v2`, ...) to Cloud Firestore (`/website_customizations` & `/website_versions`), and roll back to any previous published version.
+- **Hosting & Custom Domain DNS Status**:
+  - **Verified Live GitHub Pages Portal**: `https://haiker729-sys.github.io/Photo-/?event=<eventId>`
+  - **Custom Domain (`jummophotos.ai`)**: DNS records are not yet pointed to GitHub Pages. To activate `jummophotos.ai`, configure a DNS `CNAME` record pointing to `haiker729-sys.github.io` (or `A` records `185.199.108.153`–`185.199.111.153`) at your domain registrar and add `docs/CNAME`.
+
 ---
 
-## 14. Contact & Support
+## 15. Contact & Support
 
-- **Maintainer**: Meraj Alam (`Jummo Pro Studio`)
+- **Maintainer**: Meraj Sir / Meraj Alam (`Jummo Pro Studio`)
 - **Email**: [merajalam906090@gmail.com](mailto:merajalam906090@gmail.com)
 - **GitHub Issues**: [https://github.com/haiker729-sys/Photo-/issues](https://github.com/haiker729-sys/Photo-/issues)
 - **Official Website**: [https://haiker729-sys.github.io/Photo-/](https://haiker729-sys.github.io/Photo-/)
+

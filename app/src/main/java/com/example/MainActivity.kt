@@ -90,6 +90,7 @@ import com.example.ui.screens.EventsScreen
 import com.example.ui.screens.GuestPortalModalScreen
 import com.example.ui.screens.HomeDashboardScreen
 import com.example.ui.screens.OfficialWebsiteScreen
+import com.example.ui.screens.PhotographerWebsiteCustomizerScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.UploadsScreen
 import com.example.ui.theme.JummoCardPurple
@@ -397,6 +398,9 @@ fun JummoAuthenticatedShell(
     val eventsState by viewModel.eventsState.collectAsStateWithLifecycle()
     val uploadsState by viewModel.uploadsState.collectAsStateWithLifecycle()
     val guestConsentsState by viewModel.guestConsentsState.collectAsStateWithLifecycle()
+    val bannersState by viewModel.bannersState.collectAsStateWithLifecycle()
+    val websiteCustomizationsState by viewModel.websiteCustomizationsState.collectAsStateWithLifecycle()
+    val websiteVersionsState by viewModel.websiteVersionsState.collectAsStateWithLifecycle()
     val selectedEventId by viewModel.selectedEventId.collectAsStateWithLifecycle()
     val statusBanner by viewModel.statusBanner.collectAsStateWithLifecycle()
 
@@ -413,8 +417,15 @@ fun JummoAuthenticatedShell(
     var detailsModalEvent by remember { mutableStateOf<PhotoEvent?>(null) }
     var guestPortalEvent by remember { mutableStateOf<PhotoEvent?>(null) }
     var showAdminDashboard by rememberSaveable { mutableStateOf(false) }
+    var showWebsiteCustomizer by rememberSaveable { mutableStateOf(false) }
+    var websiteCustomizerEvent by remember { mutableStateOf<PhotoEvent?>(null) }
 
-    BackHandler(enabled = currentTab != 0 && guestPortalEvent == null && !showAdminDashboard) {
+    BackHandler(
+        enabled = currentTab != 0 &&
+            guestPortalEvent == null &&
+            !showAdminDashboard &&
+            !showWebsiteCustomizer
+    ) {
         currentTab = 0
     }
 
@@ -422,6 +433,45 @@ fun JummoAuthenticatedShell(
     val events = (eventsState as? UiState.Success)?.data.orEmpty()
     val uploads = (uploadsState as? UiState.Success)?.data.orEmpty()
     val guestConsents = (guestConsentsState as? UiState.Success)?.data.orEmpty()
+    val banners = (bannersState as? UiState.Success)?.data.orEmpty()
+    val websiteCustomizations = (websiteCustomizationsState as? UiState.Success)?.data.orEmpty()
+    val websiteVersions = (websiteVersionsState as? UiState.Success)?.data.orEmpty()
+
+    if (showWebsiteCustomizer) {
+        PhotographerWebsiteCustomizerScreen(
+            profile = profile,
+            events = events,
+            initialEvent = websiteCustomizerEvent,
+            uploads = uploads,
+            guestSessions = guestConsents,
+            customizations = websiteCustomizations,
+            versions = websiteVersions,
+            onCopyUriToWebsiteStorage = { uri, prefix ->
+                viewModel.copyAssetUriToLocalWebsiteStorage(context, uri, prefix)
+            },
+            onSaveDraft = { draft ->
+                viewModel.saveWebsiteDraft(draft)
+            },
+            onPublishWebsite = { draft, associatedEvent ->
+                viewModel.publishWebsiteCustomization(draft, associatedEvent)
+            },
+            onRollbackVersion = { currentConfig, targetVersion, associatedEvent ->
+                viewModel.rollbackWebsiteVersion(currentConfig, targetVersion, associatedEvent)
+            },
+            onOpenPublicGuestPortal = { targetEvent, _ ->
+                showWebsiteCustomizer = false
+                guestPortalEvent = targetEvent
+            },
+            onNotifyMessage = { msg ->
+                viewModel.showBanner(msg)
+            },
+            onClose = {
+                showWebsiteCustomizer = false
+                websiteCustomizerEvent = null
+            }
+        )
+        return
+    }
 
     if (showAdminDashboard) {
         AdminDashboardScreen(
@@ -429,6 +479,40 @@ fun JummoAuthenticatedShell(
             events = events,
             uploads = uploads,
             guestSessions = guestConsents,
+            banners = banners,
+            websiteCustomizations = websiteCustomizations,
+            onUploadMultipleBanners = { uris ->
+                viewModel.uploadHomeBannersFromUris(context, uris)
+            },
+            onAddPresetBanner = { presetUri ->
+                viewModel.addPresetHomeBanner(presetUri)
+            },
+            onToggleBannerActive = { banner ->
+                viewModel.toggleHomeBannerActive(banner)
+            },
+            onReplaceBannerFromUri = { banner, newUri ->
+                viewModel.replaceHomeBannerImage(context, banner, newUri)
+            },
+            onReplaceBannerWithPreset = { banner, presetUri ->
+                viewModel.replaceHomeBannerWithPreset(banner, presetUri)
+            },
+            onReorderBanners = { reordered ->
+                viewModel.reorderHomeBanners(reordered)
+            },
+            onUpdateSlideDuration = { seconds ->
+                viewModel.updateBannerSlideDuration(seconds)
+            },
+            onDeleteBanner = { banner ->
+                viewModel.deleteHomeBanner(banner)
+            },
+            onToggleWebsiteSuspended = { webConfig, suspended ->
+                viewModel.setWebsiteSuspensionStatus(webConfig, suspended)
+            },
+            onOpenWebsiteCustomizer = { targetEvent ->
+                showAdminDashboard = false
+                websiteCustomizerEvent = targetEvent
+                showWebsiteCustomizer = true
+            },
             onNavigateToTab = { tab ->
                 showAdminDashboard = false
                 currentTab = tab
@@ -443,10 +527,13 @@ fun JummoAuthenticatedShell(
     if (guestPortalEvent != null) {
         val liveEvent = events.find { it.id == guestPortalEvent?.id } ?: guestPortalEvent!!
         val eventUploads = uploads.filter { it.eventId == liveEvent.id }
+        val eventWebConfig = websiteCustomizations.find { it.eventId == liveEvent.id }
+            ?: websiteCustomizations.find { it.id == "web_${liveEvent.id}" }
         GuestPortalModalScreen(
             event = liveEvent,
             eventUploads = eventUploads,
             guestSessions = guestConsents,
+            websiteCustomization = eventWebConfig,
             onRegisterConsentSession = { guestLabel, selfieUri, matchedCount ->
                 viewModel.registerGuestFaceSearchConsent(
                     event = liveEvent,
@@ -586,6 +673,7 @@ fun JummoAuthenticatedShell(
                                 profile = profile,
                                 events = events,
                                 uploads = uploads,
+                                banners = banners,
                                 onCreateNewEventClick = {
                                     openCreateEventModal = true
                                     currentTab = 1
@@ -677,6 +765,10 @@ fun JummoAuthenticatedShell(
                                 onRemoveUploadFromQueue = { record ->
                                     viewModel.removeUploadRecordFromQueue(record)
                                 },
+                                onOpenWebsiteCustomizer = { evt ->
+                                    websiteCustomizerEvent = evt
+                                    showWebsiteCustomizer = true
+                                },
                                 onShowMessage = { msg ->
                                     viewModel.showBanner(msg)
                                 }
@@ -726,7 +818,9 @@ fun JummoAuthenticatedShell(
                                     )
                                 },
                                 onUploadAllPendingNow = {
-                                    viewModel.triggerUploadAllPendingNow(context)
+                                    val activeEvts = events.filter { it.status == "Active" }.ifEmpty { events }
+                                    val selectedEvt = activeEvts.find { it.id == selectedEventId } ?: activeEvts.firstOrNull()
+                                    viewModel.triggerUploadAllPendingNow(context, selectedEvt)
                                 },
                                 onRetrySingleUpload = { record ->
                                     viewModel.retrySingleUpload(record)
@@ -742,6 +836,33 @@ fun JummoAuthenticatedShell(
                                         wifiOnlyUpload = wifi,
                                         batteryNotLowUpload = battery
                                     )
+                                },
+                                onPauseSingleUpload = { record ->
+                                    viewModel.pauseSingleUpload(record)
+                                },
+                                onResumeSingleUpload = { record ->
+                                    viewModel.resumeSingleUpload(record, context)
+                                },
+                                onRemoveUploadFromQueue = { record ->
+                                    viewModel.removeUploadRecordFromQueue(record)
+                                },
+                                onReassignUploadToEvent = { record, targetEvt ->
+                                    viewModel.reassignUploadToEvent(record, targetEvt)
+                                },
+                                onPauseAllUploads = {
+                                    viewModel.pauseAllUploads(context)
+                                },
+                                onResumeAllUploads = {
+                                    viewModel.resumeAllUploads(context)
+                                },
+                                onCancelAllUploads = {
+                                    viewModel.cancelAllQueuedUploads(context)
+                                },
+                                onOpenDriveSettings = {
+                                    currentTab = 4
+                                },
+                                onOpenProfileTab = {
+                                    currentTab = 4
                                 }
                             )
 
@@ -769,6 +890,16 @@ fun JummoAuthenticatedShell(
                                     showAdminDashboard = true
                                 },
                                 onOpenOfficialWebsite = onOpenOfficialWebsite,
+                                onOpenWebsiteCustomizer = {
+                                    websiteCustomizerEvent = events.firstOrNull { it.status == "Active" } ?: events.firstOrNull()
+                                    showWebsiteCustomizer = true
+                                },
+                                onRetryFailedUploads = {
+                                    viewModel.resumeAllUploads(context)
+                                },
+                                onNotifyMessage = { msg ->
+                                    viewModel.showBanner(msg)
+                                },
                                 onSignOut = {
                                     signOut(
                                         credentialManager = credentialManager,
