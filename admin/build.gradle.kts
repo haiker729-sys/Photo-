@@ -1,9 +1,10 @@
+import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 import java.util.Base64
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.gms.google-services")
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -18,6 +19,9 @@ android {
         versionName = "2.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        if (!file("google-services.json").exists()) {
+            resValue("string", "default_web_client_id", "")
+        }
     }
 
     val keystoreFile = file("../debug.keystore")
@@ -63,13 +67,22 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            all {
+                it.systemProperty(
+                    "robolectric.dependency.repo.url",
+                    "https://maven-central.storage-download.googleapis.com/maven2/"
+                )
+            }
         }
     }
 }
+
+googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
