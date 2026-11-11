@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -792,6 +793,7 @@ fun JummoAdminPanelShell(
             }
 
             LazyColumn(
+                state = remember(currentTab) { LazyListState() },
                 modifier = Modifier
                     .fillMaxSize()
                     .widthIn(max = 840.dp)
@@ -1095,6 +1097,80 @@ fun JummoAdminPanelShell(
                                     tag = "panel_ad_global_switch",
                                     onCheckedChange = { adConfig = adConfig.copy(adsEnabled = it) }
                                 )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Transition Frequency Cap",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AdminTextPrimary,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        listOf(2L, 4L, 6L, 10L).forEach { freq ->
+                                            FilterChip(
+                                                selected = adConfig.adFrequency == freq,
+                                                onClick = { adConfig = adConfig.copy(adFrequency = freq) },
+                                                label = { Text("${freq}x") },
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    selectedContainerColor = AdminPrimaryPurple,
+                                                    selectedLabelColor = Color.White
+                                                ),
+                                                modifier = Modifier.testTag("panel_ad_freq_$freq")
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Button(
+                                    onClick = {
+                                        if (db != null) {
+                                            scope.launch {
+                                                runCatching {
+                                                    db.collection("appConfig").document("adConfig").set(
+                                                        mapOf(
+                                                            "adsEnabled" to adConfig.adsEnabled,
+                                                            "bannerEnabled" to adConfig.bannerEnabled,
+                                                            "interstitialEnabled" to adConfig.interstitialEnabled,
+                                                            "rewardedEnabled" to adConfig.rewardedEnabled,
+                                                            "appOpenEnabled" to adConfig.appOpenEnabled,
+                                                            "homeBannerEnabled" to adConfig.homeBannerEnabled,
+                                                            "eventListBannerEnabled" to adConfig.eventListBannerEnabled,
+                                                            "galleryBannerEnabled" to adConfig.galleryBannerEnabled,
+                                                            "interstitialTransitionEnabled" to adConfig.interstitialTransitionEnabled,
+                                                            "adFrequency" to adConfig.adFrequency,
+                                                            "testMode" to adConfig.testMode,
+                                                            "maintenanceMode" to adConfig.maintenanceMode,
+                                                            "minimumAppVersion" to adConfig.minimumAppVersion,
+                                                            "updatedAt" to FieldValue.serverTimestamp(),
+                                                            "updatedBy" to adminUid
+                                                        )
+                                                    ).await()
+                                                }
+                                            }
+                                        }
+                                        appendAuditLog(
+                                            actionType = "UPDATE_AD_CONFIG",
+                                            targetType = "appConfig",
+                                            targetId = "adConfig",
+                                            summary = "Ads:${adConfig.adsEnabled} • Banner:${adConfig.bannerEnabled} • Freq:${adConfig.adFrequency}x"
+                                        )
+                                        statusBanner = "Ad configuration synced to Jummo Photos AI."
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = AdminPrimaryPurple,
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("panel_save_ad_config_button")
+                                ) {
+                                    Text("Publish Ad Configuration", fontWeight = FontWeight.Bold)
+                                }
+
                                 AdminSwitchRow(
                                     label = "Banner Ads Format (bannerEnabled)",
                                     checked = adConfig.bannerEnabled,
@@ -1148,84 +1224,11 @@ fun JummoAdminPanelShell(
                                     onCheckedChange = { adConfig = adConfig.copy(testMode = it) }
                                 )
 
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Transition Frequency Cap",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = AdminTextPrimary,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        listOf(2L, 4L, 6L, 10L).forEach { freq ->
-                                            FilterChip(
-                                                selected = adConfig.adFrequency == freq,
-                                                onClick = { adConfig = adConfig.copy(adFrequency = freq) },
-                                                label = { Text("${freq}x") },
-                                                colors = FilterChipDefaults.filterChipColors(
-                                                    selectedContainerColor = AdminPrimaryPurple,
-                                                    selectedLabelColor = Color.White
-                                                ),
-                                                modifier = Modifier.testTag("panel_ad_freq_$freq")
-                                            )
-                                        }
-                                    }
-                                }
-
                                 Text(
                                     text = "Safety Policy: Ads are strictly blocked on Camera, Photo Upload, QR Scanner, PIN Gate & Auth screens. External AdMob eCPM/revenue requires AdMob Reporting API OAuth.",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = AdminTextSecondary
                                 )
-
-                                Button(
-                                    onClick = {
-                                        if (db != null) {
-                                            scope.launch {
-                                                runCatching {
-                                                    db.collection("appConfig").document("adConfig").set(
-                                                        mapOf(
-                                                            "adsEnabled" to adConfig.adsEnabled,
-                                                            "bannerEnabled" to adConfig.bannerEnabled,
-                                                            "interstitialEnabled" to adConfig.interstitialEnabled,
-                                                            "rewardedEnabled" to adConfig.rewardedEnabled,
-                                                            "appOpenEnabled" to adConfig.appOpenEnabled,
-                                                            "homeBannerEnabled" to adConfig.homeBannerEnabled,
-                                                            "eventListBannerEnabled" to adConfig.eventListBannerEnabled,
-                                                            "galleryBannerEnabled" to adConfig.galleryBannerEnabled,
-                                                            "interstitialTransitionEnabled" to adConfig.interstitialTransitionEnabled,
-                                                            "adFrequency" to adConfig.adFrequency,
-                                                            "testMode" to adConfig.testMode,
-                                                            "maintenanceMode" to adConfig.maintenanceMode,
-                                                            "minimumAppVersion" to adConfig.minimumAppVersion,
-                                                            "updatedAt" to FieldValue.serverTimestamp(),
-                                                            "updatedBy" to adminUid
-                                                        )
-                                                    ).await()
-                                                }
-                                            }
-                                        }
-                                        appendAuditLog(
-                                            actionType = "UPDATE_AD_CONFIG",
-                                            targetType = "appConfig",
-                                            targetId = "adConfig",
-                                            summary = "Ads:${adConfig.adsEnabled} • Banner:${adConfig.bannerEnabled} • Freq:${adConfig.adFrequency}x"
-                                        )
-                                        statusBanner = "Ad configuration synced to Jummo Photos AI."
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = AdminPrimaryPurple,
-                                        contentColor = Color.White
-                                    ),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .testTag("panel_save_ad_config_button")
-                                ) {
-                                    Text("Publish Ad Configuration", fontWeight = FontWeight.Bold)
-                                }
                             }
                         }
 
@@ -1247,28 +1250,6 @@ fun JummoAdminPanelShell(
                                     checked = remoteConfig.announcementEnabled,
                                     tag = "panel_remote_announcement_switch",
                                     onCheckedChange = { remoteConfig = remoteConfig.copy(announcementEnabled = it) }
-                                )
-                                AdminSwitchRow(
-                                    label = "Force Update Requirement (v${remoteConfig.minimumSupportedVersion})",
-                                    checked = remoteConfig.forceUpdateRequired,
-                                    tag = "panel_remote_force_update_switch",
-                                    onCheckedChange = { remoteConfig = remoteConfig.copy(forceUpdateRequired = it) }
-                                )
-                                AdminSwitchRow(
-                                    label = "Default Guest High-Res Downloads",
-                                    checked = remoteConfig.guestDownloadDefault,
-                                    tag = "panel_remote_guest_download_switch",
-                                    onCheckedChange = { remoteConfig = remoteConfig.copy(guestDownloadDefault = it) }
-                                )
-
-                                OutlinedTextField(
-                                    value = remoteConfig.announcementBanner,
-                                    onValueChange = { remoteConfig = remoteConfig.copy(announcementBanner = it) },
-                                    label = { Text("Announcement Banner Text") },
-                                    singleLine = true,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .testTag("panel_remote_announcement_input")
                                 )
 
                                 Button(
@@ -1316,6 +1297,29 @@ fun JummoAdminPanelShell(
                                 ) {
                                     Text("Publish Remote App Settings", fontWeight = FontWeight.Bold)
                                 }
+
+                                AdminSwitchRow(
+                                    label = "Force Update Requirement (v${remoteConfig.minimumSupportedVersion})",
+                                    checked = remoteConfig.forceUpdateRequired,
+                                    tag = "panel_remote_force_update_switch",
+                                    onCheckedChange = { remoteConfig = remoteConfig.copy(forceUpdateRequired = it) }
+                                )
+                                AdminSwitchRow(
+                                    label = "Default Guest High-Res Downloads",
+                                    checked = remoteConfig.guestDownloadDefault,
+                                    tag = "panel_remote_guest_download_switch",
+                                    onCheckedChange = { remoteConfig = remoteConfig.copy(guestDownloadDefault = it) }
+                                )
+
+                                OutlinedTextField(
+                                    value = remoteConfig.announcementBanner,
+                                    onValueChange = { remoteConfig = remoteConfig.copy(announcementBanner = it) },
+                                    label = { Text("Announcement Banner Text") },
+                                    singleLine = true,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("panel_remote_announcement_input")
+                                )
                             }
                         }
                     }

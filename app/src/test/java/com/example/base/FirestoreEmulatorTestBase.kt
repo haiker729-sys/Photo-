@@ -10,11 +10,14 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.MemoryCacheSettings
+import java.net.InetSocketAddress
+import java.net.Socket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -32,7 +35,7 @@ abstract class FirestoreEmulatorTestBase {
 
     @Before
     open fun setUpFirebase() {
-        org.junit.Assume.assumeTrue(
+        Assume.assumeTrue(
             "Firebase Emulators not running on $EMULATOR_HOST:$FIRESTORE_PORT / $AUTH_PORT",
             isEmulatorPortOpen(EMULATOR_HOST, FIRESTORE_PORT) && isEmulatorPortOpen(EMULATOR_HOST, AUTH_PORT)
         )
@@ -72,7 +75,9 @@ abstract class FirestoreEmulatorTestBase {
 
     @After
     open fun tearDownFirebase() {
-        auth.signOut()
+        if (::auth.isInitialized) {
+            auth.signOut()
+        }
     }
 
     protected suspend fun signInTestUser(email: String): String = withContext(Dispatchers.IO) {
@@ -105,8 +110,8 @@ abstract class FirestoreEmulatorTestBase {
 
         private fun isEmulatorPortOpen(host: String, port: Int): Boolean {
             return try {
-                java.net.Socket().use { socket ->
-                    socket.connect(java.net.InetSocketAddress(host, port), 250)
+                Socket().use { socket ->
+                    socket.connect(InetSocketAddress(host, port), 250)
                     true
                 }
             } catch (_: Exception) {
@@ -115,4 +120,3 @@ abstract class FirestoreEmulatorTestBase {
         }
     }
 }
-

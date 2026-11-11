@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
+    <!-- Official Jummo Photos AI Purple Premium Palette -->
+    <color name="jummo_primary">#FF5B21B6</color>
+    <color name="jummo_accent">#FF8B5CF6</color>
+    <color name="jummo_secondary">#FFC7B3FF</color>
+    <color name="jummo_surface">#FFEDE9FE</color>
+    <color name="jummo_background">#FFFAF9FF</color>
+    <color name="jummo_text_primary">#FF24133F</color>
+    <color name="jummo_text_secondary">#FF6B5B83</color>
+    <color name="jummo_button_text">#FFFFFFFF</color>
+
+    <!-- Backward-compatible Material color aliases -->
+    <color name="purple_200">#FFC7B3FF</color>
+    <color name="purple_500">#FF5B21B6</color>
+    <color name="purple_700">#FF24133F</color>
+    <color name="teal_200">#FF8B5CF6</color>
+    <color name="teal_700">#FF5B21B6</color>
+    <color name="black">#FF24133F</color>
     <color name="white">#FFFFFFFF</color>
 </resources>

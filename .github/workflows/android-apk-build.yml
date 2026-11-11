@@ -26,30 +26,34 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Gradle Cache
+      - name: Setup Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
 
-      - name: Decode Debug Keystore (if needed)
+      - name: Prepare Debug Keystore
         run: |
           if [ ! -f "debug.keystore" ] && [ -f "debug.keystore.base64" ]; then
             tr -d '[:space:]' < debug.keystore.base64 | base64 -d > debug.keystore
+          elif [ ! -f "debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore debug.keystore \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
           fi
 
       - name: Run Unit & Robolectric Tests (Main App & Admin Panel)
         run: |
-          if [ -x "./gradlew" ]; then
-            ./gradlew :app:testDebugUnitTest :admin:testDebugUnitTest
-          else
-            gradle :app:testDebugUnitTest :admin:testDebugUnitTest
-          fi
+          gradle :app:testDebugUnitTest :admin:testDebugUnitTest
 
       - name: Build Both APKs (Jummo-Photos-AI.apk + Jummo-Admin-Panel.apk)
         run: |
-          if [ -x "./gradlew" ]; then
-            ./gradlew :app:assembleDebug :admin:assembleDebug
-          else
-            gradle :app:assembleDebug :admin:assembleDebug
-          fi
+          gradle :app:assembleDebug :admin:assembleDebug
 
       - name: Verify & Package Public vs Private APK Assets
         run: |
@@ -109,7 +113,7 @@ jobs:
             - **Minimum Android Version**: Android 7.0+ (API 24 – API 36)
             - **Target SDK**: Android 16 (API 36)
             - **Included Features**:
-              - Royal Purple Studio UI & Real-Time Event Sync
+              - Purple Premium Studio UI & Real-Time Event Sync
               - Automatic Background Upload via WorkManager & Google Drive
               - Instant Event QR Code Generation & Guest Consent Face Search
               - Photographer Website Customizer & Official GitHub Pages Guest Portal

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="jummo_primary">#FF5B21B6</color>
+    <color name="jummo_accent">#FF8B5CF6</color>
+    <color name="jummo_secondary">#FFC7B3FF</color>
+    <color name="jummo_surface">#FFEDE9FE</color>
+    <color name="jummo_background">#FFFAF9FF</color>
+    <color name="jummo_text_primary">#FF24133F</color>
+    <color name="jummo_text_secondary">#FF6B5B83</color>
+    <color name="jummo_button_text">#FFFFFFFF</color>
+</resources>
