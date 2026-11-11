@@ -25,3 +25,5 @@ dependencyResolutionManagement {
 rootProject.name = "Jummo Photos AI"
 
 include(":app")
+include(":admin")
+

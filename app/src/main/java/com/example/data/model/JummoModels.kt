@@ -538,3 +538,134 @@ fun buildDefaultWebsiteCustomizationForEvent(
         publicWebsiteUrl = defaultUrl
     )
 }
+
+/**
+ * Global and per-placement AdMob configuration stored in Firestore (`appConfig/adConfig`).
+ * Controlled in real time by Jummo Admin Panel and enforced by Jummo Photos AI.
+ * Strictly blocks ads on Camera, Photo Upload, QR Scanning, PIN Verification, and Auth screens.
+ */
+@IgnoreExtraProperties
+data class AdConfiguration(
+    val adsEnabled: Boolean = true,
+    val bannerEnabled: Boolean = true,
+    val interstitialEnabled: Boolean = false,
+    val rewardedEnabled: Boolean = false,
+    val appOpenEnabled: Boolean = false,
+    val homeBannerEnabled: Boolean = true,
+    val eventListBannerEnabled: Boolean = true,
+    val galleryBannerEnabled: Boolean = false,
+    val interstitialTransitionEnabled: Boolean = false,
+    val adFrequency: Long = 4L,
+    val testMode: Boolean = true,
+    val maintenanceMode: Boolean = false,
+    val minimumAppVersion: String = "2.4.0",
+    val adMobAppId: String = "ca-app-pub-3940256099942544~3347511713",
+    val bannerAdUnitId: String = "ca-app-pub-3940256099942544/6300978111",
+    val interstitialAdUnitId: String = "ca-app-pub-3940256099942544/1033173712",
+    val rewardedAdUnitId: String = "ca-app-pub-3940256099942544/5224354917",
+    val appOpenAdUnitId: String = "ca-app-pub-3940256099942544/9257395921",
+    val consentRequired: Boolean = true,
+    @ServerTimestamp val updatedAt: Timestamp? = null,
+    val updatedBy: String = ""
+) {
+    fun isBlockedScreen(screenKey: String): Boolean {
+        val normalized = screenKey.trim().lowercase()
+        return normalized in setOf(
+            "camera", "capture", "uploads", "upload_queue",
+            "qr", "qr_scanner", "pin", "pin_verification",
+            "login", "register", "auth", "splash"
+        )
+    }
+
+    fun isBannerAllowedForPlacement(placement: String): Boolean {
+        if (!adsEnabled || !bannerEnabled || maintenanceMode) return false
+        if (isBlockedScreen(placement)) return false
+        return when (placement.trim().lowercase()) {
+            "home", "home_dashboard" -> homeBannerEnabled
+            "events", "event_list" -> eventListBannerEnabled
+            "gallery", "event_gallery", "event_detail" -> galleryBannerEnabled
+            else -> false
+        }
+    }
+
+    fun isInterstitialAllowed(transitionCount: Int): Boolean {
+        if (!adsEnabled || !interstitialEnabled || !interstitialTransitionEnabled || maintenanceMode) {
+            return false
+        }
+        val freq = adFrequency.coerceIn(1L, 50L).toInt()
+        return transitionCount > 0 && transitionCount % freq == 0
+    }
+}
+
+/**
+ * Admin-controlled Remote App Settings stored in Firestore (`appConfig/remoteSettings`).
+ */
+@IgnoreExtraProperties
+data class RemoteAppSettings(
+    val maintenanceMode: Boolean = false,
+    val maintenanceMessage: String = "Jummo Photos AI is undergoing scheduled studio cloud maintenance. Your local photos and queue are completely safe.",
+    val announcementBanner: String = "Jummo Photos AI v2.4 • Instant Google Drive + QR Face Search Active",
+    val announcementEnabled: Boolean = false,
+    val minimumSupportedVersion: String = "2.4.0",
+    val forceUpdateRequired: Boolean = false,
+    val guestDownloadDefault: Boolean = true,
+    val defaultGuestAccessMode: String = "FaceSearchOnly",
+    val autoUploadDefault: Boolean = true,
+    val wifiOnlyDefault: Boolean = true,
+    val supportEmail: String = "merajalam906090@gmail.com",
+    val supportPhone: String = "+91 98765 43210",
+    val promotionalBannerEnabled: Boolean = true,
+    @ServerTimestamp val updatedAt: Timestamp? = null,
+    val updatedBy: String = ""
+)
+
+/**
+ * Server-verified administrator RBAC account stored in `/admins/{adminId}`.
+ */
+@IgnoreExtraProperties
+data class AdminAccountRecord(
+    @DocumentId val id: String = "",
+    val userId: String = "",
+    val email: String = "",
+    val displayName: String = "",
+    val role: String = "Admin",
+    val isActive: Boolean = true,
+    val sessionRevoked: Boolean = false,
+    val grantedBy: String = "merajalam906090@gmail.com",
+    @ServerTimestamp val createdAt: Timestamp? = null,
+    @ServerTimestamp val updatedAt: Timestamp? = null
+)
+
+/**
+ * Platform notification or announcement managed in `/admin_notifications/{notificationId}`.
+ */
+@IgnoreExtraProperties
+data class AdminNotification(
+    @DocumentId val id: String = "",
+    val title: String = "",
+    val message: String = "",
+    val category: String = "Announcement",
+    val targetAudience: String = "AllUsers",
+    val status: String = "Sent",
+    val scheduledAt: String = "Immediate",
+    val sentBy: String = "merajalam906090@gmail.com",
+    @ServerTimestamp val createdAt: Timestamp? = null,
+    @ServerTimestamp val updatedAt: Timestamp? = null
+)
+
+/**
+ * Immutable security audit record stored in `/audit_logs/{logId}`.
+ */
+@IgnoreExtraProperties
+data class AdminAuditLog(
+    @DocumentId val id: String = "",
+    val actorUid: String = "",
+    val actorEmail: String = "",
+    val actorRole: String = "Owner",
+    val actionType: String = "",
+    val targetType: String = "",
+    val targetId: String = "",
+    val summary: String = "",
+    @ServerTimestamp val createdAt: Timestamp? = null
+)
+

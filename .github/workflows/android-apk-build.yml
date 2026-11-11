@@ -1,30 +1,20 @@
-name: Build and Release Jummo Photos AI APK
+name: Build & Publish Jummo Photos AI & Private Admin Panel APKs
 
 on:
   push:
     branches:
       - main
-      - master
     tags:
-      - "v*"
-  pull_request:
-    branches:
-      - main
-      - master
+      - 'v*'
   workflow_dispatch:
-
-concurrency:
-  group: android-apk-${{ github.ref }}
-  cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
   build-and-release:
-    name: Assemble & Publish Debug APK
+    name: Assemble Jummo-Photos-AI.apk & Private Jummo-Admin-Panel.apk
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
       - name: Checkout Repository
@@ -36,99 +26,98 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Install Android SDK Platform, Build-Tools & Platform-Tools
-        run: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMANAGER" --licenses > /dev/null || true
-          "$SDKMANAGER" --install \
-            "platform-tools" \
-            "platforms;android-36" \
-            "platforms;android-36.1" \
-            "build-tools;36.0.0"
-
-      - name: Setup Gradle 9.3.1
+      - name: Setup Gradle Cache
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.3.1'
 
-      - name: Prepare Debug Keystore, Firebase Config & Environment
+      - name: Decode Debug Keystore (if needed)
         run: |
-          if [ ! -f "app/google-services.json" ] || ! grep -q "com.aistudio.jummophotos.vkpzrt" app/google-services.json; then
-            echo "ewogICJwcm9qZWN0X2luZm8iOiB7CiAgICAicHJvamVjdF9udW1iZXIiOiAiNzU4Mzc1NDQwMjc1IiwKICAgICJwcm9qZWN0X2lkIjogImdlbi1sYW5nLWNsaWVudC0wMTE3NDM1ODE5IiwKICAgICJzdG9yYWdlX2J1Y2tldCI6ICJnZW4tbGFuZy1jbGllbnQtMDExNzQzNTgxOS5maXJlYmFzZXN0b3JhZ2UuYXBwIgogIH0sCiAgImNsaWVudCI6IFsKICAgIHsKICAgICAgImNsaWVudF9pbmZvIjogewogICAgICAgICJtb2JpbGVzZGtfYXBwX2lkIjogIjE6NzU4Mzc1NDQwMjc1OmFuZHJvaWQ6ZGZlOTFhNDJhMjcwMjFlOGFkZDI2NiIsCiAgICAgICAgImFuZHJvaWRfY2xpZW50X2luZm8iOiB7CiAgICAgICAgICAicGFja2FnZV9uYW1lIjogImNvbS5haXN0dWRpby5jb25uZWN0eC52cHhxbXIiCiAgICAgICAgfQogICAgICB9LAogICAgICAib2F1dGhfY2xpZW50IjogWwogICAgICAgIHsKICAgICAgICAgICJjbGllbnRfaWQiOiAiNzU4Mzc1NDQwMjc1LW83YTM5bjcycWZ2OTAxZG5rdG9vNm85amw1NDNkM25uLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwKICAgICAgICAgICJjbGllbnRfdHlwZSI6IDEsCiAgICAgICAgICAiYW5kcm9pZF9pbmZvIjogewogICAgICAgICAgICAicGFja2FnZV9uYW1lIjogImNvbS5haXN0dWRpby5jb25uZWN0eC52cHhxbXIiLAogICAgICAgICAgICAiY2VydGlmaWNhdGVfaGFzaCI6ICJiMzVkZDM1ZTE4ZGRjOTQ4ZjM0MjM4YTJmNTQxMTkzZDMzNGNkMmE2IgogICAgICAgICAgfQogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgImNsaWVudF9pZCI6ICI3NTgzNzU0NDAyNzUtZ2tuZWxjZGgzdjl0M205anY2aWI3YTdtM290MWJyYWMuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLAogICAgICAgICAgImNsaWVudF90eXBlIjogMwogICAgICAgIH0KICAgICAgXSwKICAgICAgImFwaV9rZXkiOiBbCiAgICAgICAgewogICAgICAgICAgImN1cnJlbnRfa2V5IjogIkFJemFTeURrZnpMMmRwQ1FUYTdabkNQUkdwQ2tENWV4RW5sX01zZyIKICAgICAgICB9CiAgICAgIF0sCiAgICAgICJzZXJ2aWNlcyI6IHsKICAgICAgICAiYXBwaW52aXRlX3NlcnZpY2UiOiB7CiAgICAgICAgICAib3RoZXJfcGxhdGZvcm1fb2F1dGhfY2xpZW50IjogWwogICAgICAgICAgICB7CiAgICAgICAgICAgICAgImNsaWVudF9pZCI6ICI3NTgzNzU0NDAyNzUtZ2tuZWxjZGgzdjl0M205anY2aWI3YTdtM290MWJyYWMuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLAogICAgICAgICAgICAgICJjbGllbnRfdHlwZSI6IDMKICAgICAgICAgICAgfQogICAgICAgICAgXQogICAgICAgIH0KICAgICAgfQogICAgfSwKICAgIHsKICAgICAgImNsaWVudF9pbmZvIjogewogICAgICAgICJtb2JpbGVzZGtfYXBwX2lkIjogIjE6NzU4Mzc1NDQwMjc1OmFuZHJvaWQ6ODRmOGU5MWQ1ZjgxZTVjNmFkZDI2NiIsCiAgICAgICAgImFuZHJvaWRfY2xpZW50X2luZm8iOiB7CiAgICAgICAgICAicGFja2FnZV9uYW1lIjogImNvbS5haXN0dWRpby5qdW1tb3Bob3Rvcy52a3B6cnQiCiAgICAgICAgfQogICAgICB9LAogICAgICAib2F1dGhfY2xpZW50IjogWwogICAgICAgIHsKICAgICAgICAgICJjbGllbnRfaWQiOiAiNzU4Mzc1NDQwMjc1LXBybmhxNXVsOGc0amt2dGFkNmJyaHV0YXFudGMzZjgzLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwKICAgICAgICAgICJjbGllbnRfdHlwZSI6IDEsCiAgICAgICAgICAiYW5kcm9pZF9pbmZvIjogewogICAgICAgICAgICAicGFja2FnZV9uYW1lIjogImNvbS5haXN0dWRpby5qdW1tb3Bob3Rvcy52a3B6cnQiLAogICAgICAgICAgICAiY2VydGlmaWNhdGVfaGFzaCI6ICI2YzUzNmRlYzNjYzU3NTQzZWY3ODhlNjliMTA5NmI4Y2I4YjhiNTdkIgogICAgICAgICAgfQogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgImNsaWVudF9pZCI6ICI3NTgzNzU0NDAyNzUtZ2tuZWxjZGgzdjl0M205anY2aWI3YTdtM290MWJyYWMuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLAogICAgICAgICAgImNsaWVudF90eXBlIjogMwogICAgICAgIH0KICAgICAgXSwKICAgICAgImFwaV9rZXkiOiBbCiAgICAgICAgewogICAgICAgICAgImN1cnJlbnRfa2V5IjogIkFJemFTeURrZnpMMmRwQ1FUYTdabkNQUkdwQ2tENWV4RW5sX01zZyIKICAgICAgICB9CiAgICAgIF0sCiAgICAgICJzZXJ2aWNlcyI6IHsKICAgICAgICAiYXBwaW52aXRlX3NlcnZpY2UiOiB7CiAgICAgICAgICAib3RoZXJfcGxhdGZvcm1fb2F1dGhfY2xpZW50IjogWwogICAgICAgICAgICB7CiAgICAgICAgICAgICAgImNsaWVudF9pZCI6ICI3NTgzNzU0NDAyNzUtZ2tuZWxjZGgzdjl0M205anY2aWI3YTdtM290MWJyYWMuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLAogICAgICAgICAgICAgICJjbGllbnRfdHlwZSI6IDMKICAgICAgICAgICAgfQogICAgICAgICAgXQogICAgICAgIH0KICAgICAgfQogICAgfQogIF0sCiAgImNvbmZpZ3VyYXRpb25fdmVyc2lvbiI6ICIxIgp9" | base64 -d > app/google-services.json
-          fi
-          if [ ! -f "app/src/main/res/values/firebase_applet_config.xml" ]; then
-            printf '<?xml version="1.0" encoding="utf-8" standalone="no"?>\n<resources>\n    <string name="firestore_database_id" translatable="false">ai-studio-android-jummopho-55029774-8138-4d41-b404-15513db02f01</string>\n</resources>\n' > app/src/main/res/values/firebase_applet_config.xml
-          fi
-          if [ -f "debug.keystore.base64" ] && [ ! -f "debug.keystore" ]; then
-            base64 -d debug.keystore.base64 > debug.keystore
-          elif [ ! -f "debug.keystore" ]; then
-            echo "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" | base64 -d > debug.keystore
-          fi
-          if [ ! -f ".env" ] && [ -f ".env.example" ]; then
-            cp .env.example .env
+          if [ ! -f "debug.keystore" ] && [ -f "debug.keystore.base64" ]; then
+            tr -d '[:space:]' < debug.keystore.base64 | base64 -d > debug.keystore
           fi
 
-      - name: Build Debug APK with Gradle
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
-
-      - name: Verify Generated Debug APK & Prepare Versioned Asset
-        id: verify_apk
+      - name: Run Unit & Robolectric Tests (Main App & Admin Panel)
         run: |
-          RAW_APK="app/build/outputs/apk/debug/app-debug.apk"
-          if [ ! -s "$RAW_APK" ]; then
-            echo "ERROR: Verified APK file $RAW_APK is missing or empty!"
+          if [ -x "./gradlew" ]; then
+            ./gradlew :app:testDebugUnitTest :admin:testDebugUnitTest
+          else
+            gradle :app:testDebugUnitTest :admin:testDebugUnitTest
+          fi
+
+      - name: Build Both APKs (Jummo-Photos-AI.apk + Jummo-Admin-Panel.apk)
+        run: |
+          if [ -x "./gradlew" ]; then
+            ./gradlew :app:assembleDebug :admin:assembleDebug
+          else
+            gradle :app:assembleDebug :admin:assembleDebug
+          fi
+
+      - name: Verify & Package Public vs Private APK Assets
+        run: |
+          mkdir -p release-assets
+          mkdir -p admin-private-assets
+
+          # 1. Public User APK (Jummo Photos AI)
+          APK_SOURCE="app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -f "$APK_SOURCE" ]; then
+            echo "ERROR: Expected public APK not found at $APK_SOURCE"
             exit 1
           fi
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            VERSION_TAG="${GITHUB_REF_NAME}"
-          else
-            VERSION_TAG="v1.0.${GITHUB_RUN_NUMBER}"
-          fi
-          VERSIONED_APK="app/build/outputs/apk/debug/Jummo-Photos-AI-${VERSION_TAG}.apk"
-          cp "$RAW_APK" "$VERSIONED_APK"
-          ls -lh "$RAW_APK" "$VERSIONED_APK"
-          echo "version_tag=${VERSION_TAG}" >> "$GITHUB_OUTPUT"
-          echo "versioned_apk=${VERSIONED_APK}" >> "$GITHUB_OUTPUT"
+          cp "$APK_SOURCE" "release-assets/Jummo-Photos-AI.apk"
+          sha256sum "release-assets/Jummo-Photos-AI.apk" > "release-assets/Jummo-Photos-AI.apk.sha256"
 
-      - name: Upload Jummo Photos AI APK Artifact
+          # 2. Private Admin APK (Jummo Admin Panel — NEVER published to public GitHub Releases)
+          ADMIN_APK_SOURCE="admin/build/outputs/apk/debug/admin-debug.apk"
+          if [ ! -f "$ADMIN_APK_SOURCE" ]; then
+            echo "ERROR: Expected Admin Panel APK not found at $ADMIN_APK_SOURCE"
+            exit 1
+          fi
+          cp "$ADMIN_APK_SOURCE" "admin-private-assets/Jummo-Admin-Panel.apk"
+          sha256sum "admin-private-assets/Jummo-Admin-Panel.apk" > "admin-private-assets/Jummo-Admin-Panel.apk.sha256"
+
+          ls -lh release-assets/
+          ls -lh admin-private-assets/
+
+      - name: Upload Public Jummo-Photos-AI.apk Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Jummo-Photos-AI-Debug-APK
+          name: Jummo-Photos-AI-APK
           path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            ${{ steps.verify_apk.outputs.versioned_apk }}
+            release-assets/Jummo-Photos-AI.apk
+            release-assets/Jummo-Photos-AI.apk.sha256
           if-no-files-found: error
+          retention-days: 30
 
-      - name: Publish Verified APK to GitHub Releases
-        if: github.event_name != 'pull_request'
+      - name: Upload Access-Controlled Jummo-Admin-Panel.apk Artifact (Short Retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jummo-Admin-Panel-Private-APK
+          path: |
+            admin-private-assets/Jummo-Admin-Panel.apk
+            admin-private-assets/Jummo-Admin-Panel.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publish ONLY Public Jummo-Photos-AI.apk to GitHub Releases
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v2.4.0-pro' }}
+          name: "Jummo Photos AI v2.4.0 Pro Studio Edition"
+          body: |
+            ## Jummo Photos AI — Smart Event Photography Suite (v2.4.0 Pro)
+            - **Public Direct APK Download**: `Jummo-Photos-AI.apk`
+            - **Minimum Android Version**: Android 7.0+ (API 24 – API 36)
+            - **Target SDK**: Android 16 (API 36)
+            - **Included Features**:
+              - Royal Purple Studio UI & Real-Time Event Sync
+              - Automatic Background Upload via WorkManager & Google Drive
+              - Instant Event QR Code Generation & Guest Consent Face Search
+              - Photographer Website Customizer & Official GitHub Pages Guest Portal
+            - **Security Note**: `Jummo-Admin-Panel.apk` is strictly excluded from public releases and public website pages.
+          files: |
+            release-assets/Jummo-Photos-AI.apk
+            release-assets/Jummo-Photos-AI.apk.sha256
+          draft: false
+          prerelease: false
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="${{ steps.verify_apk.outputs.version_tag }}"
-          APK_PATH="${{ steps.verify_apk.outputs.versioned_apk }}"
-          RAW_APK="app/build/outputs/apk/debug/app-debug.apk"
-
-          if [ ! -s "$APK_PATH" ]; then
-            echo "ERROR: Refusing to publish release because $APK_PATH does not exist."
-            exit 1
-          fi
-
-          # Collision-safe check: if tag already exists on a manual re-run, append run attempt
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-              echo "Release $TAG already exists for pushed tag; attaching verified APK without overwriting release metadata."
-              gh release upload "$TAG" "$APK_PATH" "$RAW_APK" --clobber
-              exit 0
-            else
-              TAG="${TAG}-${GITHUB_RUN_ATTEMPT}"
-              APK_PATH="app/build/outputs/apk/debug/Jummo-Photos-AI-${TAG}.apk"
-              cp "$RAW_APK" "$APK_PATH"
-            fi
-          fi
-
-          gh release create "$TAG" \
-            "$APK_PATH" \
-            "$RAW_APK" \
-            --title "Jummo Photos AI ${TAG}" \
-            --generate-notes \
-            --latest
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

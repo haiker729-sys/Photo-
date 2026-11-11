@@ -2,6 +2,10 @@ package com.example.data.repository
 
 import android.content.Context
 import com.example.R
+import com.example.data.model.AdConfiguration
+import com.example.data.model.AdminAccountRecord
+import com.example.data.model.AdminAuditLog
+import com.example.data.model.AdminNotification
 import com.example.data.model.BannerSliderConfig
 import com.example.data.model.BannerVisibilityModes
 import com.example.data.model.GuestFaceSearchSession
@@ -9,6 +13,7 @@ import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
+import com.example.data.model.RemoteAppSettings
 import com.example.data.model.StorageDestinations
 import com.example.data.model.WebsiteCustomization
 import com.example.data.model.WebsiteVersionSnapshot
@@ -1235,4 +1240,218 @@ class JummoRepository(private val db: FirebaseFirestore) {
             throw e
         }
     }
+
+    // --- Ad Configuration (`appConfig/adConfig`) ---
+
+    fun observeAdConfiguration(): Flow<AdConfiguration> = flow {
+        val path = "appConfig/adConfig"
+        emitAll(
+            db.document(path)
+                .snapshots()
+                .map { snapshot ->
+                    snapshot.toObject(
+                        AdConfiguration::class.java,
+                        DocumentSnapshot.ServerTimestampBehavior.ESTIMATE
+                    ) ?: AdConfiguration()
+                }
+                .catch {
+                    emit(AdConfiguration())
+                }
+        )
+    }
+
+    suspend fun saveAdConfiguration(config: AdConfiguration): Result<Unit> = runCatching {
+        val uid = requireUserId()
+        val docRef = db.collection("appConfig").document("adConfig")
+        val payload = mapOf(
+            "adsEnabled" to config.adsEnabled,
+            "bannerEnabled" to config.bannerEnabled,
+            "interstitialEnabled" to config.interstitialEnabled,
+            "rewardedEnabled" to config.rewardedEnabled,
+            "appOpenEnabled" to config.appOpenEnabled,
+            "homeBannerEnabled" to config.homeBannerEnabled,
+            "eventListBannerEnabled" to config.eventListBannerEnabled,
+            "galleryBannerEnabled" to config.galleryBannerEnabled,
+            "interstitialTransitionEnabled" to config.interstitialTransitionEnabled,
+            "adFrequency" to config.adFrequency.coerceIn(1L, 50L),
+            "testMode" to config.testMode,
+            "maintenanceMode" to config.maintenanceMode,
+            "minimumAppVersion" to config.minimumAppVersion.trim().ifBlank { "2.4.0" }.take(40),
+            "adMobAppId" to config.adMobAppId.trim().take(120),
+            "bannerAdUnitId" to config.bannerAdUnitId.trim().take(120),
+            "interstitialAdUnitId" to config.interstitialAdUnitId.trim().take(120),
+            "rewardedAdUnitId" to config.rewardedAdUnitId.trim().take(120),
+            "appOpenAdUnitId" to config.appOpenAdUnitId.trim().take(120),
+            "consentRequired" to config.consentRequired,
+            "updatedAt" to FieldValue.serverTimestamp(),
+            "updatedBy" to uid
+        )
+        docRef.set(payload).await()
+    }
+
+    // --- Remote App Settings (`appConfig/remoteSettings`) ---
+
+    fun observeRemoteAppSettings(): Flow<RemoteAppSettings> = flow {
+        val path = "appConfig/remoteSettings"
+        emitAll(
+            db.document(path)
+                .snapshots()
+                .map { snapshot ->
+                    snapshot.toObject(
+                        RemoteAppSettings::class.java,
+                        DocumentSnapshot.ServerTimestampBehavior.ESTIMATE
+                    ) ?: RemoteAppSettings()
+                }
+                .catch {
+                    emit(RemoteAppSettings())
+                }
+        )
+    }
+
+    suspend fun saveRemoteAppSettings(settings: RemoteAppSettings): Result<Unit> = runCatching {
+        val uid = requireUserId()
+        val docRef = db.collection("appConfig").document("remoteSettings")
+        val payload = mapOf(
+            "maintenanceMode" to settings.maintenanceMode,
+            "maintenanceMessage" to settings.maintenanceMessage.trim().take(400),
+            "announcementBanner" to settings.announcementBanner.trim().take(400),
+            "announcementEnabled" to settings.announcementEnabled,
+            "minimumSupportedVersion" to settings.minimumSupportedVersion.trim().ifBlank { "2.4.0" }.take(40),
+            "forceUpdateRequired" to settings.forceUpdateRequired,
+            "guestDownloadDefault" to settings.guestDownloadDefault,
+            "defaultGuestAccessMode" to settings.defaultGuestAccessMode.ifBlank { "FaceSearchOnly" },
+            "autoUploadDefault" to settings.autoUploadDefault,
+            "wifiOnlyDefault" to settings.wifiOnlyDefault,
+            "supportEmail" to settings.supportEmail.trim().take(160),
+            "supportPhone" to settings.supportPhone.trim().take(60),
+            "promotionalBannerEnabled" to settings.promotionalBannerEnabled,
+            "updatedAt" to FieldValue.serverTimestamp(),
+            "updatedBy" to uid
+        )
+        docRef.set(payload).await()
+    }
+
+    // --- Admin RBAC Accounts (`/admins/{adminId}`) ---
+
+    fun observeAdminAccounts(): Flow<List<AdminAccountRecord>> = flow {
+        emitAll(
+            db.collection("admins")
+                .snapshots()
+                .map { snapshot ->
+                    snapshot.toObjects(
+                        AdminAccountRecord::class.java,
+                        DocumentSnapshot.ServerTimestampBehavior.ESTIMATE
+                    ).sortedByDescending { it.updatedAt ?: Timestamp(0, 0) }
+                }
+                .catch {
+                    emit(emptyList())
+                }
+        )
+    }
+
+    suspend fun saveAdminAccountRecord(record: AdminAccountRecord): Result<Unit> = runCatching {
+        val uid = requireUserId()
+        val targetId = record.userId.trim().ifBlank {
+            "adm_${UUID.randomUUID().toString().replace("-", "").take(12)}"
+        }
+        val docRef = db.collection("admins").document(targetId)
+        val payload = mapOf(
+            "userId" to targetId,
+            "email" to record.email.trim().take(160),
+            "displayName" to record.displayName.trim().ifBlank { "Admin Operator" }.take(100),
+            "role" to record.role.ifBlank { "Admin" },
+            "isActive" to record.isActive,
+            "sessionRevoked" to record.sessionRevoked,
+            "grantedBy" to (auth.currentUser?.email ?: uid).take(160),
+            "createdAt" to FieldValue.serverTimestamp(),
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+        docRef.set(payload).await()
+    }
+
+    // --- Admin Notifications (`/admin_notifications/{notificationId}`) ---
+
+    fun observeAdminNotifications(): Flow<List<AdminNotification>> = flow {
+        emitAll(
+            db.collection("admin_notifications")
+                .snapshots()
+                .map { snapshot ->
+                    snapshot.toObjects(
+                        AdminNotification::class.java,
+                        DocumentSnapshot.ServerTimestampBehavior.ESTIMATE
+                    ).sortedByDescending { it.createdAt ?: Timestamp(0, 0) }
+                }
+                .catch {
+                    emit(emptyList())
+                }
+        )
+    }
+
+    suspend fun createAdminNotification(
+        title: String,
+        message: String,
+        category: String = "Announcement",
+        targetAudience: String = "AllUsers",
+        scheduledAt: String = "Immediate"
+    ): Result<String> = runCatching {
+        val uid = requireUserId()
+        val notifId = "ntf_${UUID.randomUUID().toString().replace("-", "").take(14)}"
+        val docRef = db.collection("admin_notifications").document(notifId)
+        val payload = mapOf(
+            "title" to title.trim().ifBlank { "Platform Notice" }.take(140),
+            "message" to message.trim().ifBlank { "Update from Jummo Photos AI." }.take(1000),
+            "category" to category.ifBlank { "Announcement" },
+            "targetAudience" to targetAudience.ifBlank { "AllUsers" },
+            "status" to if (scheduledAt.equals("Immediate", ignoreCase = true)) "Sent" else "Scheduled",
+            "scheduledAt" to scheduledAt.trim().ifBlank { "Immediate" }.take(80),
+            "sentBy" to (auth.currentUser?.email ?: uid).take(160),
+            "createdAt" to FieldValue.serverTimestamp(),
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+        docRef.set(payload).await()
+        notifId
+    }
+
+    // --- Immutable Admin Audit Logs (`/audit_logs/{logId}`) ---
+
+    fun observeAuditLogs(): Flow<List<AdminAuditLog>> = flow {
+        emitAll(
+            db.collection("audit_logs")
+                .snapshots()
+                .map { snapshot ->
+                    snapshot.toObjects(
+                        AdminAuditLog::class.java,
+                        DocumentSnapshot.ServerTimestampBehavior.ESTIMATE
+                    ).sortedByDescending { it.createdAt ?: Timestamp(0, 0) }
+                }
+                .catch {
+                    emit(emptyList())
+                }
+        )
+    }
+
+    suspend fun recordAuditLog(
+        actionType: String,
+        targetType: String,
+        targetId: String,
+        summary: String,
+        actorRole: String = "Owner"
+    ): Result<String> = runCatching {
+        val uid = requireUserId()
+        val logId = "aud_${UUID.randomUUID().toString().replace("-", "").take(16)}"
+        val docRef = db.collection("audit_logs").document(logId)
+        val payload = mapOf(
+            "actorUid" to uid,
+            "actorEmail" to (auth.currentUser?.email ?: "merajalam906090@gmail.com").take(160),
+            "actorRole" to actorRole.take(60),
+            "actionType" to actionType.trim().ifBlank { "ADMIN_ACTION" }.take(80),
+            "targetType" to targetType.trim().ifBlank { "system" }.take(80),
+            "targetId" to targetId.trim().ifBlank { "global" }.take(160),
+            "summary" to summary.trim().ifBlank { "Administrative configuration updated" }.take(500),
+            "createdAt" to FieldValue.serverTimestamp()
+        )
+        docRef.set(payload).await()
+        logId
+    }
 }
+

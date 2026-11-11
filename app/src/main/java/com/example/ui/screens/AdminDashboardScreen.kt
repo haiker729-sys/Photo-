@@ -79,6 +79,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Language
+import com.example.data.model.AdConfiguration
+import com.example.data.model.AdminAccountRecord
+import com.example.data.model.AdminAuditLog
+import com.example.data.model.AdminNotification
 import com.example.data.model.BannerSliderConfig
 import com.example.data.model.GuestFaceSearchSession
 import com.example.data.model.HomeBanner
@@ -86,7 +90,12 @@ import com.google.firebase.Timestamp
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
+import com.example.data.model.RemoteAppSettings
 import com.example.data.model.WebsiteCustomization
+import com.example.ui.components.AdminAdManagementCard
+import com.example.ui.components.AdminNotificationManagementCard
+import com.example.ui.components.AdminRbacAndAuditCard
+import com.example.ui.components.AdminRemoteSettingsCard
 import com.example.ui.components.MetricStatCard
 import com.example.ui.components.SettingsInfoRow
 import com.example.ui.components.StatusBadgePill
@@ -126,6 +135,15 @@ fun AdminDashboardScreen(
     banners: List<HomeBanner> = emptyList(),
     sliderConfig: BannerSliderConfig = BannerSliderConfig(),
     websiteCustomizations: List<WebsiteCustomization> = emptyList(),
+    adConfig: AdConfiguration = AdConfiguration(),
+    remoteSettings: RemoteAppSettings = RemoteAppSettings(),
+    adminAccounts: List<AdminAccountRecord> = emptyList(),
+    adminNotifications: List<AdminNotification> = emptyList(),
+    auditLogs: List<AdminAuditLog> = emptyList(),
+    onSaveAdConfig: (AdConfiguration) -> Unit = {},
+    onSaveRemoteSettings: (RemoteAppSettings) -> Unit = {},
+    onSaveAdminAccount: (AdminAccountRecord) -> Unit = {},
+    onSendAdminNotification: (String, String, String, String, String) -> Unit = { _, _, _, _, _ -> },
     onSaveSliderConfig: (BannerSliderConfig) -> Unit = {},
     onUploadMultipleBanners: (List<Uri>) -> Unit = {},
     onAddPresetBanner: (String) -> Unit = {},
@@ -610,6 +628,39 @@ fun AdminDashboardScreen(
                             }
                         }
                     }
+                }
+
+                // 2c. Complete Ad Management System Card (AdMob Global, Format & Placement Toggles + Frequency Cap)
+                item {
+                    AdminAdManagementCard(
+                        adConfig = adConfig,
+                        onSaveAdConfig = onSaveAdConfig
+                    )
+                }
+
+                // 2d. Remote App Settings & Version Control Card
+                item {
+                    AdminRemoteSettingsCard(
+                        remoteSettings = remoteSettings,
+                        onSaveRemoteSettings = onSaveRemoteSettings
+                    )
+                }
+
+                // 2e. Notification & Broadcast Management Card
+                item {
+                    AdminNotificationManagementCard(
+                        notifications = adminNotifications,
+                        onSendNotification = onSendAdminNotification
+                    )
+                }
+
+                // 2f. Admin RBAC & Immutable Security Audit Logs Card
+                item {
+                    AdminRbacAndAuditCard(
+                        adminAccounts = adminAccounts,
+                        auditLogs = auditLogs,
+                        onSaveAdminAccount = onSaveAdminAccount
+                    )
                 }
 
                 // 3. Storage Used Dual-Tone Card (matches reference)

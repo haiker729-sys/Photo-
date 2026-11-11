@@ -14,6 +14,10 @@ import android.provider.OpenableColumns
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.model.AdConfiguration
+import com.example.data.model.AdminAccountRecord
+import com.example.data.model.AdminAuditLog
+import com.example.data.model.AdminNotification
 import com.example.data.model.BannerPresets
 import com.example.data.model.BannerSliderConfig
 import com.example.data.model.BannerVisibilityModes
@@ -22,6 +26,7 @@ import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
+import com.example.data.model.RemoteAppSettings
 import com.example.data.model.UiState
 import com.example.data.model.WebsiteCustomization
 import com.example.data.model.WebsiteVersionSnapshot
@@ -239,6 +244,46 @@ class JummoViewModel(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
                 initialValue = UiState.Loading
+            )
+
+    val adConfigState: StateFlow<AdConfiguration> =
+        repository.observeAdConfiguration()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                initialValue = AdConfiguration()
+            )
+
+    val remoteSettingsState: StateFlow<RemoteAppSettings> =
+        repository.observeRemoteAppSettings()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                initialValue = RemoteAppSettings()
+            )
+
+    val adminAccountsState: StateFlow<List<AdminAccountRecord>> =
+        repository.observeAdminAccounts()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                initialValue = emptyList()
+            )
+
+    val adminNotificationsState: StateFlow<List<AdminNotification>> =
+        repository.observeAdminNotifications()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                initialValue = emptyList()
+            )
+
+    val auditLogsState: StateFlow<List<AdminAuditLog>> =
+        repository.observeAuditLogs()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                initialValue = emptyList()
             )
 
     init {
@@ -1293,8 +1338,103 @@ class JummoViewModel(
             result.onSuccess {
                 val stateLabel = if (suspended) "suspended" else "reactivated"
                 _statusBanner.value = "Website for \"${webConfig.eventName}\" $stateLabel."
+                repository.recordAuditLog(
+                    actionType = if (suspended) "SUSPEND_WEBSITE" else "REACTIVATE_WEBSITE",
+                    targetType = "website_customizations",
+                    targetId = webConfig.id,
+                    summary = "Website \"${webConfig.eventName}\" $stateLabel"
+                )
             }.onFailure { err ->
                 _statusBanner.value = "Failed to update website status: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun saveAdConfiguration(config: AdConfiguration) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            val result = repository.saveAdConfiguration(config)
+            _isBusy.value = false
+            result.onSuccess {
+                val stateText = if (config.adsEnabled) "Ads Enabled" else "Ads Disabled"
+                _statusBanner.value = "Ad configuration saved ($stateText • Freq ${config.adFrequency})."
+                repository.recordAuditLog(
+                    actionType = "UPDATE_AD_CONFIG",
+                    targetType = "appConfig",
+                    targetId = "adConfig",
+                    summary = "$stateText • Home:${config.homeBannerEnabled} • Events:${config.eventListBannerEnabled} • Gallery:${config.galleryBannerEnabled} • Freq:${config.adFrequency}"
+                )
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to save ad configuration: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun saveRemoteAppSettings(settings: RemoteAppSettings) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            val result = repository.saveRemoteAppSettings(settings)
+            _isBusy.value = false
+            result.onSuccess {
+                _statusBanner.value = "Remote app settings saved (Min Version ${settings.minimumSupportedVersion})."
+                repository.recordAuditLog(
+                    actionType = "UPDATE_REMOTE_SETTINGS",
+                    targetType = "appConfig",
+                    targetId = "remoteSettings",
+                    summary = "Maintenance:${settings.maintenanceMode} • MinVersion:${settings.minimumSupportedVersion} • Announcement:${settings.announcementEnabled}"
+                )
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to save remote settings: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun saveAdminAccountRecord(record: AdminAccountRecord) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            val result = repository.saveAdminAccountRecord(record)
+            _isBusy.value = false
+            result.onSuccess {
+                _statusBanner.value = "Updated admin role (${record.role}) for ${record.email}."
+                repository.recordAuditLog(
+                    actionType = "UPDATE_ADMIN_ROLE",
+                    targetType = "admins",
+                    targetId = record.userId.ifBlank { record.email },
+                    summary = "Assigned ${record.role} to ${record.email} (Active: ${record.isActive})"
+                )
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to update admin role: ${err.localizedMessage}"
+            }
+        }
+    }
+
+    fun sendAdminNotification(
+        title: String,
+        message: String,
+        category: String = "Announcement",
+        targetAudience: String = "AllUsers",
+        scheduledAt: String = "Immediate"
+    ) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            val result = repository.createAdminNotification(
+                title = title,
+                message = message,
+                category = category,
+                targetAudience = targetAudience,
+                scheduledAt = scheduledAt
+            )
+            _isBusy.value = false
+            result.onSuccess { notifId ->
+                _statusBanner.value = "Notification \"$title\" dispatched ($targetAudience)."
+                repository.recordAuditLog(
+                    actionType = "SEND_NOTIFICATION",
+                    targetType = "admin_notifications",
+                    targetId = notifId,
+                    summary = "Sent [$category] \"$title\" to $targetAudience"
+                )
+            }.onFailure { err ->
+                _statusBanner.value = "Failed to send notification: ${err.localizedMessage}"
             }
         }
     }

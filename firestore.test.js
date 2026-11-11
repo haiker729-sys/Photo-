@@ -361,3 +361,158 @@ test("WebsiteCustomization & WebsiteVersionSnapshot: enforces cross-user isolati
   );
 });
 
+test("Admin RBAC: only Owner can grant SuperAdmin role in /admins, and regular user cannot write adConfig or remoteSettings", async () => {
+  const now = new Date();
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
+  const ownerDb = testEnv
+    .authenticatedContext("owner_meraj_uid", {
+      email: "merajalam906090@gmail.com",
+      email_verified: true,
+    })
+    .firestore();
+
+  // Regular photographer cannot grant themselves admin privileges
+  await assertFails(
+    aliceDb.collection("admins").doc(ALICE_UID).set({
+      userId: ALICE_UID,
+      email: "alice@example.com",
+      displayName: "Alice",
+      role: "SuperAdmin",
+      isActive: true,
+      sessionRevoked: false,
+      grantedBy: ALICE_UID,
+      createdAt: now,
+      updatedAt: now,
+    })
+  );
+
+  // Regular photographer cannot modify global adConfig
+  await assertFails(
+    aliceDb.collection("appConfig").doc("adConfig").set({
+      adsEnabled: false,
+      bannerEnabled: false,
+      interstitialEnabled: false,
+      rewardedEnabled: false,
+      appOpenEnabled: false,
+      homeBannerEnabled: false,
+      eventListBannerEnabled: false,
+      galleryBannerEnabled: false,
+      interstitialTransitionEnabled: false,
+      adFrequency: 5,
+      testMode: true,
+      maintenanceMode: false,
+      minimumAppVersion: "2.4.0",
+      updatedAt: now,
+      updatedBy: ALICE_UID,
+    })
+  );
+
+  // Verified Owner can register a SuperAdmin in /admins and update adConfig & remoteSettings
+  await assertSucceeds(
+    ownerDb.collection("admins").doc("admin_support_1").set({
+      userId: "admin_support_1",
+      email: "support@jummophotos.ai",
+      displayName: "Jummo Support Lead",
+      role: "SupportAdmin",
+      isActive: true,
+      sessionRevoked: false,
+      grantedBy: "merajalam906090@gmail.com",
+      createdAt: now,
+      updatedAt: now,
+    })
+  );
+
+  await assertSucceeds(
+    ownerDb.collection("appConfig").doc("adConfig").set({
+      adsEnabled: true,
+      bannerEnabled: true,
+      interstitialEnabled: true,
+      rewardedEnabled: false,
+      appOpenEnabled: false,
+      homeBannerEnabled: true,
+      eventListBannerEnabled: true,
+      galleryBannerEnabled: false,
+      interstitialTransitionEnabled: true,
+      adFrequency: 4,
+      testMode: true,
+      maintenanceMode: false,
+      minimumAppVersion: "2.4.0",
+      updatedAt: now,
+      updatedBy: "owner_meraj_uid",
+    })
+  );
+
+  await assertSucceeds(
+    ownerDb.collection("appConfig").doc("remoteSettings").set({
+      maintenanceMode: false,
+      maintenanceMessage: "Scheduled maintenance window at 03:00 IST.",
+      announcementBanner: "Jummo Photos AI v2.4 Pro Release is live!",
+      announcementEnabled: true,
+      minimumSupportedVersion: "2.4.0",
+      forceUpdateRequired: false,
+      guestDownloadDefault: true,
+      defaultGuestAccessMode: "FaceSearchOnly",
+      autoUploadDefault: true,
+      wifiOnlyDefault: true,
+      supportEmail: "merajalam906090@gmail.com",
+      supportPhone: "+91 98765 43210",
+      promotionalBannerEnabled: true,
+      updatedAt: now,
+      updatedBy: "owner_meraj_uid",
+    })
+  );
+
+  // Regular signed-in user CAN read adConfig and remoteSettings
+  await assertSucceeds(aliceDb.collection("appConfig").doc("adConfig").get());
+  await assertSucceeds(aliceDb.collection("appConfig").doc("remoteSettings").get());
+});
+
+test("Audit Logs & Notifications: Admin can create notifications and immutable audit logs; nobody can mutate or delete audit logs", async () => {
+  const now = new Date();
+  const ownerDb = testEnv
+    .authenticatedContext("owner_meraj_uid", {
+      email: "merajalam906090@gmail.com",
+      email_verified: true,
+    })
+    .firestore();
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
+
+  await assertSucceeds(
+    ownerDb.collection("admin_notifications").doc("notif_1").set({
+      title: "Studio Sync Upgrade",
+      message: "Google Drive multi-event upload throughput improved by 40%.",
+      category: "Announcement",
+      targetAudience: "AllUsers",
+      status: "Sent",
+      scheduledAt: "Immediate",
+      sentBy: "merajalam906090@gmail.com",
+      createdAt: now,
+      updatedAt: now,
+    })
+  );
+
+  await assertSucceeds(aliceDb.collection("admin_notifications").doc("notif_1").get());
+
+  await assertSucceeds(
+    ownerDb.collection("audit_logs").doc("log_1").set({
+      actorUid: "owner_meraj_uid",
+      actorEmail: "merajalam906090@gmail.com",
+      actorRole: "Owner",
+      actionType: "UPDATE_AD_CONFIG",
+      targetType: "appConfig",
+      targetId: "adConfig",
+      summary: "Enabled Home & Event List Banner Ads in Test Mode (Freq: 4)",
+      createdAt: now,
+    })
+  );
+
+  // Audit logs are strictly immutable
+  await assertFails(
+    ownerDb.collection("audit_logs").doc("log_1").update({
+      summary: "Tampered summary",
+    })
+  );
+  await assertFails(ownerDb.collection("audit_logs").doc("log_1").delete());
+});
+
+

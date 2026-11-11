@@ -1,557 +1,543 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Global safety net: default-deny all unmatched paths
-    match /{document=**} {
-      allow read, write: if false;
-    }
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function incoming() {
-      return request.resource.data;
+    function isDocOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    function existing() {
-      return resource.data;
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    function isOwner() {
+      return isSignedIn()
+        && ('email' in request.auth.token)
+        && request.auth.token.email == 'merajalam906090@gmail.com'
+        && ('email_verified' in request.auth.token)
+        && request.auth.token.email_verified == true;
     }
 
     function isAdmin() {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        ('email' in request.auth.token &&
-         'email_verified' in request.auth.token &&
-         request.auth.token.email == 'merajalam906090@gmail.com' &&
-         request.auth.token.email_verified == true)
-      );
+      return isOwner()
+        || (isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
     }
 
-    // Admins lookup collection (read-only for owner/admin, no client writes)
+    function isValidUserProfile(userId) {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'userId', 'displayName', 'email', 'studioName', 'role',
+          'driveConnected', 'driveFolderName', 'autoUploadEnabled',
+          'wifiOnlyUpload', 'batteryNotLowUpload', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'displayName', 'email', 'studioName', 'role',
+          'profilePhotoUri', 'isVerified', 'membershipTier',
+          'driveConnected', 'driveAccountEmail', 'driveFolderName', 'driveSyncStatus',
+          'localBackupFolderUri', 'localBackupFolderName', 'storageMode',
+          'autoUploadEnabled', 'wifiOnlyUpload', 'batteryNotLowUpload',
+          'chargingOnlyUpload', 'backgroundUploadAllowed', 'uploadQualityMode',
+          'faceMatchAccuracyMode', 'autoFaceIndexingEnabled', 'defaultGuestPrivacyMode',
+          'biometricLockEnabled', 'subscriptionPlan', 'accountStatus',
+          'createdAt', 'updatedAt'
+        ])
+        && data.userId == userId
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.email is string && data.email.size() <= 160
+        && data.studioName is string && data.studioName.size() >= 1 && data.studioName.size() <= 100
+        && data.role in ['photographer', 'admin', 'super_admin', 'owner']
+        && (!('profilePhotoUri' in data) || (data.profilePhotoUri is string && data.profilePhotoUri.size() <= 500))
+        && (!('isVerified' in data) || data.isVerified is bool)
+        && (!('membershipTier' in data) || (data.membershipTier is string && data.membershipTier.size() <= 60))
+        && data.driveConnected is bool
+        && (!('driveAccountEmail' in data) || (data.driveAccountEmail is string && data.driveAccountEmail.size() <= 160))
+        && data.driveFolderName is string && data.driveFolderName.size() <= 120
+        && (!('driveSyncStatus' in data) || data.driveSyncStatus in ['Synced', 'Syncing', 'NotConnected', 'Error'])
+        && (!('localBackupFolderUri' in data) || (data.localBackupFolderUri is string && data.localBackupFolderUri.size() <= 500))
+        && (!('localBackupFolderName' in data) || (data.localBackupFolderName is string && data.localBackupFolderName.size() <= 200))
+        && (!('storageMode' in data) || data.storageMode in ['GoogleDrive', 'PhoneFolder', 'Both'])
+        && data.autoUploadEnabled is bool
+        && data.wifiOnlyUpload is bool
+        && data.batteryNotLowUpload is bool
+        && (!('chargingOnlyUpload' in data) || data.chargingOnlyUpload is bool)
+        && (!('backgroundUploadAllowed' in data) || data.backgroundUploadAllowed is bool)
+        && (!('uploadQualityMode' in data) || data.uploadQualityMode in ['OriginalQuality', 'HighEfficiency'])
+        && (!('faceMatchAccuracyMode' in data) || data.faceMatchAccuracyMode in ['HighPrecision', 'Balanced'])
+        && (!('autoFaceIndexingEnabled' in data) || data.autoFaceIndexingEnabled is bool)
+        && (!('defaultGuestPrivacyMode' in data) || data.defaultGuestPrivacyMode in ['FaceSearchOnly', 'FullEventGallery', 'GuestChoice'])
+        && (!('biometricLockEnabled' in data) || data.biometricLockEnabled is bool)
+        && (!('subscriptionPlan' in data) || (data.subscriptionPlan is string && data.subscriptionPlan.size() <= 60))
+        && (!('accountStatus' in data) || data.accountStatus in ['Active', 'Suspended'])
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPhotoEvent() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'userId', 'name', 'category', 'eventDate', 'location', 'coverType',
+          'coverUri', 'status', 'qrCodeValue', 'qrEnabled', 'qrExpirationDate',
+          'guestAccessMode', 'guestAllowDownload', 'totalPhotos', 'uploadedPhotos',
+          'pendingPhotos', 'failedPhotos', 'driveSyncStatus', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'name', 'category', 'eventDate', 'location', 'coverType',
+          'coverUri', 'status', 'qrCodeValue', 'qrEnabled', 'qrExpirationDate',
+          'guestAccessMode', 'guestAllowDownload', 'pinProtected', 'guestAccessPin',
+          'driveFolderId', 'localFolderPath', 'storageMode',
+          'totalPhotos', 'uploadedPhotos', 'pendingPhotos', 'failedPhotos',
+          'driveSyncStatus', 'createdAt', 'updatedAt'
+        ])
+        && data.userId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && data.category in ['Wedding', 'Birthday', 'Festival', 'Corporate', 'School', 'Other']
+        && data.eventDate is string && data.eventDate.size() >= 1 && data.eventDate.size() <= 40
+        && data.location is string && data.location.size() <= 140
+        && data.coverType is string && data.coverType.size() <= 40
+        && data.coverUri is string && data.coverUri.size() <= 500
+        && data.status in ['Active', 'Completed', 'Draft', 'Suspended']
+        && data.qrCodeValue is string && data.qrCodeValue.size() <= 300
+        && data.qrEnabled is bool
+        && data.qrExpirationDate is string && data.qrExpirationDate.size() <= 40
+        && data.guestAccessMode in ['FaceSearchOnly', 'FullEventGallery', 'GuestChoice']
+        && data.guestAllowDownload is bool
+        && (!('pinProtected' in data) || data.pinProtected is bool)
+        && (!('guestAccessPin' in data) || (data.guestAccessPin is string && data.guestAccessPin.size() <= 12))
+        && (!('driveFolderId' in data) || (data.driveFolderId is string && data.driveFolderId.size() <= 200))
+        && (!('localFolderPath' in data) || (data.localFolderPath is string && data.localFolderPath.size() <= 400))
+        && (!('storageMode' in data) || data.storageMode in ['GoogleDrive', 'PhoneFolder', 'Both'])
+        && data.totalPhotos is int && data.totalPhotos >= 0
+        && data.uploadedPhotos is int && data.uploadedPhotos >= 0
+        && data.pendingPhotos is int && data.pendingPhotos >= 0
+        && data.failedPhotos is int && data.failedPhotos >= 0
+        && data.driveSyncStatus in ['Synced', 'Syncing', 'Attention', 'NotConnected']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPhotoUploadRecord() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'userId', 'eventId', 'eventName', 'fileName', 'localUri',
+          'sourceType', 'uploadMode', 'status', 'progress', 'fileSizeBytes',
+          'mimeType', 'faceIndexStatus', 'driveFileId', 'errorMessage',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'eventId', 'eventName', 'fileName', 'localUri',
+          'sourceType', 'uploadMode', 'status', 'progress', 'fileSizeBytes',
+          'mimeType', 'faceIndexStatus', 'driveFileId', 'errorMessage',
+          'createdAt', 'updatedAt'
+        ])
+        && data.userId == request.auth.uid
+        && data.eventId is string && data.eventId.size() >= 1 && data.eventId.size() <= 120
+        && data.eventName is string && data.eventName.size() >= 1 && data.eventName.size() <= 120
+        && data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 180
+        && data.localUri is string && data.localUri.size() <= 500
+        && data.sourceType in ['CameraCapture', 'GalleryImport', 'DSLRImport', 'GoogleDriveImport']
+        && data.uploadMode in ['Automatic', 'Manual']
+        && data.status in ['Pending', 'Uploading', 'Paused', 'Uploaded', 'Failed']
+        && data.progress is int && data.progress >= 0 && data.progress <= 100
+        && data.fileSizeBytes is int && data.fileSizeBytes >= 0
+        && data.mimeType is string && data.mimeType.size() <= 80
+        && data.faceIndexStatus in ['Indexed', 'AwaitingBackend', 'NotIndexed']
+        && data.driveFileId is string && data.driveFileId.size() <= 200
+        && data.errorMessage is string && data.errorMessage.size() <= 300
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidGuestFaceSession() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'userId', 'eventId', 'eventName', 'guestLabel', 'consentAccepted',
+          'selfieSource', 'matchedPhotoCount', 'matchStatus', 'privacyNote',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'eventId', 'eventName', 'guestLabel', 'consentAccepted',
+          'selfieSource', 'matchedPhotoCount', 'matchStatus', 'privacyNote',
+          'createdAt', 'updatedAt'
+        ])
+        && data.userId == request.auth.uid
+        && data.eventId is string && data.eventId.size() >= 1 && data.eventId.size() <= 120
+        && data.eventName is string && data.eventName.size() >= 1 && data.eventName.size() <= 120
+        && data.guestLabel is string && data.guestLabel.size() >= 1 && data.guestLabel.size() <= 80
+        && data.consentAccepted is bool
+        && data.selfieSource in ['CameraSelfie', 'GalleryUpload']
+        && data.matchedPhotoCount is int && data.matchedPhotoCount >= 0
+        && data.matchStatus in ['Completed', 'ReportedMismatch', 'DataDeleted']
+        && data.privacyNote is string && data.privacyNote.size() <= 240
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidHomeBanner() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'userId', 'imageUri', 'storagePath', 'displayOrder',
+          'isActive', 'slideDurationSeconds', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'title', 'imageUri', 'storagePath', 'displayOrder',
+          'isActive', 'status', 'visibility', 'targetPhotographerIds',
+          'targetPlanIds', 'startAt', 'endAt', 'slideDurationSeconds',
+          'createdBy', 'createdAt', 'updatedAt'
+        ])
+        && data.userId == request.auth.uid
+        && (!('title' in data) || (data.title is string && data.title.size() <= 120))
+        && data.imageUri is string && data.imageUri.size() >= 1 && data.imageUri.size() <= 500
+        && data.storagePath is string && data.storagePath.size() <= 300
+        && data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 1000
+        && data.isActive is bool
+        && (!('status' in data) || data.status in ['ACTIVE', 'INACTIVE', 'SCHEDULED', 'EXPIRED', 'DRAFT'])
+        && (!('visibility' in data) || data.visibility in ['ALL_PHOTOGRAPHERS', 'SELECTED_PHOTOGRAPHERS', 'SUBSCRIPTION_PLANS'])
+        && (!('targetPhotographerIds' in data) || data.targetPhotographerIds is list)
+        && (!('targetPlanIds' in data) || data.targetPlanIds is list)
+        && (!('startAt' in data) || data.startAt == null || data.startAt is timestamp)
+        && (!('endAt' in data) || data.endAt == null || data.endAt is timestamp)
+        && (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 128))
+        && data.slideDurationSeconds is int && data.slideDurationSeconds >= 2 && data.slideDurationSeconds <= 15
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBannerSliderConfig() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'autoSlide', 'slideDurationSeconds', 'infiniteLoop', 'manualSwipe',
+          'smoothTransition', 'showIndicatorDots', 'bannerTextOverlay',
+          'bannerCaptions', 'visibility', 'updatedAt', 'updatedBy'
+        ])
+        && data.keys().hasOnly([
+          'autoSlide', 'slideDurationSeconds', 'infiniteLoop', 'manualSwipe',
+          'smoothTransition', 'showIndicatorDots', 'bannerTextOverlay',
+          'bannerCaptions', 'visibility', 'updatedAt', 'updatedBy'
+        ])
+        && data.autoSlide is bool
+        && data.slideDurationSeconds is int && data.slideDurationSeconds >= 2 && data.slideDurationSeconds <= 15
+        && data.infiniteLoop is bool
+        && data.manualSwipe is bool
+        && data.smoothTransition is bool
+        && data.showIndicatorDots is bool
+        && data.bannerTextOverlay == false
+        && data.bannerCaptions == false
+        && data.visibility in ['ALL_PHOTOGRAPHERS', 'SELECTED_PHOTOGRAPHERS', 'SUBSCRIPTION_PLANS']
+        && data.updatedAt is timestamp
+        && data.updatedBy is string && data.updatedBy.size() <= 128;
+    }
+
+    function isValidAdConfig() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'adsEnabled', 'bannerEnabled', 'interstitialEnabled', 'rewardedEnabled',
+          'appOpenEnabled', 'homeBannerEnabled', 'eventListBannerEnabled',
+          'galleryBannerEnabled', 'interstitialTransitionEnabled', 'adFrequency',
+          'testMode', 'maintenanceMode', 'minimumAppVersion', 'updatedAt', 'updatedBy'
+        ])
+        && data.adsEnabled is bool
+        && data.bannerEnabled is bool
+        && data.interstitialEnabled is bool
+        && data.rewardedEnabled is bool
+        && data.appOpenEnabled is bool
+        && data.homeBannerEnabled is bool
+        && data.eventListBannerEnabled is bool
+        && data.galleryBannerEnabled is bool
+        && data.interstitialTransitionEnabled is bool
+        && data.adFrequency is int && data.adFrequency >= 1 && data.adFrequency <= 50
+        && data.testMode is bool
+        && data.maintenanceMode is bool
+        && data.minimumAppVersion is string && data.minimumAppVersion.size() <= 40
+        && data.updatedAt is timestamp
+        && data.updatedBy is string && data.updatedBy.size() <= 128;
+    }
+
+    function isValidRemoteSettings() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'maintenanceMode', 'maintenanceMessage', 'announcementBanner',
+          'announcementEnabled', 'minimumSupportedVersion', 'forceUpdateRequired',
+          'guestDownloadDefault', 'defaultGuestAccessMode', 'autoUploadDefault',
+          'wifiOnlyDefault', 'supportEmail', 'supportPhone', 'promotionalBannerEnabled',
+          'updatedAt', 'updatedBy'
+        ])
+        && data.maintenanceMode is bool
+        && data.maintenanceMessage is string && data.maintenanceMessage.size() <= 400
+        && data.announcementBanner is string && data.announcementBanner.size() <= 400
+        && data.announcementEnabled is bool
+        && data.minimumSupportedVersion is string && data.minimumSupportedVersion.size() <= 40
+        && data.forceUpdateRequired is bool
+        && data.guestDownloadDefault is bool
+        && data.defaultGuestAccessMode in ['FaceSearchOnly', 'FullEventGallery', 'GuestChoice']
+        && data.autoUploadDefault is bool
+        && data.wifiOnlyDefault is bool
+        && data.supportEmail is string && data.supportEmail.size() <= 160
+        && data.supportPhone is string && data.supportPhone.size() <= 60
+        && data.promotionalBannerEnabled is bool
+        && data.updatedAt is timestamp
+        && data.updatedBy is string && data.updatedBy.size() <= 128;
+    }
+
+    function isValidAdminAccountRecord(adminId) {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'userId', 'email', 'displayName', 'role', 'isActive',
+          'sessionRevoked', 'grantedBy', 'createdAt', 'updatedAt'
+        ])
+        && data.userId == adminId
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && data.role in ['Owner', 'SuperAdmin', 'Admin', 'SupportAdmin', 'Analyst']
+        && data.isActive is bool
+        && data.sessionRevoked is bool
+        && data.grantedBy is string && data.grantedBy.size() <= 160
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAdminNotification() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'title', 'message', 'category', 'targetAudience',
+          'status', 'scheduledAt', 'sentBy', 'createdAt', 'updatedAt'
+        ])
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 140
+        && data.message is string && data.message.size() >= 1 && data.message.size() <= 1000
+        && data.category in ['Announcement', 'Maintenance', 'VersionNotice', 'ServiceStatus']
+        && data.targetAudience in ['AllUsers', 'PhotographersOnly', 'GuestsOnly', 'ActiveEvents']
+        && data.status in ['Sent', 'Scheduled', 'Draft', 'Archived']
+        && data.scheduledAt is string && data.scheduledAt.size() <= 80
+        && data.sentBy is string && data.sentBy.size() <= 160
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAuditLog() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'actorUid', 'actorEmail', 'actorRole', 'actionType',
+          'targetType', 'targetId', 'summary', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'actorUid', 'actorEmail', 'actorRole', 'actionType',
+          'targetType', 'targetId', 'summary', 'createdAt'
+        ])
+        && data.actorUid == request.auth.uid
+        && data.actorEmail is string && data.actorEmail.size() <= 160
+        && data.actorRole is string && data.actorRole.size() <= 60
+        && data.actionType is string && data.actionType.size() >= 1 && data.actionType.size() <= 80
+        && data.targetType is string && data.targetType.size() <= 80
+        && data.targetId is string && data.targetId.size() <= 160
+        && data.summary is string && data.summary.size() >= 1 && data.summary.size() <= 500
+        && data.createdAt is timestamp;
+    }
+
+    function isValidWebsiteCustomization() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'userId', 'eventId', 'eventName', 'brandingEnabled',
+          'studioName', 'photographerName', 'logoUri', 'profileImageUri',
+          'coverImageUri', 'bannerUrisCsv', 'autoSliderEnabled',
+          'sliderIntervalSeconds', 'bannerHeightMode', 'bannerCropMode',
+          'theme', 'primaryAccentHex', 'secondaryAccentHex', 'fontFamily',
+          'layout', 'welcomeMessage', 'contactEmail', 'contactPhone',
+          'studioLocation', 'instagramUrl', 'portfolioUrl',
+          'faceSearchEnabled', 'galleryEnabled', 'downloadsEnabled',
+          'shareEnabled', 'guestAccessMode', 'publicationStatus',
+          'publishedVersion', 'publishedUrl', 'hasUnpublishedChanges',
+          'adminAuditNote', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'eventId', 'eventName', 'brandingEnabled',
+          'studioName', 'photographerName', 'logoUri', 'profileImageUri',
+          'coverImageUri', 'bannerUrisCsv', 'autoSliderEnabled',
+          'sliderIntervalSeconds', 'bannerHeightMode', 'bannerCropMode',
+          'theme', 'primaryAccentHex', 'secondaryAccentHex', 'fontFamily',
+          'layout', 'welcomeMessage', 'contactEmail', 'contactPhone',
+          'studioLocation', 'instagramUrl', 'portfolioUrl',
+          'faceSearchEnabled', 'galleryEnabled', 'downloadsEnabled',
+          'shareEnabled', 'guestAccessMode', 'publicationStatus',
+          'publishedVersion', 'publishedUrl', 'hasUnpublishedChanges',
+          'adminAuditNote', 'createdAt', 'updatedAt'
+        ])
+        && data.userId == request.auth.uid
+        && data.eventId is string && data.eventId.size() >= 1 && data.eventId.size() <= 120
+        && data.eventName is string && data.eventName.size() <= 140
+        && data.brandingEnabled is bool
+        && data.studioName is string && data.studioName.size() <= 120
+        && data.photographerName is string && data.photographerName.size() <= 100
+        && data.logoUri is string && data.logoUri.size() <= 500
+        && data.profileImageUri is string && data.profileImageUri.size() <= 500
+        && data.coverImageUri is string && data.coverImageUri.size() <= 500
+        && data.bannerUrisCsv is string && data.bannerUrisCsv.size() <= 3000
+        && data.autoSliderEnabled is bool
+        && data.sliderIntervalSeconds is int && data.sliderIntervalSeconds >= 2 && data.sliderIntervalSeconds <= 15
+        && data.bannerHeightMode in ['Compact', 'Standard', 'Cinematic']
+        && data.bannerCropMode in ['CenterCrop', 'FitCenter']
+        && data.theme in ['RoyalPurple', 'LuxuryGold', 'MidnightBlack', 'MinimalWhite', 'WeddingRose']
+        && data.primaryAccentHex is string && data.primaryAccentHex.size() <= 16
+        && data.secondaryAccentHex is string && data.secondaryAccentHex.size() <= 16
+        && data.fontFamily in ['PlayfairDisplay', 'PlusJakartaSans', 'CormorantGaramond', 'Montserrat']
+        && data.layout in ['ClassicGrid', 'Masonry', 'ModernCards', 'FullWidthHero', 'Editorial']
+        && data.welcomeMessage is string && data.welcomeMessage.size() <= 500
+        && data.contactEmail is string && data.contactEmail.size() <= 160
+        && data.contactPhone is string && data.contactPhone.size() <= 60
+        && data.studioLocation is string && data.studioLocation.size() <= 160
+        && data.instagramUrl is string && data.instagramUrl.size() <= 300
+        && data.portfolioUrl is string && data.portfolioUrl.size() <= 300
+        && data.faceSearchEnabled is bool
+        && data.galleryEnabled is bool
+        && data.downloadsEnabled is bool
+        && data.shareEnabled is bool
+        && data.guestAccessMode in ['FaceSearchOnly', 'FullEventGallery', 'GuestChoice']
+        && data.publicationStatus in ['Draft', 'Published', 'Suspended']
+        && data.publishedVersion is int && data.publishedVersion >= 0
+        && data.publishedUrl is string && data.publishedUrl.size() <= 400
+        && data.hasUnpublishedChanges is bool
+        && data.adminAuditNote is string && data.adminAuditNote.size() <= 300
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidWebsiteVersionSnapshot() {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'userId', 'eventId', 'customizationId', 'versionNumber',
+          'studioName', 'photographerName', 'logoUri', 'coverImageUri',
+          'bannerUrisCsv', 'theme', 'layout', 'welcomeMessage',
+          'guestAccessMode', 'faceSearchEnabled', 'galleryEnabled',
+          'downloadsEnabled', 'publishedUrl', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'eventId', 'customizationId', 'versionNumber',
+          'studioName', 'photographerName', 'logoUri', 'coverImageUri',
+          'bannerUrisCsv', 'theme', 'layout', 'welcomeMessage',
+          'guestAccessMode', 'faceSearchEnabled', 'galleryEnabled',
+          'downloadsEnabled', 'publishedUrl', 'createdAt', 'updatedAt'
+        ])
+        && data.userId == request.auth.uid
+        && data.eventId is string && data.eventId.size() >= 1 && data.eventId.size() <= 120
+        && data.customizationId is string && data.customizationId.size() >= 1 && data.customizationId.size() <= 120
+        && data.versionNumber is int && data.versionNumber >= 1
+        && data.studioName is string && data.studioName.size() <= 120
+        && data.photographerName is string && data.photographerName.size() <= 100
+        && data.logoUri is string && data.logoUri.size() <= 500
+        && data.coverImageUri is string && data.coverImageUri.size() <= 500
+        && data.bannerUrisCsv is string && data.bannerUrisCsv.size() <= 3000
+        && data.theme in ['RoyalPurple', 'LuxuryGold', 'MidnightBlack', 'MinimalWhite', 'WeddingRose']
+        && data.layout in ['ClassicGrid', 'Masonry', 'ModernCards', 'FullWidthHero', 'Editorial']
+        && data.welcomeMessage is string && data.welcomeMessage.size() <= 500
+        && data.guestAccessMode in ['FaceSearchOnly', 'FullEventGallery', 'GuestChoice']
+        && data.faceSearchEnabled is bool
+        && data.galleryEnabled is bool
+        && data.downloadsEnabled is bool
+        && data.publishedUrl is string && data.publishedUrl.size() <= 400
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
     match /admins/{adminId} {
-      allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
-      allow list, create, update, delete: if false;
-    }
-
-    // 1. Photographer Profile validation
-    function isValidPhotographerProfile(data) {
-      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
-             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
-             data.email is string && data.email.size() <= 150 &&
-             data.studioName is string && data.studioName.size() >= 1 && data.studioName.size() <= 100 &&
-             data.role is string && (data.role == 'photographer' || data.role == 'admin') &&
-             data.driveConnected is bool &&
-             data.driveFolderName is string && data.driveFolderName.size() <= 120 &&
-             data.autoUploadEnabled is bool &&
-             data.wifiOnlyUpload is bool &&
-             data.batteryNotLowUpload is bool &&
-             data.createdAt is timestamp && data.createdAt <= request.time &&
-             data.updatedAt is timestamp && data.updatedAt <= request.time;
+      allow get: if (isSignedIn() && request.auth.uid == adminId) || isAdmin();
+      allow list: if isAdmin();
+      allow create, update: if isOwner() && isValidAdminAccountRecord(adminId);
+      allow delete: if isOwner();
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
-      allow list: if isSignedIn() && request.auth.uid == userId;
-
-      allow create: if isSignedIn() &&
-                       isValidId(userId) &&
-                       request.auth.uid == userId &&
-                       incoming().keys().hasAll([
-                         'userId', 'displayName', 'email', 'studioName', 'role',
-                         'driveConnected', 'driveFolderName', 'autoUploadEnabled',
-                         'wifiOnlyUpload', 'batteryNotLowUpload', 'createdAt', 'updatedAt'
-                       ]) &&
-                       incoming().keys().hasOnly([
-                         'userId', 'displayName', 'email', 'studioName', 'role',
-                         'driveConnected', 'driveFolderName', 'autoUploadEnabled',
-                         'wifiOnlyUpload', 'batteryNotLowUpload', 'createdAt', 'updatedAt'
-                       ]) &&
-                       isValidPhotographerProfile(incoming()) &&
-                       (incoming().role == 'photographer' || isAdmin());
-
-      allow update: if isSignedIn() &&
-                       isValidId(userId) &&
-                       isValidPhotographerProfile(incoming()) &&
-                       request.auth.uid == userId &&
-                       incoming().userId == existing().userId &&
-                       incoming().createdAt == existing().createdAt &&
-                       (incoming().role == existing().role || isAdmin()) &&
-                       incoming().diff(existing()).affectedKeys().hasOnly([
-                         'displayName', 'email', 'studioName', 'role',
-                         'driveConnected', 'driveFolderName', 'autoUploadEnabled',
-                         'wifiOnlyUpload', 'batteryNotLowUpload', 'updatedAt'
-                       ]);
-
-      allow delete: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
-    }
-
-    // 2. PhotoEvent validation
-    function isValidPhotoEvent(data) {
-      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
-             data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
-             data.category is string && (
-               data.category == 'Wedding' ||
-               data.category == 'Birthday' ||
-               data.category == 'Festival' ||
-               data.category == 'School' ||
-               data.category == 'Corporate' ||
-               data.category == 'Other'
-             ) &&
-             data.eventDate is string && data.eventDate.size() >= 1 && data.eventDate.size() <= 40 &&
-             data.location is string && data.location.size() >= 1 && data.location.size() <= 160 &&
-             data.coverType is string && data.coverType.size() >= 1 && data.coverType.size() <= 60 &&
-             data.coverUri is string && data.coverUri.size() <= 500 &&
-             data.status is string && (data.status == 'Active' || data.status == 'Archived') &&
-             data.qrCodeValue is string && data.qrCodeValue.size() >= 1 && data.qrCodeValue.size() <= 250 &&
-             data.qrEnabled is bool &&
-             data.qrExpirationDate is string && data.qrExpirationDate.size() <= 40 &&
-             data.guestAccessMode is string && (
-               data.guestAccessMode == 'FaceSearchOnly' ||
-               data.guestAccessMode == 'ViewAllPermitted' ||
-               data.guestAccessMode == 'PINProtected' ||
-               data.guestAccessMode == 'GalleryOnly'
-             ) &&
-             data.guestAllowDownload is bool &&
-             data.totalPhotos is int && data.totalPhotos >= 0 &&
-             data.uploadedPhotos is int && data.uploadedPhotos >= 0 &&
-             data.pendingPhotos is int && data.pendingPhotos >= 0 &&
-             data.failedPhotos is int && data.failedPhotos >= 0 &&
-             data.driveSyncStatus is string && (
-               data.driveSyncStatus == 'Synced' ||
-               data.driveSyncStatus == 'Pending' ||
-               data.driveSyncStatus == 'NotConnected'
-             ) &&
-             (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
-             (!('storageDestination' in data) || (data.storageDestination is string && (
-               data.storageDestination == 'Phone Folder' ||
-               data.storageDestination == 'Google Drive' ||
-               data.storageDestination == 'Both'
-             ))) &&
-             (!('guestPin' in data) || (data.guestPin is string && data.guestPin.size() <= 30)) &&
-             (!('phoneFolderPath' in data) || (data.phoneFolderPath is string && data.phoneFolderPath.size() <= 500)) &&
-             (!('driveFolderId' in data) || (data.driveFolderId is string && data.driveFolderId.size() <= 200)) &&
-             (!('downloadEnabled' in data) || (data.downloadEnabled is bool)) &&
-             data.createdAt is timestamp && data.createdAt <= request.time &&
-             data.updatedAt is timestamp && data.updatedAt <= request.time;
+      allow get: if isDocOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isDocOwner(userId)
+        && isValidUserProfile(userId)
+        && (request.resource.data.role == 'photographer' || isOwner());
+      allow update: if (isDocOwner(userId)
+        && isValidUserProfile(userId)
+        && (request.resource.data.role == resource.data.role || isOwner())
+        && request.resource.data.createdAt == resource.data.createdAt)
+        || (isAdmin() && isValidUserProfile(userId));
+      allow delete: if isDocOwner(userId) || isOwner();
     }
 
     match /events/{eventId} {
-      allow get: if isSignedIn() && isValidId(eventId) && (existing().userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && existing().userId == request.auth.uid;
-
-      allow create: if isSignedIn() &&
-                       isValidId(eventId) &&
-                       incoming().keys().hasAll([
-                         'userId', 'name', 'category', 'eventDate', 'location',
-                         'coverType', 'coverUri', 'status', 'qrCodeValue', 'qrEnabled',
-                         'qrExpirationDate', 'guestAccessMode', 'guestAllowDownload',
-                         'totalPhotos', 'uploadedPhotos', 'pendingPhotos', 'failedPhotos',
-                         'driveSyncStatus', 'createdAt', 'updatedAt'
-                       ]) &&
-                       incoming().keys().hasOnly([
-                         'userId', 'name', 'category', 'eventDate', 'location',
-                         'coverType', 'coverUri', 'status', 'qrCodeValue', 'qrEnabled',
-                         'qrExpirationDate', 'guestAccessMode', 'guestAllowDownload',
-                         'totalPhotos', 'uploadedPhotos', 'pendingPhotos', 'failedPhotos',
-                         'driveSyncStatus', 'description', 'storageDestination', 'guestPin',
-                         'phoneFolderPath', 'driveFolderId', 'downloadEnabled',
-                         'createdAt', 'updatedAt'
-                       ]) &&
-                       isValidPhotoEvent(incoming());
-
-      allow update: if isSignedIn() &&
-                       isValidId(eventId) &&
-                       isValidPhotoEvent(incoming()) &&
-                       (existing().userId == request.auth.uid || isAdmin()) &&
-                       incoming().userId == existing().userId &&
-                       incoming().createdAt == existing().createdAt &&
-                       incoming().diff(existing()).affectedKeys().hasOnly([
-                         'name', 'category', 'eventDate', 'location',
-                         'coverType', 'coverUri', 'status', 'qrCodeValue', 'qrEnabled',
-                         'qrExpirationDate', 'guestAccessMode', 'guestAllowDownload',
-                         'totalPhotos', 'uploadedPhotos', 'pendingPhotos', 'failedPhotos',
-                         'driveSyncStatus', 'description', 'storageDestination', 'guestPin',
-                         'phoneFolderPath', 'driveFolderId', 'downloadEnabled',
-                         'updatedAt'
-                       ]);
-
-      allow delete: if isSignedIn() && isValidId(eventId) && (existing().userId == request.auth.uid || isAdmin());
-    }
-
-    // 3. PhotoUploadRecord validation
-    function isValidPhotoUploadRecord(data) {
-      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
-             data.eventId is string && isValidId(data.eventId) &&
-             data.eventName is string && data.eventName.size() >= 1 && data.eventName.size() <= 120 &&
-             data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 200 &&
-             data.localUri is string && data.localUri.size() >= 1 && data.localUri.size() <= 500 &&
-             data.sourceType is string && (
-               data.sourceType == 'MobileCamera' ||
-               data.sourceType == 'DSLRImport' ||
-               data.sourceType == 'ManualGallery' ||
-               data.sourceType == 'GoogleDriveImport' ||
-               data.sourceType == 'EventPhotoImport'
-             ) &&
-             data.uploadMode is string && (
-               data.uploadMode == 'Automatic' ||
-               data.uploadMode == 'Manual'
-             ) &&
-             data.status is string && (
-               data.status == 'Uploaded' ||
-               data.status == 'Pending' ||
-               data.status == 'Uploading' ||
-               data.status == 'Verifying' ||
-               data.status == 'Paused' ||
-               data.status == 'Failed'
-             ) &&
-             data.progress is int && data.progress >= 0 && data.progress <= 100 &&
-             data.fileSizeBytes is int && data.fileSizeBytes >= 0 &&
-             data.mimeType is string && data.mimeType.size() >= 1 && data.mimeType.size() <= 60 &&
-             data.faceIndexStatus is string && (
-               data.faceIndexStatus == 'Indexed' ||
-               data.faceIndexStatus == 'AwaitingBackend' ||
-               data.faceIndexStatus == 'OptedOut'
-             ) &&
-             data.driveFileId is string && data.driveFileId.size() <= 200 &&
-             data.errorMessage is string && data.errorMessage.size() <= 300 &&
-             data.createdAt is timestamp && data.createdAt <= request.time &&
-             data.updatedAt is timestamp && data.updatedAt <= request.time;
+      allow get, list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && isValidPhotoEvent();
+      allow update: if (isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && isValidPhotoEvent()
+        && request.resource.data.createdAt == resource.data.createdAt)
+        || isAdmin();
+      allow delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
     }
 
     match /uploads/{uploadId} {
-      allow get: if isSignedIn() && isValidId(uploadId) && (existing().userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && existing().userId == request.auth.uid;
-
-      allow create: if isSignedIn() &&
-                       isValidId(uploadId) &&
-                       incoming().keys().hasAll([
-                         'userId', 'eventId', 'eventName', 'fileName', 'localUri',
-                         'sourceType', 'uploadMode', 'status', 'progress',
-                         'fileSizeBytes', 'mimeType', 'faceIndexStatus',
-                         'driveFileId', 'errorMessage', 'createdAt', 'updatedAt'
-                       ]) &&
-                       incoming().keys().hasOnly([
-                         'userId', 'eventId', 'eventName', 'fileName', 'localUri',
-                         'sourceType', 'uploadMode', 'status', 'progress',
-                         'fileSizeBytes', 'mimeType', 'faceIndexStatus',
-                         'driveFileId', 'errorMessage', 'createdAt', 'updatedAt'
-                       ]) &&
-                       isValidPhotoUploadRecord(incoming());
-
-      allow update: if isSignedIn() &&
-                       isValidId(uploadId) &&
-                       isValidPhotoUploadRecord(incoming()) &&
-                       (existing().userId == request.auth.uid || isAdmin()) &&
-                       incoming().userId == existing().userId &&
-                       incoming().createdAt == existing().createdAt &&
-                       incoming().diff(existing()).affectedKeys().hasOnly([
-                         'eventId', 'eventName', 'fileName', 'localUri', 'uploadMode',
-                         'status', 'progress', 'faceIndexStatus',
-                         'driveFileId', 'errorMessage', 'updatedAt'
-                       ]);
-
-      allow delete: if isSignedIn() && isValidId(uploadId) && (existing().userId == request.auth.uid || isAdmin());
+      allow get, list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && isValidPhotoUploadRecord();
+      allow update: if (isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && isValidPhotoUploadRecord()
+        && request.resource.data.createdAt == resource.data.createdAt)
+        || isAdmin();
+      allow delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
     }
 
-    // 4. GuestFaceSearchSession validation
-    function isValidGuestFaceSearchSession(data) {
-      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
-             data.eventId is string && isValidId(data.eventId) &&
-             data.guestLabel is string && data.guestLabel.size() >= 1 && data.guestLabel.size() <= 100 &&
-             data.consentGranted is bool &&
-             data.selfieUri is string && data.selfieUri.size() <= 500 &&
-             data.matchStatus is string && (
-               data.matchStatus == 'ConsentVerified' ||
-               data.matchStatus == 'BackendPending' ||
-               data.matchStatus == 'DataDeleted' ||
-               data.matchStatus == 'ReportedMismatch'
-             ) &&
-             data.matchedPhotoCount is int && data.matchedPhotoCount >= 0 &&
-             data.reportNotes is string && data.reportNotes.size() <= 300 &&
-             data.createdAt is timestamp && data.createdAt <= request.time &&
-             data.updatedAt is timestamp && data.updatedAt <= request.time;
-    }
-
-    match /guest_consents/{consentId} {
-      allow get: if isSignedIn() && isValidId(consentId) && (existing().userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && existing().userId == request.auth.uid;
-
-      allow create: if isSignedIn() &&
-                       isValidId(consentId) &&
-                       incoming().keys().hasAll([
-                         'userId', 'eventId', 'guestLabel', 'consentGranted',
-                         'selfieUri', 'matchStatus', 'matchedPhotoCount',
-                         'reportNotes', 'createdAt', 'updatedAt'
-                       ]) &&
-                       incoming().keys().hasOnly([
-                         'userId', 'eventId', 'guestLabel', 'consentGranted',
-                         'selfieUri', 'matchStatus', 'matchedPhotoCount',
-                         'reportNotes', 'createdAt', 'updatedAt'
-                       ]) &&
-                       isValidGuestFaceSearchSession(incoming()) &&
-                       incoming().consentGranted == true;
-
-      allow update: if isSignedIn() &&
-                       isValidId(consentId) &&
-                       isValidGuestFaceSearchSession(incoming()) &&
-                       (existing().userId == request.auth.uid || isAdmin()) &&
-                       incoming().userId == existing().userId &&
-                       incoming().eventId == existing().eventId &&
-                       incoming().createdAt == existing().createdAt &&
-                       incoming().diff(existing()).affectedKeys().hasOnly([
-                         'guestLabel', 'consentGranted', 'selfieUri',
-                         'matchStatus', 'matchedPhotoCount', 'reportNotes', 'updatedAt'
-                       ]);
-
-      allow delete: if isSignedIn() && isValidId(consentId) && (existing().userId == request.auth.uid || isAdmin());
-    }
-
-    // 5. HomeBanner validation
-    function isValidHomeBanner(data) {
-      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
-             data.imageUri is string && data.imageUri.size() >= 1 && data.imageUri.size() <= 500 &&
-             data.storagePath is string && data.storagePath.size() <= 300 &&
-             data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 1000 &&
-             data.isActive is bool &&
-             data.slideDurationSeconds is int && data.slideDurationSeconds >= 1 && data.slideDurationSeconds <= 30 &&
-             (!('title' in data) || (data.title is string && data.title.size() <= 120)) &&
-             (!('visibility' in data) || (data.visibility in ['ALL', 'SELECTED', 'PLAN', 'DRAFT'])) &&
-             (!('targetPhotographerIds' in data) || (data.targetPhotographerIds is list && data.targetPhotographerIds.size() <= 50)) &&
-             (!('targetPlanIds' in data) || (data.targetPlanIds is list && data.targetPlanIds.size() <= 20)) &&
-             (!('startAt' in data) || data.startAt == null || data.startAt is timestamp) &&
-             (!('endAt' in data) || data.endAt == null || data.endAt is timestamp) &&
-             (!('aspectRatio' in data) || (data.aspectRatio is string && data.aspectRatio.size() <= 20)) &&
-             (!('cropMode' in data) || (data.cropMode is string && data.cropMode.size() <= 30)) &&
-             data.createdAt is timestamp && data.createdAt <= request.time &&
-             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    match /guest_face_sessions/{sessionId} {
+      allow get, list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && isValidGuestFaceSession();
+      allow update: if (isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && isValidGuestFaceSession()
+        && request.resource.data.createdAt == resource.data.createdAt)
+        || isAdmin();
+      allow delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
     }
 
     match /home_banners/{bannerId} {
-      allow get: if isSignedIn() && isValidId(bannerId) && (existing().userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && existing().userId == request.auth.uid;
-
-      allow create: if isSignedIn() &&
-                       isValidId(bannerId) &&
-                       incoming().keys().hasAll([
-                         'userId', 'imageUri', 'storagePath', 'displayOrder',
-                         'isActive', 'slideDurationSeconds', 'createdAt', 'updatedAt'
-                       ]) &&
-                       incoming().keys().hasOnly([
-                         'userId', 'imageUri', 'storagePath', 'displayOrder',
-                         'isActive', 'slideDurationSeconds', 'createdAt', 'updatedAt',
-                         'title', 'visibility', 'targetPhotographerIds', 'targetPlanIds',
-                         'startAt', 'endAt', 'aspectRatio', 'cropMode'
-                       ]) &&
-                       isValidHomeBanner(incoming());
-
-      allow update: if isSignedIn() &&
-                       isValidId(bannerId) &&
-                       isValidHomeBanner(incoming()) &&
-                       (existing().userId == request.auth.uid || isAdmin()) &&
-                       incoming().userId == existing().userId &&
-                       incoming().createdAt == existing().createdAt &&
-                       incoming().diff(existing()).affectedKeys().hasOnly([
-                         'imageUri', 'storagePath', 'displayOrder',
-                         'isActive', 'slideDurationSeconds', 'updatedAt',
-                         'title', 'visibility', 'targetPhotographerIds', 'targetPlanIds',
-                         'startAt', 'endAt', 'aspectRatio', 'cropMode'
-                       ]);
-
-      allow delete: if isSignedIn() && isValidId(bannerId) && (existing().userId == request.auth.uid || isAdmin());
+      allow get, list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && isValidHomeBanner();
+      allow update: if (isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && isValidHomeBanner()
+        && request.resource.data.createdAt == resource.data.createdAt)
+        || isAdmin();
+      allow delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
     }
 
-    // Global Slider & App Configuration
     match /appConfig/{configId} {
-      allow get: if isSignedIn() && isValidId(configId);
-      allow list: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(configId) && isAdmin();
+      allow get, list: if isSignedIn() && configId in ['bannerSlider', 'adConfig', 'remoteSettings'];
+      allow create, update: if isSignedIn() && (
+        (configId == 'bannerSlider' && isValidBannerSliderConfig())
+        || (configId == 'adConfig' && isAdmin() && isValidAdConfig())
+        || (configId == 'remoteSettings' && isAdmin() && isValidRemoteSettings())
+      );
       allow delete: if false;
     }
 
-    // 6. WebsiteCustomization validation
-    function isValidWebsiteCustomization(data) {
-      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
-             data.eventId is string && isValidId(data.eventId) &&
-             data.eventName is string && data.eventName.size() >= 1 && data.eventName.size() <= 120 &&
-             data.brandingEnabled is bool &&
-             data.studioName is string && data.studioName.size() >= 1 && data.studioName.size() <= 100 &&
-             data.photographerName is string && data.photographerName.size() >= 1 && data.photographerName.size() <= 100 &&
-             data.logoUri is string && data.logoUri.size() <= 500 &&
-             data.profileImageUri is string && data.profileImageUri.size() <= 500 &&
-             data.coverImageUri is string && data.coverImageUri.size() <= 500 &&
-             data.bannerUrisCsv is string && data.bannerUrisCsv.size() <= 2000 &&
-             data.autoSliderEnabled is bool &&
-             data.sliderIntervalSeconds is int && data.sliderIntervalSeconds >= 1 && data.sliderIntervalSeconds <= 30 &&
-             data.bannerHeightMode is string && (
-               data.bannerHeightMode == 'Compact' ||
-               data.bannerHeightMode == 'Standard' ||
-               data.bannerHeightMode == 'Balanced' ||
-               data.bannerHeightMode == 'Cinematic' ||
-               data.bannerHeightMode == 'Grand'
-             ) &&
-             data.bannerCropMode is string && (
-               data.bannerCropMode == 'CenterCrop' ||
-               data.bannerCropMode == 'FillCrop' ||
-               data.bannerCropMode == 'TopFocus' ||
-               data.bannerCropMode == 'FullFrameFit' ||
-               data.bannerCropMode == 'SafeFit'
-             ) &&
-             data.theme is string && (
-               data.theme == 'RoyalPurple' ||
-               data.theme == 'MidnightBlack' ||
-               data.theme == 'ChampagneGold' ||
-               data.theme == 'ElegantIvory' ||
-               data.theme == 'Custom'
-             ) &&
-             data.primaryAccentHex is string && data.primaryAccentHex.size() >= 4 && data.primaryAccentHex.size() <= 12 &&
-             data.secondaryAccentHex is string && data.secondaryAccentHex.size() >= 4 && data.secondaryAccentHex.size() <= 12 &&
-             data.fontFamily is string && data.fontFamily.size() >= 1 && data.fontFamily.size() <= 60 &&
-             data.layout is string && (
-               data.layout == 'Editorial' ||
-               data.layout == 'ClassicGrid' ||
-               data.layout == 'Masonry'
-             ) &&
-             data.welcomeMessage is string && data.welcomeMessage.size() <= 500 &&
-             data.contactEmail is string && data.contactEmail.size() <= 150 &&
-             data.contactPhone is string && data.contactPhone.size() <= 60 &&
-             data.studioLocation is string && data.studioLocation.size() <= 160 &&
-             data.instagramUrl is string && data.instagramUrl.size() <= 250 &&
-             data.portfolioUrl is string && data.portfolioUrl.size() <= 250 &&
-             data.faceSearchEnabled is bool &&
-             data.galleryEnabled is bool &&
-             data.downloadsEnabled is bool &&
-             data.shareEnabled is bool &&
-             data.guestAccessMode is string && (
-               data.guestAccessMode == 'FaceSearchOnly' ||
-               data.guestAccessMode == 'ViewAllPermitted' ||
-               data.guestAccessMode == 'PINProtected' ||
-               data.guestAccessMode == 'GalleryOnly'
-             ) &&
-             data.publicationStatus is string && (
-               data.publicationStatus == 'Draft' ||
-               data.publicationStatus == 'Published' ||
-               data.publicationStatus == 'Suspended'
-             ) &&
-             data.publishedVersion is int && data.publishedVersion >= 0 &&
-             data.publishedUrl is string && data.publishedUrl.size() <= 300 &&
-             data.hasUnpublishedChanges is bool &&
-             data.adminAuditNote is string && data.adminAuditNote.size() <= 300 &&
-             data.createdAt is timestamp && data.createdAt <= request.time &&
-             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    match /admin_notifications/{notificationId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isAdmin() && isValidAdminNotification();
+      allow delete: if isAdmin();
+    }
+
+    match /audit_logs/{logId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && isValidAuditLog();
+      allow update, delete: if false;
     }
 
     match /website_customizations/{customizationId} {
-      allow get: if isSignedIn() && isValidId(customizationId) && (existing().userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && existing().userId == request.auth.uid;
-
-      allow create: if isSignedIn() &&
-                       isValidId(customizationId) &&
-                       incoming().userId == request.auth.uid &&
-                       incoming().keys().hasAll([
-                         'userId', 'eventId', 'eventName', 'brandingEnabled',
-                         'studioName', 'photographerName', 'logoUri', 'profileImageUri',
-                         'coverImageUri', 'bannerUrisCsv', 'autoSliderEnabled',
-                         'sliderIntervalSeconds', 'bannerHeightMode', 'bannerCropMode',
-                         'theme', 'primaryAccentHex', 'secondaryAccentHex', 'fontFamily',
-                         'layout', 'welcomeMessage', 'contactEmail', 'contactPhone',
-                         'studioLocation', 'instagramUrl', 'portfolioUrl',
-                         'faceSearchEnabled', 'galleryEnabled', 'downloadsEnabled',
-                         'shareEnabled', 'guestAccessMode', 'publicationStatus',
-                         'publishedVersion', 'publishedUrl', 'hasUnpublishedChanges',
-                         'adminAuditNote', 'createdAt', 'updatedAt'
-                       ]) &&
-                       incoming().keys().hasOnly([
-                         'userId', 'eventId', 'eventName', 'brandingEnabled',
-                         'studioName', 'photographerName', 'logoUri', 'profileImageUri',
-                         'coverImageUri', 'bannerUrisCsv', 'autoSliderEnabled',
-                         'sliderIntervalSeconds', 'bannerHeightMode', 'bannerCropMode',
-                         'theme', 'primaryAccentHex', 'secondaryAccentHex', 'fontFamily',
-                         'layout', 'welcomeMessage', 'contactEmail', 'contactPhone',
-                         'studioLocation', 'instagramUrl', 'portfolioUrl',
-                         'faceSearchEnabled', 'galleryEnabled', 'downloadsEnabled',
-                         'shareEnabled', 'guestAccessMode', 'publicationStatus',
-                         'publishedVersion', 'publishedUrl', 'hasUnpublishedChanges',
-                         'adminAuditNote', 'createdAt', 'updatedAt'
-                       ]) &&
-                       isValidWebsiteCustomization(incoming());
-
-      allow update: if isSignedIn() &&
-                       isValidId(customizationId) &&
-                       isValidWebsiteCustomization(incoming()) &&
-                       (existing().userId == request.auth.uid || isAdmin()) &&
-                       incoming().userId == existing().userId &&
-                       incoming().eventId == existing().eventId &&
-                       incoming().createdAt == existing().createdAt &&
-                       incoming().diff(existing()).affectedKeys().hasOnly([
-                         'eventName', 'brandingEnabled', 'studioName', 'photographerName',
-                         'logoUri', 'profileImageUri', 'coverImageUri', 'bannerUrisCsv',
-                         'autoSliderEnabled', 'sliderIntervalSeconds', 'bannerHeightMode',
-                         'bannerCropMode', 'theme', 'primaryAccentHex', 'secondaryAccentHex',
-                         'fontFamily', 'layout', 'welcomeMessage', 'contactEmail',
-                         'contactPhone', 'studioLocation', 'instagramUrl', 'portfolioUrl',
-                         'faceSearchEnabled', 'galleryEnabled', 'downloadsEnabled',
-                         'shareEnabled', 'guestAccessMode', 'publicationStatus',
-                         'publishedVersion', 'publishedUrl', 'hasUnpublishedChanges',
-                         'adminAuditNote', 'updatedAt'
-                       ]);
-
-      allow delete: if isSignedIn() && isValidId(customizationId) && (existing().userId == request.auth.uid || isAdmin());
-    }
-
-    // 7. WebsiteVersionSnapshot validation (Immutable published snapshots)
-    function isValidWebsiteVersionSnapshot(data) {
-      return data.userId is string && data.userId == request.auth.uid && data.userId.size() >= 1 && data.userId.size() <= 128 &&
-             data.eventId is string && isValidId(data.eventId) &&
-             data.customizationId is string && isValidId(data.customizationId) &&
-             data.versionNumber is int && data.versionNumber >= 1 && data.versionNumber <= 10000 &&
-             data.studioName is string && data.studioName.size() >= 1 && data.studioName.size() <= 100 &&
-             data.photographerName is string && data.photographerName.size() >= 1 && data.photographerName.size() <= 100 &&
-             data.logoUri is string && data.logoUri.size() <= 500 &&
-             data.coverImageUri is string && data.coverImageUri.size() <= 500 &&
-             data.bannerUrisCsv is string && data.bannerUrisCsv.size() <= 2000 &&
-             data.theme is string && data.theme.size() >= 1 && data.theme.size() <= 40 &&
-             data.layout is string && data.layout.size() >= 1 && data.layout.size() <= 40 &&
-             data.welcomeMessage is string && data.welcomeMessage.size() <= 500 &&
-             data.guestAccessMode is string && data.guestAccessMode.size() >= 1 && data.guestAccessMode.size() <= 40 &&
-             data.faceSearchEnabled is bool &&
-             data.galleryEnabled is bool &&
-             data.downloadsEnabled is bool &&
-             data.publishedUrl is string && data.publishedUrl.size() <= 300 &&
-             data.createdAt is timestamp && data.createdAt <= request.time &&
-             data.updatedAt is timestamp && data.updatedAt <= request.time;
+      allow get, list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && isValidWebsiteCustomization();
+      allow update: if (isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && isValidWebsiteCustomization()
+        && request.resource.data.createdAt == resource.data.createdAt)
+        || isAdmin();
+      allow delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
     }
 
     match /website_versions/{versionId} {
-      allow get: if isSignedIn() && isValidId(versionId) && (existing().userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && existing().userId == request.auth.uid;
-
-      allow create: if isSignedIn() &&
-                       isValidId(versionId) &&
-                       incoming().keys().hasAll([
-                         'userId', 'eventId', 'customizationId', 'versionNumber',
-                         'studioName', 'photographerName', 'logoUri', 'coverImageUri',
-                         'bannerUrisCsv', 'theme', 'layout', 'welcomeMessage',
-                         'guestAccessMode', 'faceSearchEnabled', 'galleryEnabled',
-                         'downloadsEnabled', 'publishedUrl', 'createdAt', 'updatedAt'
-                       ]) &&
-                       incoming().keys().hasOnly([
-                         'userId', 'eventId', 'customizationId', 'versionNumber',
-                         'studioName', 'photographerName', 'logoUri', 'coverImageUri',
-                         'bannerUrisCsv', 'theme', 'layout', 'welcomeMessage',
-                         'guestAccessMode', 'faceSearchEnabled', 'galleryEnabled',
-                         'downloadsEnabled', 'publishedUrl', 'createdAt', 'updatedAt'
-                       ]) &&
-                       isValidWebsiteVersionSnapshot(incoming());
-
-      allow update: if false;
-      allow delete: if isSignedIn() && isValidId(versionId) && (existing().userId == request.auth.uid || isAdmin());
+      allow get, list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && isValidWebsiteVersionSnapshot();
+      allow update, delete: if false;
     }
   }
 }

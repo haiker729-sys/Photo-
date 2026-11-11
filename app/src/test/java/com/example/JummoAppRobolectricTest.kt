@@ -15,6 +15,10 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ApplicationProvider
+import com.example.data.model.AdConfiguration
+import com.example.data.model.AdminAccountRecord
+import com.example.data.model.AdminAuditLog
+import com.example.data.model.AdminNotification
 import com.example.data.model.BannerPresets
 import com.example.data.model.BannerSliderConfig
 import com.example.data.model.BannerVisibilityModes
@@ -23,12 +27,15 @@ import com.example.data.model.HomeBanner
 import com.example.data.model.PhotoEvent
 import com.example.data.model.PhotoUploadRecord
 import com.example.data.model.PhotographerProfile
+import com.example.data.model.RemoteAppSettings
 import com.example.data.model.StorageDestinations
 import com.example.data.model.WebsiteCustomization
 import com.example.data.model.WebsiteLayouts
 import com.example.data.model.WebsiteThemes
 import com.example.data.model.WebsiteVersionSnapshot
 import com.example.ui.auth.AuthScreen
+import com.example.ui.components.JummoManagedBannerAd
+import com.example.ui.components.RemoteAnnouncementBanner
 import com.example.ui.screens.AdminDashboardScreen
 import com.example.ui.screens.EventQrSystemDialog
 import com.example.ui.screens.EventsScreen
@@ -1597,4 +1604,117 @@ class JummoAppRobolectricTest {
         assertTrue(thumbs.exists() && thumbs.isDirectory)
         assertTrue(exports.exists() && exports.isDirectory)
     }
+
+    @Test
+    fun adManagement_remoteSettings_notificationsAndRbacAuditControls_enforcedCorrectly() {
+        val adConfigState = androidx.compose.runtime.mutableStateOf(AdConfiguration())
+        val remoteSettingsState = androidx.compose.runtime.mutableStateOf(
+            RemoteAppSettings(
+                announcementEnabled = true,
+                announcementBanner = "Jummo Photos AI v2.4 Live Release"
+            )
+        )
+        val notificationsState = androidx.compose.runtime.mutableStateOf<List<AdminNotification>>(emptyList())
+        val adminAccountsState = androidx.compose.runtime.mutableStateOf<List<AdminAccountRecord>>(emptyList())
+        val auditLogsState = androidx.compose.runtime.mutableStateOf<List<AdminAuditLog>>(emptyList())
+
+        // 1. Verify AdConfiguration placement safety guards (Camera, Uploads, QR, PIN, Auth blocked)
+        val initialAdConfig = adConfigState.value
+        assertTrue(initialAdConfig.isBannerAllowedForPlacement("home"))
+        assertTrue(initialAdConfig.isBannerAllowedForPlacement("events"))
+        assertFalse(initialAdConfig.isBannerAllowedForPlacement("camera"))
+        assertFalse(initialAdConfig.isBannerAllowedForPlacement("uploads"))
+        assertFalse(initialAdConfig.isBannerAllowedForPlacement("qr"))
+        assertFalse(initialAdConfig.isBannerAllowedForPlacement("pin"))
+        assertFalse(initialAdConfig.isBannerAllowedForPlacement("auth"))
+
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                androidx.compose.foundation.layout.Column {
+                    RemoteAnnouncementBanner(remoteSettings = remoteSettingsState.value)
+                    JummoManagedBannerAd(placement = "home", adConfig = adConfigState.value)
+                    JummoManagedBannerAd(placement = "camera", adConfig = adConfigState.value)
+                    AdminDashboardScreen(
+                        profile = PhotographerProfile(displayName = "Meraj Sir"),
+                        events = emptyList(),
+                        uploads = emptyList(),
+                        guestSessions = emptyList(),
+                        adConfig = adConfigState.value,
+                        remoteSettings = remoteSettingsState.value,
+                        adminAccounts = adminAccountsState.value,
+                        adminNotifications = notificationsState.value,
+                        auditLogs = auditLogsState.value,
+                        onSaveAdConfig = { updated ->
+                            adConfigState.value = updated
+                            auditLogsState.value = auditLogsState.value + AdminAuditLog(
+                                id = "log_ad",
+                                actorEmail = "merajalam906090@gmail.com",
+                                actionType = "UPDATE_AD_CONFIG",
+                                summary = "Updated ad config freq=${updated.adFrequency}"
+                            )
+                        },
+                        onSaveRemoteSettings = { updated ->
+                            remoteSettingsState.value = updated
+                        },
+                        onSaveAdminAccount = { record ->
+                            adminAccountsState.value = adminAccountsState.value + record
+                        },
+                        onSendAdminNotification = { title, msg, cat, aud, _ ->
+                            notificationsState.value = notificationsState.value + AdminNotification(
+                                id = "n_1",
+                                title = title,
+                                message = msg,
+                                category = cat,
+                                targetAudience = aud
+                            )
+                        },
+                        onNavigateToTab = {},
+                        onClose = {}
+                    )
+                }
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        // 2. Verify Remote Announcement Banner & Home Banner Ad are displayed, while Camera Ad is blocked
+        composeTestRule.onNodeWithTag("remote_announcement_banner").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("jummo_ad_banner_home").assertIsDisplayed()
+        composeTestRule.onAllNodes(hasTestTag("jummo_ad_banner_camera")).fetchSemanticsNodes().let {
+            assertTrue("Camera screen must never render an ad banner", it.isEmpty())
+        }
+
+        // 3. Scroll to Ad Management Card in AdminDashboardScreen, change frequency to 6x, and save
+        val adminList = composeTestRule.onNodeWithTag("admin_dashboard_list")
+        adminList.performScrollToNode(hasTestTag("admin_ad_management_card"))
+        composeTestRule.onNodeWithTag("ad_freq_chip_6").performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("save_ad_config_button").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+
+        assertEquals(6L, adConfigState.value.adFrequency)
+        assertEquals(1, auditLogsState.value.size)
+
+        // 4. Scroll to Notification Management Card and send a broadcast
+        adminList.performScrollToNode(hasTestTag("admin_notification_management_card"))
+        composeTestRule.onNodeWithTag("admin_notif_title_input")
+            .performScrollTo()
+            .performTextReplacement("Cloud Drive v2.4 Upgrade")
+        composeTestRule.onNodeWithTag("send_admin_notification_button")
+            .performScrollTo()
+            .performClick()
+        composeTestRule.waitForIdle()
+        assertEquals(1, notificationsState.value.size)
+        assertEquals("Cloud Drive v2.4 Upgrade", notificationsState.value.first().title)
+
+        // 5. Scroll to Admin RBAC Card and grant SupportAdmin role
+        adminList.performScrollToNode(hasTestTag("admin_rbac_security_card"))
+        composeTestRule.onNodeWithTag("rbac_role_chip_SupportAdmin").performScrollTo().performClick()
+        composeTestRule.onNodeWithTag("rbac_email_input")
+            .performScrollTo()
+            .performTextReplacement("ops@jummophotos.ai")
+        composeTestRule.onNodeWithTag("rbac_grant_role_button").performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+        assertEquals(1, adminAccountsState.value.size)
+        assertEquals("SupportAdmin", adminAccountsState.value.first().role)
+    }
 }
+

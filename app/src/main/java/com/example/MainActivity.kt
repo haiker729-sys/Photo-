@@ -84,6 +84,8 @@ import com.example.ui.auth.AuthScreen
 import com.example.ui.auth.signOut
 import com.example.ui.components.JummoLuxuryBottomBar
 import com.example.ui.components.JummoLuxuryCameraLogo
+import com.example.ui.components.JummoManagedBannerAd
+import com.example.ui.components.RemoteAnnouncementBanner
 import com.example.ui.screens.AdminDashboardScreen
 import com.example.ui.screens.CameraScreen
 import com.example.ui.screens.EventsScreen
@@ -290,6 +292,11 @@ fun JummoAuthenticatedShell(
     val sliderConfig by viewModel.sliderConfigState.collectAsStateWithLifecycle()
     val websiteCustomizationsState by viewModel.websiteCustomizationsState.collectAsStateWithLifecycle()
     val websiteVersionsState by viewModel.websiteVersionsState.collectAsStateWithLifecycle()
+    val adConfig by viewModel.adConfigState.collectAsStateWithLifecycle()
+    val remoteSettings by viewModel.remoteSettingsState.collectAsStateWithLifecycle()
+    val adminAccounts by viewModel.adminAccountsState.collectAsStateWithLifecycle()
+    val adminNotifications by viewModel.adminNotificationsState.collectAsStateWithLifecycle()
+    val auditLogs by viewModel.auditLogsState.collectAsStateWithLifecycle()
     val selectedEventId by viewModel.selectedEventId.collectAsStateWithLifecycle()
     val statusBanner by viewModel.statusBanner.collectAsStateWithLifecycle()
 
@@ -371,6 +378,23 @@ fun JummoAuthenticatedShell(
             banners = banners,
             sliderConfig = sliderConfig,
             websiteCustomizations = websiteCustomizations,
+            adConfig = adConfig,
+            remoteSettings = remoteSettings,
+            adminAccounts = adminAccounts,
+            adminNotifications = adminNotifications,
+            auditLogs = auditLogs,
+            onSaveAdConfig = { updatedAdConfig ->
+                viewModel.saveAdConfiguration(updatedAdConfig)
+            },
+            onSaveRemoteSettings = { updatedSettings ->
+                viewModel.saveRemoteAppSettings(updatedSettings)
+            },
+            onSaveAdminAccount = { record ->
+                viewModel.saveAdminAccountRecord(record)
+            },
+            onSendAdminNotification = { title, message, category, targetAudience, scheduledAt ->
+                viewModel.sendAdminNotification(title, message, category, targetAudience, scheduledAt)
+            },
             onSaveSliderConfig = { config ->
                 viewModel.saveSliderConfig(config)
             },
@@ -549,6 +573,22 @@ fun JummoAuthenticatedShell(
                         )
                     }
                 }
+
+                RemoteAnnouncementBanner(
+                    remoteSettings = remoteSettings,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+
+                val activePlacement = when (currentTab) {
+                    0 -> "home"
+                    1 -> "events"
+                    else -> "blocked"
+                }
+                JummoManagedBannerAd(
+                    placement = activePlacement,
+                    adConfig = adConfig,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
 
                 if (eventsState is UiState.Loading) {
                     Box(

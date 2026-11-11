@@ -173,7 +173,8 @@ fun ProfileScreen(
     onOpenWebsiteCustomizer: () -> Unit = {},
     onRetryFailedUploads: () -> Unit = {},
     onNotifyMessage: (String) -> Unit = {},
-    initialReleaseInfo: VerifiedGitHubReleaseInfo? = null
+    initialReleaseInfo: VerifiedGitHubReleaseInfo? = null,
+    showAdminEntry: Boolean = true
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -1797,78 +1798,80 @@ fun ProfileScreen(
             }
 
             // 11. ADMIN DASHBOARD ENTRY (Role-Based Access Control) + WEBSITE CUSTOMIZER
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            if (isAuthorizedAdmin) {
-                                onOpenAdminDashboard()
-                            } else {
-                                onNotifyMessage("Admin access restricted to authorized studio administrators.")
-                            }
-                        }
-                        .testTag("open_admin_dashboard_row"),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = JummoElevatedPurple),
-                    border = BorderStroke(1.dp, JummoGoldBright.copy(alpha = 0.65f))
-                ) {
-                    Row(
+            if (showAdminEntry) {
+                item {
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .clickable {
+                                if (isAuthorizedAdmin) {
+                                    onOpenAdminDashboard()
+                                } else {
+                                    onNotifyMessage("Admin access restricted to authorized studio administrators.")
+                                }
+                            }
+                            .testTag("open_admin_dashboard_row"),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = JummoElevatedPurple),
+                        border = BorderStroke(1.dp, JummoGoldBright.copy(alpha = 0.65f))
                     ) {
                         Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(JummoGoldBright.copy(alpha = 0.16f)),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.AdminPanelSettings,
-                                    contentDescription = null,
-                                    tint = JummoGoldBright,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Column {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(JummoGoldBright.copy(alpha = 0.16f)),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = "Admin Dashboard",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = JummoGoldBright,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    StatusBadgePill(
-                                        text = if (isAuthorizedAdmin) "Authorized" else "Restricted",
-                                        color = if (isAuthorizedAdmin) JummoSuccessGreen else JummoErrorRed
+                                    Icon(
+                                        imageVector = Icons.Default.AdminPanelSettings,
+                                        contentDescription = null,
+                                        tint = JummoGoldBright,
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
-                                Text(
-                                    text = "Users, events, QR & guest access, face AI, banners, Drive & analytics",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = JummoTextSecondary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "Admin Dashboard",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = JummoGoldBright,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        StatusBadgePill(
+                                            text = if (isAuthorizedAdmin) "Authorized" else "Restricted",
+                                            color = if (isAuthorizedAdmin) JummoSuccessGreen else JummoErrorRed
+                                        )
+                                    }
+                                    Text(
+                                        text = "Users, events, QR & guest access, face AI, banners, Drive & analytics",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = JummoTextSecondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = JummoGoldBright
+                            )
                         }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = JummoGoldBright
-                        )
                     }
                 }
             }
